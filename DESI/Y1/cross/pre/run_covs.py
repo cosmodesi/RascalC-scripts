@@ -28,7 +28,7 @@ def read_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, F
 mode = "legendre_projected"
 max_l = 4 # maximum (even) multipole index
 
-njack = 60 # if 0 jackknife is turned off
+njack = 0 # if 0 jackknife is turned off
 
 periodic_boxsize = None # aperiodic if None (or 0)
 
