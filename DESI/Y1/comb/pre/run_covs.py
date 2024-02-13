@@ -29,6 +29,7 @@ mode = "legendre_projected"
 max_l = 4 # maximum (even) multipole index
 
 njack = 0 # if 0 jackknife is turned off
+# desirable to run the next version with jackknives; will need pycorr counts accordingly (important to use the subsampler consistently with this script)!
 
 periodic_boxsize = None # aperiodic if None (or 0)
 
