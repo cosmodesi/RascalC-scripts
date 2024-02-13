@@ -34,11 +34,11 @@ mbin_cf = 10 # number of angular (mu) bins for input 2PCF
 # Settings related to time and convergence
 
 nthread = 256 # number of OMP threads to use
-n_loops = 1024 # number of integration loops per filename
+n_loops = 1024 # number of integration loops per filename; may need to be adjusted with the number of random points
 loops_per_sample = 64 # number of loops to collapse into one subsample
-N2 = 5 # number of secondary cells/particles per primary cell
-N3 = 10 # number of third cells/particles per secondary cell/particle
-N4 = 20 # number of fourth cells/particles per third cell/particle
+N2 = 10 # number of secondary cells/particles per primary cell
+N3 = 20 # number of third cells/particles per secondary cell/particle
+N4 = 40 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames; many are decided by the first command-line argument
 tlabels = ["QSO"] # tracer labels for filenames
