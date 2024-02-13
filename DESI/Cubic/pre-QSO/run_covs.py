@@ -3,8 +3,7 @@ import sys, os
 import numpy as np
 from pycorr import TwoPointCorrelationFunction
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
-from RascalC.interface import run_cov
-from RascalC.convergence_check_extra import convergence_check_extra
+from RascalC import run_cov
 
 def prevent_override(filename: str, max_num: int = 10) -> str: # append _{number} to filename to prevent override
     for i in range(max_num+1):
@@ -94,7 +93,7 @@ for t in range(len(tlabels)):
     # generate random positions between 0 and periodic_boxsize
     randoms_positions[t] = np.random.rand(n_randoms_t, 3) * periodic_boxsize
 
-# Run the main code and post-processing
+# Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
                   nthread = nthread, N2 = N2, N3 = N3, N4 = N4, n_loops = n_loops, loops_per_sample = loops_per_sample,
                   pycorr_allcounts_11 = pycorr_allcounts[0], pycorr_allcounts_12 = pycorr_allcounts[1], pycorr_allcounts_22 = pycorr_allcounts[2],
@@ -105,6 +104,3 @@ results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
                   normalize_wcounts = True,
                   out_dir = outdir, tmp_dir = tmpdir,
                   skip_s_bins = skip_nbin_post, skip_l = skip_l_post)
-
-# Additional convergence check
-convergence_check_extra(results, print_function = print)
