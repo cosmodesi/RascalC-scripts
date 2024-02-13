@@ -79,7 +79,7 @@ z_min, z_max = zs[id] # for redshift cut and filenames
 
 # Output and temporary directories
 
-outdir = prevent_override("_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
+outdir = prevent_override(os.path.join(f"recon_sm{sm}_{rectype}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir) # directory to write intermediate files, kept in a different subdirectory for easy deletion
 
 # Form correlation function labels

@@ -6,7 +6,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --job-name=RascalC-Y1-v0.6-blinded
-#SBATCH --array=0-17 # all tracers
+#SBATCH --array=0-5,8-11,14-17 # excluding LRG and ELG full ranges
 
 # load cosmodesi environment
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
@@ -23,4 +23,4 @@ source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
 # Limit OpenBLAS thread usage (for jackknife assignment, error otherwise)
 # export OPENBLAS_NUM_THREADS=1
 
-python -u run_cov.py $SLURM_ARRAY_TASK_ID
+python -u run_covs.py $SLURM_ARRAY_TASK_ID
