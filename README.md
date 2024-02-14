@@ -27,5 +27,8 @@ Setting up the filenames in `run_cov.py` for your setup would be a big help alre
 ## Common files
 
 - `run_covs.py` – computation-heavy (needs a compute node) Python script running the code, typically expects a command-line argument to determine which of the similar tasks to perform.
+IMPORTANT: do not launch this script multi-threaded (e.g. at NERSC, do not set `OMP_*` and other `*_THREADS` environment variables), otherwise the main computation may run effectively single-threaded.
+The Python function `run_cov` for calling `RascalC` should set up OpenMP threads by itself based on `nthread` argument.
+If you need to run something besides `RascalC` on multiple threads, run it separately (one of the options is to create a child process).
 - `run_covs.sh` – SLURM batch script submitting an array of jobs doing the whole list of similar tasks.
 - `make_covs.py` – computation-light (usually ok to run on a login node) Python script to format the covariance matrices into text files. Only run when all the submitted jobs have finished. The script tracks the dependencies: does not run the recipe if sources are missing or have not been changed since the previous run (the knowledge about the latter is only gathered after the first execution without critical failures).
