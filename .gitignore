@@ -1,3 +1,9 @@
+# data products
+outdirs
+cov_txt
+slurm-*.out
+make_covs.*.*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
