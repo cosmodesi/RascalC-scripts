@@ -51,7 +51,7 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames; many are decided by the first command-line argument
-version_label = "v1/unblinded"
+version_label = "v1.2/unblinded"
 rectype = "IFFT_recsym" # reconstruction type
 
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
@@ -71,9 +71,9 @@ ns_randoms = [8] * 4 + [10] * 3 + [1, 4]
 # need 2 * 9 = 18 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
+z_min, z_max = zs[id] # for redshift cut and filenames
 sm = sms[id] # smoothing scale in Mpc/h for filenames
 nrandoms = ns_randoms[id]
-z_min, z_max = zs[id] # for redshift cut and filenames
 
 # Output and temporary directories
 

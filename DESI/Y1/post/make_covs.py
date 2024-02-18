@@ -20,7 +20,7 @@ jackknife = 1
 njack = 60 if jackknife else 0
 if jackknife: mbin = 100
 
-version_label = "v1/unblinded"
+version_label = "v1.2/unblinded"
 rectype = "IFFT_recsym" # reconstruction type
 
 regs = ('SGC', 'NGC') # regions for filenames
