@@ -1,4 +1,5 @@
 # data products
+tmpdirs
 outdirs
 cov_txt
 slurm-*.out
