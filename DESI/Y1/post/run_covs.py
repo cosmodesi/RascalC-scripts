@@ -3,7 +3,6 @@ import sys, os
 import numpy as np
 from astropy.table import Table, vstack
 from pycorr import TwoPointCorrelationFunction, KMeansSubsampler
-from pycorr.utils import sky_to_cartesian
 from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
@@ -134,9 +133,8 @@ for t in range(len(tlabels)):
         data_catalog = read_catalog(data_ref_filenames[t], z_min = z_min, z_max = z_max)
         subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', nsamples = njack, nside = 512, random_state = 42)
         randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
-    # convert to comoving Cartesian coordinates
-    comoving_dist = cosmology.comoving_radial_distance(random_catalog["Z"])
-    randoms_positions[t] = np.column_stack(sky_to_cartesian([random_catalog["RA"], random_catalog["DEC"], comoving_dist], degree = True))
+    # compute comoving distance
+    randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
 
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
@@ -144,6 +142,7 @@ results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
                   pycorr_allcounts_11 = pycorr_allcounts[0], pycorr_allcounts_12 = pycorr_allcounts[1], pycorr_allcounts_22 = pycorr_allcounts[2],
                   xi_table_11 = input_xis[0], xi_table_12 = input_xis[1], xi_table_22 = input_xis[2],
                   no_data_galaxies1 = ndata[0], no_data_galaxies2 = ndata[1],
+                  position_type = "rdd",
                   randoms_positions1 = randoms_positions[0], randoms_weights1 = randoms_weights[0], randoms_samples1 = randoms_samples[0],
                   randoms_positions2 = randoms_positions[1], randoms_weights2 = randoms_weights[1], randoms_samples2 = randoms_samples[1],
                   normalize_wcounts = True,
