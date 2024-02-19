@@ -59,10 +59,14 @@ os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
 
 fm = desi_y1_file_manager.get_ez_file_manager()
 
-id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
+full_id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 
-mock_id = 1 + id // 2 # mock number, starting from 1, IDs should start from 0
-id = 4 + id % 2 # this is now tracer, redshift bin and region index; corresponds to LRG z0.8-1.1 SGC/NGC
+n_mocks = 10 # number of mocks for each tracer
+id_mapping = [4, 8, 14] # LRG z0.8-1.1, ELG z1.1-1.6 and BGS z0.1-0.4; add 1 for NGC
+
+id = id_mapping[full_id // (2 * n_mocks)] + full_id % 2 # this is now tracer, redshift bin and region index
+mock_id = 1 + full_id // 2 % n_mocks # mock number, starting from 1, IDs should start from 0
+# not very obvious; made for compatibility with the previous ordering where LRG runs had IDs 0 through 19 with each mock's S/NGC next to each other
 
 reg = "NGC" if id%2 else "SGC" # region for filenames
 # known cases where more loops are needed consistently
