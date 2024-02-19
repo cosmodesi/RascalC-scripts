@@ -72,13 +72,13 @@ zs = [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1], [0.4, 1.1], [0.8, 1.1], [1.1, 1.6], [0
 # need 2 * 9 = 18 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
-z_range = zs[id] # for redshift cut and filenames
+z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
 nrandoms = desi_y1_file_manager.list_nran[tlabels[0]]
 
-common_setup = {"region": reg, "zrange": z_range, "version": version}
+common_setup = {"region": reg, "version": version}
 xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True)
-xi_setup.update({"cut": None, "njack": njack}) # request no cut and jackknives
+xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives
 recon_setup = desi_y1_file_manager.get_baseline_recon_setup(tlabels[0], z_range)
 
 sm = xi_setup["smoothing_radius"] # smoothing scale in Mpc/h for filenames
@@ -99,7 +99,6 @@ if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-corre
 os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
 
 # Filenames for saved pycorr counts
-split_above = 20
 pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_recon_y1', tracer = corlabel, **common_setup, **xi_setup)] for corlabel in corlabels]
 print("pycorr filenames:", pycorr_filenames)
 
