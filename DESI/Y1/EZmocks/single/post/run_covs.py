@@ -62,7 +62,7 @@ fm = desi_y1_file_manager.get_ez_file_manager()
 full_id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 
 n_mocks = 10 # number of mocks for each tracer
-id_mapping = [4, 8, 14] # LRG z0.8-1.1, ELG z1.1-1.6 and BGS z0.1-0.4; add 1 for NGC
+id_mapping = [4, 10, 14] # LRG z0.8-1.1, ELG z1.1-1.6 and BGS z0.1-0.4; add 1 for NGC
 
 id = id_mapping[full_id // (2 * n_mocks)] + full_id % 2 # this is now tracer, redshift bin and region index
 mock_id = 1 + full_id // 2 % n_mocks # mock number, starting from 1, IDs should start from 0
