@@ -86,8 +86,8 @@ xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, reco
 xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives
 recon_setup = desi_y1_file_manager.get_baseline_recon_setup(tlabels[0], z_range)
 
-sm = xi_setup["smoothing_radius"] # smoothing scale in Mpc/h for filenames
-rectype = xi_setup["mode"] + "_" + xi_setup["algorithm"] # reconstruction type for filenames
+sm = int(xi_setup["smoothing_radius"]) # smoothing scale in Mpc/h for filenames
+rectype = xi_setup["algorithm"] + "_" + xi_setup["mode"] # reconstruction type for filenames
 
 # Output and temporary directories
 

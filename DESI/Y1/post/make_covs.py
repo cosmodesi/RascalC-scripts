@@ -115,8 +115,8 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
     # get options automatically
     xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True)
     xi_setup.update({"version": version, "region": regs, "zrange": z_range, "cut": None}) # specify regions, version, z range and no cut; no need for jackknives
-    sm = xi_setup["smoothing_radius"] # smoothing scale in Mpc/h for filenames
-    rectype = xi_setup["mode"] + "_" + xi_setup["algorithm"] # reconstruction type for filenames
+    sm = int(xi_setup["smoothing_radius"]) # smoothing scale in Mpc/h for filenames
+    rectype = xi_setup["algorithm"] + "_" + xi_setup["mode"] # reconstruction type for filenames
     if jackknife: reg_results_jack = []
     for reg in regs:
         outdir = os.path.join("outdirs", version, conf, f"recon_sm{sm}_{rectype}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
