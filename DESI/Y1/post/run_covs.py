@@ -55,6 +55,9 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 version = "v1.2"
 conf = "unblinded"
 
+# Set DESI CFS before creating the file manager
+os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
+
 fm = desi_y1_file_manager.get_data_file_manager(conf)
 
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
@@ -94,9 +97,6 @@ tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate 
 assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
 corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
-
-# Set DESI CFS
-os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
 
 # Filenames for saved pycorr counts
 pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_recon_y1', tracer = corlabel, **common_setup, **xi_setup)] for corlabel in corlabels]
