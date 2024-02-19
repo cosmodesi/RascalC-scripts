@@ -79,6 +79,8 @@ z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
 nrandoms = desi_y1_file_manager.list_nran[tlabels[0]]
 
+if nrandoms >= 8: n_loops //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
+
 common_setup = {"region": reg, "version": version}
 xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True)
 xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives

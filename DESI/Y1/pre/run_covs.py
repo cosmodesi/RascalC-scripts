@@ -71,6 +71,8 @@ tlabels = [tracers[id]] # tracer labels for filenames
 nrandoms = ns_randoms[id]
 z_min, z_max = zs[id] # for redshift cut and filenames
 
+if nrandoms >= 8: n_loops //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
+
 # Output and temporary directories
 
 outdir_base = os.path.join(version_label, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
