@@ -11,7 +11,7 @@ from RascalC import run_cov
 def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory exists, rename it with a numeric suffix
     if not os.path.exists(filename): return
     for i in range(max_num+1):
-        trial_name = filename + ("_" + str(i)) * bool(i)
+        trial_name = filename + ("_" + str(i))
         if not os.path.exists(trial_name):
             os.rename(filename, trial_name)
             print(f"Found existing {filename}, renamed into {trial_name}.")
