@@ -5,6 +5,7 @@ from datetime import datetime
 import pickle
 import hashlib
 from typing import Callable
+import desi_y1_files.file_manager as desi_y1_file_manager
 from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect_raw_covariance_matrices
 from RascalC.post_process.legendre import post_process_legendre
 from RascalC.post_process.legendre_mix_jackknife import post_process_legendre_mix_jackknife
@@ -22,33 +23,32 @@ jackknife = 1
 njack = 60 if jackknife else 0
 if jackknife: mbin = 100
 
+skip_r_bins = 5
+skip_l = 0
+
+r_step = rmax // nbin
+rmin_real = r_step * skip_r_bins
+
+xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
+
 mocks = 0 # this is about mock post-processing, i.e. fitting RascalC cov to the mock sample cov and not jackknife
 
-version_label = "v1"
-rectype = "IFFT_recsym" # reconstruction type
+# Settings for filenames; many are decided by the first command-line argument
+version = "v1"
 
-input_dir = f"/global/cfs/cdirs/desi/survey/catalogs/Y1/mocks/SecondGenMocks/EZmock/desipipe/{version_label}/ffa/2pt/"
+# Set DESI CFS before creating the file manager
+os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
+
+fm = desi_y1_file_manager.get_ez_file_manager()
 
 mock_ids = range(1, 11) # 1 through 10
+all_mock_ids = range(1, 1001) # 1 through 1001
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracers = ['LRG'] * 4 + ['ELG_LOP'] * 3 + ['BGS_BRIGHT-21.5', 'QSO']
+tracers = ['LRG'] * 4 + ['ELG_LOPnotqso'] * 3 + ['BGS_BRIGHT-21.5', 'QSO']
 zs = [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1], [0.4, 1.1], [0.8, 1.1], [1.1, 1.6], [0.8, 1.6], [0.1, 0.4], [0.8, 2.1]]
-sms = [15] * 8 + [30]
-ns_randoms = [8] * 4 + [10] * 3 + [1, 4] # BGS missing but presumed 1 random
-
-skip_r_bins = 5
-skip_l = 0
-
-split_above = 20
-njack_counts = 0 # jackknife counts are often not available in the same dir/format, and not really needed in some cases
-
-xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
-
-r_step = rmax // nbin
-rmin_real = r_step * skip_r_bins
 
 hash_dict_file = "make_covs.hash_dict.pkl"
 if os.path.isfile(hash_dict_file):
@@ -118,14 +118,25 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
     return h.hexdigest()
 
 # Make steps for making covs
-for tracer, (z_min, z_max), sm, nrandoms in zip(tracers, zs, sms, ns_randoms):
+for tracer, (z_min, z_max) in zip(tracers, zs):
     tlabels = [tracer]
+    z_range = (z_min, z_max)
+    # get options automatically
+    xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True)
+    xi_setup = {key: value for key, value in xi_setup.items() if not key.startswith("recon")} # remove some options lacking for EZmocks
+    xi_setup.update({"version": version, "tracer": tracer, "zrange": z_range, "cut": None}) # specify regions, version, z range and no cut; no need for jackknives
+    sm = int(xi_setup["smoothing_radius"]) # smoothing scale in Mpc/h for filenames
+    rectype = xi_setup["algorithm"] + "_" + xi_setup["mode"] # reconstruction type for filenames
     for mock_id in mock_ids:
-        reg_results, reg_pycorr_names = [], []
+        reg_results = []
         if jackknife or mocks: reg_results_rescaled = []
         for reg in regs:
             outdir = os.path.join(f"outdirs/mock{mock_id}/recon_sm{sm}_{rectype}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
-            if not os.path.isdir(outdir): continue # if doesn't exist can't really do anything else
+            if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
+                outdirs_w_suffixes = [outdir + "_" + str(i) for i in range(11)] # append suffixes
+                outdirs_w_suffixes = [dirname for dirname in outdirs_w_suffixes if os.path.isdir(dirname)] # filter only existing dirs
+                if len(outdirs_w_suffixes) == 0: continue # can't really do anything else
+                cat_raw_covariance_matrices(nbin, f"l{max_l}", outdirs_w_suffixes, [None] * len(outdirs_w_suffixes), outdir, print_function = print_and_log) # concatenate subsamples
             
             raw_name = os.path.join(outdir, f"Raw_Covariance_Matrices_n{nbin}_l{max_l}.npz")
 
@@ -142,8 +153,6 @@ for tracer, (z_min, z_max), sm, nrandoms in zip(tracers, zs, sms, ns_randoms):
             results_name = os.path.join(outdir, 'Rescaled_Covariance_Matrices_Legendre_n%d_l%d.npz' % (nbin, max_l))
             reg_results.append(results_name)
             cov_name = f"cov_txt/mock{mock_id}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
-            this_reg_pycorr_filenames = [input_dir + f"mock{i+1}/recon_sm{sm}_{rectype}/xi/smu/allcounts_{tracer}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{nrandoms}_njack{njack_counts}_split{split_above}.npy" for i in range(1000)]
-            reg_pycorr_names.append(this_reg_pycorr_filenames[mock_id - 1]) # this mock's pycorr filename
 
             def make_gaussian_cov():
                 results = post_process_legendre(outdir, nbin, max_l, outdir, skip_r_bins = skip_r_bins, skip_l = skip_l, print_function = print_and_log)
@@ -183,6 +192,7 @@ for tracer, (z_min, z_max), sm, nrandoms in zip(tracers, zs, sms, ns_randoms):
             # Mock post-processing
             if mocks:
                 # Make the mock sample covariance matrix
+                this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg, **xi_setup)]
                 mock_cov_name = "cov_txt/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
                 my_make(mock_cov_name, this_reg_pycorr_filenames, lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax))
 
@@ -201,6 +211,8 @@ for tracer, (z_min, z_max), sm, nrandoms in zip(tracers, zs, sms, ns_randoms):
                 # Individual cov file depends on RascalC results
                 my_make(cov_name_rescaled, [results_name_mocks], lambda: export_cov_legendre(results_name_mocks, max_l, cov_name_rescaled))
                 # Recipe: run convert cov
+
+        reg_pycorr_names = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = mock_id, region = regs, **xi_setup)]
 
         if len(reg_pycorr_names) == len(regs): # if we have pycorr files for all regions
             if len(reg_results) == len(regs): # if we have RascalC results for all regions
