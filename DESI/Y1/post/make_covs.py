@@ -120,7 +120,11 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
     if jackknife: reg_results_jack = []
     for reg in regs:
         outdir = os.path.join("outdirs", version, conf, f"recon_sm{sm}_{rectype}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
-        if not os.path.isdir(outdir): continue # if doesn't exist can't really do anything else
+        if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
+            outdirs_w_suffixes = [outdir + "_" + str(i) for i in range(11)] # append suffixes
+            outdirs_w_suffixes = [dirname for dirname in outdirs_w_suffixes if os.path.isdir(dirname)] # filter only existing dirs
+            if len(outdirs_w_suffixes) == 0: continue # can't really do anything else
+            cat_raw_covariance_matrices(nbin, f"l{max_l}", outdirs_w_suffixes, [None] * len(outdirs_w_suffixes), outdir, print_function = print_and_log) # concatenate subsamples
         
         raw_name = os.path.join(outdir, f"Raw_Covariance_Matrices_n{nbin}_l{max_l}.npz")
 
