@@ -130,7 +130,7 @@ for tracer, (z_min, z_max), sm, nrandoms in zip(tracers, zs, sms, ns_randoms):
         if len(outdirs_perfile) > 0: # if such dirs found, need to cat the raw covariance matrices
             outdirs_perfile = [os.path.join(outdir, str(index)) for index in sorted(outdirs_perfile)] # sort integers, transform back to strings and prepend the parent directory
             cat_raw_covariance_matrices(nbin, f"l{max_l}", outdirs_perfile, [None] * len(outdirs_perfile), outdir, print_function = print_and_log) # concatenate the subsamples
-        else: # if no subdirs found, run the raw matrix collection just in case
+        elif not os.path.isfile(raw_name): # run the raw matrix collection, which creates this file. Non-existing file breaks the logic in my_make()
             collect_raw_covariance_matrices(outdir, print_function = print_and_log)
 
         # Gaussian covariances
