@@ -61,7 +61,7 @@ id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 # need 2 jobs in this array
 
-tlabels = ['LRG', 'ELG_LOPnotqso'] # tracer labels for filenames
+tlabels = ['LRG+ELG_LOPnotqso'] # tracer labels for filenames
 nrandoms = 4
 z_min, z_max = 0.8, 1.1 # for redshift cut and filenames
 
