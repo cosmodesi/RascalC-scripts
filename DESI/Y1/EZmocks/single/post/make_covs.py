@@ -31,7 +31,8 @@ rmin_real = r_step * skip_r_bins
 
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
-mocks = 0 # this is about mock post-processing, i.e. fitting RascalC cov to the mock sample cov and not jackknife
+make_mock_cov = 1
+mock_post_processing = 0 # this is about mock post-processing, i.e. fitting RascalC cov to the mock sample cov and not jackknife
 
 # Settings for filenames; many are decided by the first command-line argument
 version = "v1"
@@ -129,7 +130,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
     rectype = xi_setup["algorithm"] + "_" + xi_setup["mode"] # reconstruction type for filenames
     for mock_id in mock_ids:
         reg_results = []
-        if jackknife or mocks: reg_results_rescaled = []
+        if jackknife or mock_post_processing: reg_results_rescaled = []
         for reg in regs:
             outdir = os.path.join(f"outdirs/mock{mock_id}/recon_sm{sm}_{rectype}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
             if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
@@ -167,7 +168,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
             my_make(cov_name, [results_name], lambda: export_cov_legendre(results_name, max_l, cov_name))
             # Recipe: export cov
 
-            if jackknife or mocks:
+            if jackknife or mock_post_processing:
                 cov_name_rescaled = f"cov_txt/mock{mock_id}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_rescaled.txt"
 
             # Jackknife post-processing
@@ -189,13 +190,17 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
                 my_make(cov_name_rescaled, [results_name_jack], lambda: export_cov_legendre(results_name_jack, max_l, cov_name_rescaled))
                 # Recipe: run convert cov
             
-            # Mock post-processing
-            if mocks:
+            if make_mock_cov or mock_post_processing:
+                # set the mock covariance matrix filename
+                mock_cov_name = "cov_txt/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
+            
+            if make_mock_cov:
                 # Make the mock sample covariance matrix
                 this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg, **xi_setup)]
-                mock_cov_name = "cov_txt/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
-                my_make(mock_cov_name, this_reg_pycorr_filenames, lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax))
-
+                my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
+            
+            # Mock post-processing
+            if mock_post_processing:
                 results_name_mocks = os.path.join(outdir, 'Rescaled_Covariance_Matrices_Legendre_Mocks_n%d_l%d.npz' % (nbin, max_l))
                 reg_results_rescaled.append(results_name_mocks)
 
@@ -224,7 +229,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
                 my_make(cov_name, reg_results, lambda: combine_covs_legendre(*reg_results, *reg_pycorr_names, cov_name, max_l, r_step = r_step, skip_r_bins = skip_r_bins, print_function = print_and_log))
                 # Recipe: run combine covs
 
-            if (jackknife or mocks) and len(reg_results_rescaled) == len(regs): # if jackknife and we have RascalC jack results for all regions
+            if (jackknife or mock_post_processing) and len(reg_results_rescaled) == len(regs): # if jackknife and we have RascalC jack results for all regions
                 # Combined rescaled cov
                 cov_name_rescaled = f"cov_txt/mock{mock_id}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_rescaled.txt" # combined cov name
 
