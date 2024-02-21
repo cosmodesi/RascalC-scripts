@@ -237,6 +237,12 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
                 my_make(cov_name_rescaled, reg_results_rescaled, lambda: combine_covs_legendre(*reg_results_rescaled, *reg_pycorr_names, cov_name_rescaled, max_l, r_step = r_step, skip_r_bins = skip_r_bins, print_function = print_and_log))
                 # Recipe: run combine covs
 
+        if make_mock_cov:
+            # Make the mock sample covariance matrix for reg_comb
+            mock_cov_name = "cov_txt/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
+            this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg_comb, **xi_setup)]
+            my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
+
 # Save the updated hash dictionary
 with open(hash_dict_file, "wb") as f:
     pickle.dump(hash_dict, f)
