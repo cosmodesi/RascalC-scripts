@@ -7,12 +7,15 @@ from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
 
-def prevent_override(filename: str, max_num: int = 10) -> str: # append _{number} to filename to prevent override
+def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory exists, rename it with a numeric suffix
+    if not os.path.exists(filename): return
     for i in range(max_num+1):
-        trial_name = filename + ("_" + str(i)) * bool(i) # will be filename for i=0
-        if not os.path.exists(trial_name): return trial_name
-    print(f"Could not prevent override of {filename}, aborting.")
-    sys.exit(1)
+        trial_name = filename + ("_" + str(i))
+        if not os.path.exists(trial_name):
+            os.rename(filename, trial_name)
+            print(f"Found existing {filename}, renamed into {trial_name}.")
+            return
+    raise RuntimeError(f"Could not back up {filename}, aborting.")
 
 def read_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, FKP_weight: bool = True):
     catalog = Table.read(filename)
@@ -52,7 +55,8 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames; many are decided by the first command-line argument
-version_label = "v0.6"
+version = "v1.2"
+conf = "unblinded"
 
 rectype = "IFTrecsym" # reconstruction type
 sm = 15 # smoothing scale
@@ -67,9 +71,10 @@ z_min, z_max = 0.8, 1.1 # for redshift cut and filenames
 
 # Output and temporary directories
 
-outdir_base = os.path.join(version_label, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
-outdir = prevent_override(os.path.join("outdirs", outdir_base)) # output file directory
+outdir_base = os.path.join(version, conf, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
+preserve(outdir) # rename the directory if it exists to prevent overwriting
 
 # Form correlation function labels
 assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
@@ -80,12 +85,11 @@ if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-corre
 input_dir = "/global/cfs/cdirs/desi/users/dvalcin/EZMOCKS/Overlap/Y1/"
 
 # Filenames for saved pycorr counts
-pycorr_filenames = [[input_dir + f"FOR_MISHA/{version_label}/recon_sm{sm}/allcounts_{corlabel}_{rectype}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}.npy"] for corlabel in corlabels]
+pycorr_filenames = [[input_dir + f"COMBINED/{version}/xi_comb_Y1_z{z_min}_{z_max}_data_nran{nrandoms}_{reg}_RECsr{sm}_COMBINED_NEWFKP_{version}_{conf}.npy"]]
 
 # Filenames for randoms and galaxy catalogs
-random_filenames = [[input_dir + f"FITS_FILES/{tlabel}_{reg}_{i}_clustering.ran.fits" for i in range(nrandoms)] for tlabel in tlabels]
-if njack: data_ref_filenames = [input_dir + f"FITS_FILES/{tlabel}_{reg}_clustering.dat.fits" for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
-# These are not shifted randoms; desirable to have the shifted ones for the next version!
+random_filenames = [[input_dir + f"FITS_FILES/{version}/{conf}/{tlabel}_{reg}_{i}_clustering.{rectype}.ran.fits" for i in range(nrandoms)] for tlabel in tlabels]
+if njack: data_ref_filenames = [input_dir + f"FITS_FILES/{version}/{conf}/{tlabel}_{reg}_clustering.{rectype}.dat.fits" for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
 
 # Load pycorr counts
 pycorr_allcounts = [0] * len(pycorr_filenames)
