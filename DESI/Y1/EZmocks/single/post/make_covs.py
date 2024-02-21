@@ -44,6 +44,8 @@ fm = desi_y1_file_manager.get_ez_file_manager()
 
 mock_ids = range(1, 11) # 1 through 10
 all_mock_ids = range(1, 1001) # 1 through 1001
+all_mock_ids_alt = range(1, 201) # 1 through 201 for BGS
+def alt_condition(tracer: str) -> bool: return tracer.startswith("BGS")
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
@@ -196,7 +198,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
             
             if make_mock_cov:
                 # Make the mock sample covariance matrix
-                this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg, **xi_setup)]
+                this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids_alt if alt_condition(tracer) else all_mock_ids, region = reg, **xi_setup)]
                 my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
             
             # Mock post-processing
@@ -240,7 +242,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
         if make_mock_cov:
             # Make the mock sample covariance matrix for reg_comb
             mock_cov_name = "cov_txt/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
-            this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg_comb, **xi_setup)]
+            this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids_alt if alt_condition(tracer) else all_mock_ids, region = reg_comb, **xi_setup)]
             my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
 
 # Save the updated hash dictionary
