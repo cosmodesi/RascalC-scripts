@@ -6,7 +6,8 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --job-name=RascalC-Y1-EZmocks-single
-#SBATCH --array=0-59 # full job array: 10 mocks, SGC and NGC, LRG, ELG and BGS
+#SBATCH --array=2,13,29,38,44,58 # underconverged jobs
+##SBATCH --array=0-59 # full job array: 10 mocks, SGC and NGC, LRG, ELG and BGS
 
 # load cosmodesi environment
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
