@@ -77,14 +77,15 @@ preserve(outdir) # rename the directory if it exists to prevent overwriting
 
 # Form correlation function labels
 assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
-corlabels = [tlabels[0]]
-if len(tlabels) == 2: corlabels += ["_x_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
+tlabels_cor = [tlabel.split("_")[0] for tlabel in tlabels] # strip _LOPnotqso from ELG
+corlabels = [tlabels_cor[0]]
+if len(tlabels) == 2: corlabels += ["_x_".join(tlabels_cor), tlabels_cor[1]] # cross-correlation comes between the auto-correlatons
 
 # Common part of the path to avoid repetitions
 input_dir = f"/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/iron/LSScats/{version}/{conf}/desipipe/2pt/recon_sm{sm}_{rectype}/"
 
 # Filenames for saved pycorr counts
-pycorr_filenames = [["/global/cfs/cdirs/desi/users/dvalcin/EZMOCKS/Overlap/Y1/" + "CROSS" if "x" in corlabel else "AUTO" + f"/{version}/xi_{corlabel}_Y1_z{z_min}_{z_max}_data_nran{nrandoms}_{reg}_RECsr{sm}_{version}_{conf}.npy"] for corlabel in corlabels]
+pycorr_filenames = [["/global/cfs/cdirs/desi/users/dvalcin/EZMOCKS/Overlap/Y1/" + ("CROSS" if "_x_" in corlabel else "AUTO") + f"/{version}/xi_{corlabel}_Y1_z{z_min}_{z_max}_data_nran{nrandoms}_{reg}_RECsr{sm}" + f"{sm}_CROSS" * ("_x_" in corlabel) + f"_{version}_{conf}.npy"] for corlabel in corlabels]
 
 # Filenames for randoms and galaxy catalogs
 random_filenames = [[input_dir + f"{tlabel}_{reg}_{i}_clustering.ran.fits" for i in range(nrandoms)] for tlabel in tlabels]
