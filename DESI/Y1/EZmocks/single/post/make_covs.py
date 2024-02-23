@@ -1,6 +1,7 @@
 # This script generates all covs
 
 import os
+import numpy as np
 from datetime import datetime
 import pickle
 import hashlib
@@ -43,9 +44,7 @@ os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
 fm = desi_y1_file_manager.get_ez_file_manager()
 
 mock_ids = range(1, 11) # 1 through 10
-all_mock_ids = range(1, 1001) # 1 through 1001
-all_mock_ids_alt = range(1, 201) # 1 through 201 for BGS
-def alt_condition(tracer: str) -> bool: return tracer.startswith("BGS")
+all_mock_ids = range(1, 1001) # 1 through 1000
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
@@ -120,6 +119,16 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
             h.update(mv[:n])
     return h.hexdigest()
 
+def sample_cov_multipoles_from_pycorr_files_wrapper(infile_names: list[list[str]], outfile_name: str, max_l: int, r_step: float = 1, r_max: float = np.inf):
+    infile_names_transposed = list(map(list, zip(*infile_names)))
+    nfiles = len(infile_names_transposed)
+    infile_names_transposed_filtered = [infile_names_i for infile_names_i in infile_names_transposed if all(os.path.isfile(infile_name) for infile_name in infile_names_i)]
+    nfiles_exist = len(infile_names_transposed_filtered)
+    if nfiles_exist < nfiles:
+        print_and_log(f"Warning: using only {nfiles_exist} existing samples out of {nfiles} provided")
+    infile_names_filtered = list(map(list, zip(*infile_names_transposed_filtered)))
+    sample_cov_multipoles_from_pycorr_files(infile_names_filtered, outfile_name, max_l = max_l, r_step = r_step, r_max = r_max)
+
 # Make steps for making covs
 for tracer, (z_min, z_max) in zip(tracers, zs):
     tlabels = [tracer]
@@ -140,9 +149,9 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
             
             if make_mock_cov and mock_id == mock_ids[0]:
                 # Make the mock sample covariance matrix
-                this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids_alt if alt_condition(tracer) else all_mock_ids, region = reg, **xi_setup)]
+                this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg, **xi_setup)]
                 if len(this_reg_pycorr_filenames) > 0: # only if any files found
-                    my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
+                    my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files_wrapper([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
 
             outdir = os.path.join(f"outdirs/mock{mock_id}/recon_sm{sm}_{rectype}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
             if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
@@ -243,9 +252,9 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
         if make_mock_cov and mock_id == mock_ids[0]:
             # Make the mock sample covariance matrix for reg_comb
             mock_cov_name = "cov_txt/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
-            this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids_alt if alt_condition(tracer) else all_mock_ids, region = reg_comb, **xi_setup)]
+            this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg_comb, **xi_setup)]
             if len(this_reg_pycorr_filenames) > 0: # only if any files found
-                my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
+                my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files_wrapper([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
 
 # Save the updated hash dictionary
 with open(hash_dict_file, "wb") as f:
