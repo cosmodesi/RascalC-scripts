@@ -19,9 +19,17 @@ jackknife = 0
 njack = 60 if jackknife else 0
 if jackknife: mbin = 100
 
-version_label = "v0.6"
+skip_r_bins = 5
+skip_l = 0
 
-rectype = "IFTrecsym" # reconstruction type
+r_step = rmax // nbin
+rmin_real = r_step * skip_r_bins
+
+# Settings for filenames
+version = "v1.2"
+conf = "unblinded"
+
+rectype = "IFFT_recsym" # reconstruction type
 sm = 15 # smoothing scale
 
 regs = ('SGC', 'NGC') # regions for filenames
@@ -29,17 +37,11 @@ reg_comb = "GCcomb"
 
 tracers = [['LRG', 'ELG_LOPnotqso']]
 zs = [[0.8, 1.1]]
-alphas_ext = [[[0.98, 0.84], [0.90, 0.77]]] # from single-tracer jackknives, external to these runs. 
-
-skip_r_bins = 5
-skip_l = 0
+alphas_ext = [[[0.96, 0.75], [0.85, 0.73]]] # from single-tracer jackknives, external to these runs.
 
 nrandoms = 4
 
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
-
-r_step = rmax // nbin
-rmin_real = r_step * skip_r_bins
 
 hash_dict_file = "make_covs.hash_dict.pkl"
 if os.path.isfile(hash_dict_file):
@@ -106,11 +108,12 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
 
 # Make steps for making covs
 for tlabels, (z_min, z_max), these_alphas_ext in zip(tracers, zs, alphas_ext):
-    corlabels = [tlabels[0], "_".join(tlabels), tlabels[1]]
+    tlabels_cor = [tlabel.split("_")[0] for tlabel in tlabels] # remove _LOPnotqso for ELG
+    corlabels = [tlabels_cor[0], "_x_".join(tlabels_cor), tlabels_cor[1]]
     reg_results, reg_pycorr_names = [], []
     reg_results_rescaled = []
     for reg, alphas in zip(regs, these_alphas_ext):
-        outdir = os.path.join("outdirs", version_label, f"recon_sm{sm}", "_".join(tlabels + [rectype, reg]) + f"_z{z_min}-{z_max}") # output file directory
+        outdir = os.path.join("outdirs", version, conf, f"recon_sm{sm}", "_".join(tlabels + [rectype, reg]) + f"_z{z_min}-{z_max}") # output file directory
         if not os.path.isdir(outdir): continue # if doesn't exist can't really do anything else
         
         raw_name = os.path.join(outdir, f"Raw_Covariance_Matrices_n{nbin}_l{max_l}.npz")
@@ -127,8 +130,8 @@ for tlabels, (z_min, z_max), these_alphas_ext in zip(tracers, zs, alphas_ext):
 
         results_name = os.path.join(outdir, 'Rescaled_Multi_Field_Covariance_Matrices_Legendre_n%d_l%d.npz' % (nbin, max_l))
         reg_results.append(results_name)
-        cov_name = f"cov_txt/{version_label}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
-        reg_pycorr_names.append([f"/global/cfs/cdirs/desi/users/dvalcin/EZMOCKS/Overlap/Y1/FOR_MISHA/{version_label}/recon_sm{sm}/allcounts_{corlabel}_{rectype}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}.npy" for corlabel in corlabels])
+        cov_name = f"cov_txt/{version}/{conf}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
+        reg_pycorr_names.append(["/global/cfs/cdirs/desi/users/dvalcin/EZMOCKS/Overlap/Y1/" + ("CROSS" if "_x_" in corlabel else "AUTO") + f"/{version}/xi_{corlabel}_Y1_z{z_min}_{z_max}_data_nran{nrandoms}_{reg}_RECsr{sm}" + f"{sm}_CROSS" * ("_x_" in corlabel) + f"_{version}_{conf}.npy" for corlabel in corlabels])
 
         def make_gaussian_cov():
             results = post_process_legendre_multi(outdir, nbin, max_l, outdir, skip_r_bins = skip_r_bins, skip_l = skip_l, print_function = print_and_log)
@@ -158,7 +161,7 @@ for tlabels, (z_min, z_max), these_alphas_ext in zip(tracers, zs, alphas_ext):
             # Also perform convergence check (optional but nice)
 
             # Load shot-noise rescaling and make name
-            cov_name_rescaled = f"cov_txt/{version_label}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_rescaled.txt"
+            cov_name_rescaled = f"cov_txt/{version}/{conf}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_rescaled.txt"
             # Individual cov file depends on RascalC results
             my_make(cov_name_rescaled, [results_name_rescaled], lambda: export_cov_legendre_multi(results_name_rescaled, max_l, cov_name_rescaled))
             # Recipe: run convert cov
@@ -167,7 +170,7 @@ for tlabels, (z_min, z_max), these_alphas_ext in zip(tracers, zs, alphas_ext):
         if len(reg_results) == len(regs): # if we have RascalC results for all regions
             # Combined Gaussian cov
 
-            cov_name = f"cov_txt/{version_label}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # combined cov name
+            cov_name = f"cov_txt/{version}/{conf}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # combined cov name
 
             # Comb cov depends on the region RascalC results
             my_make(cov_name, reg_results, lambda: combine_covs_legendre_multi(*reg_results, *reg_pycorr_names, cov_name, max_l, r_step = r_step, skip_r_bins = skip_r_bins, print_function = print_and_log))
@@ -175,7 +178,7 @@ for tlabels, (z_min, z_max), these_alphas_ext in zip(tracers, zs, alphas_ext):
 
         if len(reg_results_rescaled) == len(regs): # if we have RascalC rescaled results for all regions
             # Combined rescaled cov
-            cov_name_rescaled = f"cov_txt/{version_label}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_rescaled.txt" # combined cov name
+            cov_name_rescaled = f"cov_txt/{version}/{conf}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_rescaled.txt" # combined cov name
 
             # Comb cov depends on the region RascalC results
             my_make(cov_name_rescaled, reg_results_rescaled, lambda: combine_covs_legendre_multi(*reg_results_rescaled, *reg_pycorr_names, cov_name_rescaled, max_l, r_step = r_step, skip_r_bins = skip_r_bins, print_function = print_and_log))

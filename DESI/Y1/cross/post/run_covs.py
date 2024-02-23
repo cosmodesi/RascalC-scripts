@@ -70,7 +70,7 @@ z_min, z_max = 0.8, 1.1 # for redshift cut and filenames
 
 # Output and temporary directories
 
-outdir_base = os.path.join(version, conf, f"recon_sm{sm}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir_base = os.path.join(version, conf, f"recon_sm{sm}", "_".join(tlabels + [rectype, reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 preserve(outdir) # rename the directory if it exists to prevent overwriting
