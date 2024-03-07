@@ -1,9 +1,11 @@
 # This is a custom pre-processing script.
 # Not computationally heavy so could be run on login nodes to save time allocation
 
-import os, sys
+import os
 import numpy as np
 import h5py
+from RascalC.pre_process.convert_to_xyz import convert_to_xyz_files
+from RascalC.pre_process.create_jackknives_pycorr import create_jackknives_pycorr_files
 
 z_min, z_max = 0.43, 0.7
 
@@ -38,32 +40,22 @@ with h5py.File(random_filename) as f:
 random_filename = change_extension(random_filename, "rdzw")
 np.savetxt(random_filename, np.array((random_ra, random_dec, random_z, random_w)).T[np.logical_and(random_z >= z_min, random_z <= z_max)])
 
-def exec_print(commandline: str, terminate_on_error: bool = True) -> None:
-    print(f"Running command: {commandline}")
-    status = os.system(commandline)
-    exit_code = os.waitstatus_to_exitcode(status) # assumes we are in Unix-based OS; on Windows status is the exit code
-    if exit_code:
-        print(f"{commandline} exited with error (code {exit_code}).")
-        if terminate_on_error:
-            print("Terminating the script execution due to this error.")
-            sys.exit(1)
-
 # convert data to xyz
 xyzw_filename = change_extension(data_filename_rdzw, "xyzw")
-exec_print(f"python python/convert_to_xyz.py {data_filename_rdzw} {xyzw_filename} {Omega_m} {Omega_k} {w_dark_energy}")
+convert_to_xyz_files(data_filename_rdzw, xyzw_filename, Omega_m, Omega_k, w_dark_energy)
 data_filename = xyzw_filename
 
 # convert randoms to xyz
 xyzw_filename = change_extension(random_filename, "xyzw")
-exec_print(f"python python/convert_to_xyz.py {random_filename} {xyzw_filename} {Omega_m} {Omega_k} {w_dark_energy}")
+convert_to_xyz_files(random_filename, xyzw_filename, Omega_m, Omega_k, w_dark_energy)
 random_filename = xyzw_filename
 
 # create jackknives for data
 xyzwj_filename = change_extension(data_filename, "xyzwj")
-exec_print(f"python python/create_jackknives_pycorr.py {data_filename_rdzw} {data_filename} {xyzwj_filename} {njack}")
+create_jackknives_pycorr_files(data_filename_rdzw, data_filename, xyzwj_filename, njack)
 data_filename = xyzwj_filename
 
 # create jackknives for randoms
 xyzwj_filename = change_extension(random_filename, "xyzwj")
-exec_print(f"python python/create_jackknives_pycorr.py {data_filename_rdzw} {random_filename} {xyzwj_filename} {njack}")
+create_jackknives_pycorr_files(data_filename_rdzw, random_filename, xyzwj_filename, njack)
 random_filename = xyzwj_filename
