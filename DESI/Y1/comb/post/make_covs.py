@@ -5,6 +5,7 @@ from datetime import datetime
 import pickle
 import hashlib
 from typing import Callable
+import desi_y1_files.file_manager as desi_y1_file_manager
 from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect_raw_covariance_matrices
 from RascalC.post_process.legendre import post_process_legendre
 from RascalC.post_process.legendre_mix_jackknife import post_process_legendre_mix_jackknife
@@ -28,20 +29,20 @@ rmin_real = r_step * skip_r_bins
 
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
-# Settings for filenames
+# Settings for filenames; many are decided by the first command-line argument
 version = "v1.2"
 conf = "unblinded"
 
-rectype = "IFTrecsym" # reconstruction type
-sm = 15 # smoothing scale
+# Set DESI CFS before creating the file manager
+os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
+
+fm = desi_y1_file_manager.get_data_file_manager(conf)
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
 tracers = ['LRG+ELG_LOPnotqso']
 zs = [[0.8, 1.1]]
-
-nrandoms = 4
 
 hash_dict_file = "make_covs.hash_dict.pkl"
 if os.path.isfile(hash_dict_file):
@@ -109,11 +110,22 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
 # Make steps for making covs
 for tracer, (z_min, z_max) in zip(tracers, zs):
     tlabels = [tracer]
-    reg_results, reg_pycorr_names = [], []
+    z_range = (z_min, z_max)
+    reg_results = []
+    # get options automatically
+    xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True)
+    xi_setup["mode"] = "reciso" # manually override the mode (from recsym to reciso)
+    xi_setup.update({"version": version, "tracer": tracer, "region": regs, "zrange": z_range, "cut": None}) # specify regions, version, z range and no cut; no need for jackknives
+    sm = int(xi_setup["smoothing_radius"]) # smoothing scale in Mpc/h for filenames
+    rectype = xi_setup["algorithm"] + "_" + xi_setup["mode"] # reconstruction type for filenames
     if jackknife: reg_results_jack = []
     for reg in regs:
-        outdir = os.path.join("outdirs", version, conf, f"recon_sm{sm}", "_".join(tlabels + [rectype, reg]) + f"_z{z_min}-{z_max}") # output file directory
-        if not os.path.isdir(outdir): continue # if doesn't exist can't really do anything else
+        outdir = os.path.join("outdirs", version, conf, f"recon_sm{sm}_{rectype}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
+        if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
+            outdirs_w_suffixes = [outdir + "_" + str(i) for i in range(11)] # append suffixes
+            outdirs_w_suffixes = [dirname for dirname in outdirs_w_suffixes if os.path.isdir(dirname)] # filter only existing dirs
+            if len(outdirs_w_suffixes) == 0: continue # can't really do anything else
+            cat_raw_covariance_matrices(nbin, f"l{max_l}", outdirs_w_suffixes, [None] * len(outdirs_w_suffixes), outdir, print_function = print_and_log) # concatenate subsamples
         
         raw_name = os.path.join(outdir, f"Raw_Covariance_Matrices_n{nbin}_l{max_l}.npz")
 
@@ -130,7 +142,6 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
         results_name = os.path.join(outdir, 'Rescaled_Covariance_Matrices_Legendre_n%d_l%d.npz' % (nbin, max_l))
         reg_results.append(results_name)
         cov_name = f"cov_txt/{version}/{conf}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
-        reg_pycorr_names.append(f"/global/cfs/cdirs/desi/users/dvalcin/EZMOCKS/Overlap/Y1/COMBINED/{version}/xi_comb_Y1_z{z_min}_{z_max}_data_nran{nrandoms}_{reg}_RECsr{sm}_COMBINED_NEWFKP_{version}_{conf}.npy")
 
         def make_gaussian_cov():
             results = post_process_legendre(outdir, nbin, max_l, outdir, skip_r_bins = skip_r_bins, skip_l = skip_l, print_function = print_and_log)
@@ -160,11 +171,14 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
             # Recipe: run post-processing
             # Also perform convergence check (optional but nice)
 
-            # Load shot-noise rescaling and make name
+            # Load shot-noise rescaling and make name, if the jack results file exists, otherwise can't do it anyway
             cov_name_jack = f"cov_txt/{version}/{conf}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_rescaled.txt"
             # Individual cov file depends on RascalC results
             my_make(cov_name_jack, [results_name_jack], lambda: export_cov_legendre(results_name_jack, max_l, cov_name_jack))
             # Recipe: run convert cov
+
+    # obtain the counts names
+    reg_pycorr_names = [f.filepath for f in fm.select(id = 'correlation_recon_y1', **xi_setup)]
 
     if len(reg_pycorr_names) == len(regs): # if we have pycorr files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions

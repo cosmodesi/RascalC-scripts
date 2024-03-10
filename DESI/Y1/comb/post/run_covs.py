@@ -2,6 +2,7 @@
 import sys, os
 import numpy as np
 from astropy.table import Table, vstack
+import desi_y1_files.file_manager as desi_y1_file_manager
 from pycorr import TwoPointCorrelationFunction, KMeansSubsampler
 from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
@@ -30,7 +31,6 @@ mode = "legendre_projected"
 max_l = 4 # maximum (even) multipole index
 
 njack = 60 # if 0 jackknife is turned off
-# desirable to run the next version with jackknives; will need pycorr counts accordingly (important to use the subsampler consistently with this script)!
 
 periodic_boxsize = None # aperiodic if None (or 0)
 
@@ -58,20 +58,33 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 version = "v1.2"
 conf = "unblinded"
 
-rectype = "IFTrecsym" # reconstruction type
-sm = 15 # smoothing scale
+# Set DESI CFS before creating the file manager
+os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
+
+fm = desi_y1_file_manager.get_data_file_manager(conf)
 
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 # need 2 jobs in this array
 
 tlabels = ['LRG+ELG_LOPnotqso'] # tracer labels for filenames
-nrandoms = 4
-z_min, z_max = 0.8, 1.1 # for redshift cut and filenames
+z_range = (0.8, 1.1) # for redshift cut and filenames
+z_min, z_max = z_range
+nrandoms = desi_y1_file_manager.list_nran[tlabels[0]]
+
+if nrandoms >= 8: n_loops //= 2 # to keep closer to the old runtime & convergence level, when LRG+ELG had only 4 randoms
+
+common_setup = {"region": reg, "version": version}
+xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True)
+xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives
+recon_setup = desi_y1_file_manager.get_baseline_recon_setup(tlabels[0], z_range)
+
+sm = int(xi_setup["smoothing_radius"]) # smoothing scale in Mpc/h for filenames
+rectype = xi_setup["algorithm"] + "_" + xi_setup["mode"] # reconstruction type for filenames
 
 # Output and temporary directories
 
-outdir_base = os.path.join(version, conf, f"recon_sm{sm}", "_".join(tlabels + [rectype, reg]) + f"_z{z_min}-{z_max}")
+outdir_base = os.path.join(version, conf, f"recon_sm{sm}_{rectype}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 preserve(outdir) # rename the directory if it exists to prevent overwriting
@@ -81,15 +94,16 @@ assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
 corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
-# Common part of the path to avoid repetitions
-input_dir = "/global/cfs/cdirs/desi/users/dvalcin/EZMOCKS/Overlap/Y1/"
-
 # Filenames for saved pycorr counts
-pycorr_filenames = [[input_dir + f"COMBINED/{version}/xi_comb_Y1_z{z_min}_{z_max}_data_nran{nrandoms}_{reg}_RECsr{sm}_COMBINED_NEWFKP_{version}_{conf}.npy"]]
+pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_recon_y1', tracer = corlabel, **common_setup, **xi_setup)] for corlabel in corlabels]
+print("pycorr filenames:", pycorr_filenames)
 
 # Filenames for randoms and galaxy catalogs
-random_filenames = [[input_dir + f"FITS_FILES/{version}/{conf}/{tlabel}_{reg}_{i}_clustering.{rectype}.ran.fits" for i in range(nrandoms)] for tlabel in tlabels]
-if njack: data_ref_filenames = [input_dir + f"FITS_FILES/{version}/{conf}/{tlabel}_{reg}_clustering.{rectype}.dat.fits" for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+random_filenames = [[f.filepath for f in fm.select(id = 'catalog_randoms_recon_y1', tracer = tlabel, iran = range(nrandoms), **common_setup, **recon_setup)] for tlabel in tlabels]
+print("Random filenames:", random_filenames)
+if njack:
+    data_ref_filenames = [fm.select(id = 'catalog_data_recon_y1', tracer = tlabel, **common_setup, **recon_setup)[0].filepath for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+    print("Data filenames:", data_ref_filenames)
 
 # Load pycorr counts
 pycorr_allcounts = [0] * len(pycorr_filenames)
