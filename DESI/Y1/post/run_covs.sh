@@ -5,9 +5,8 @@
 #SBATCH --time=12:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --job-name=RascalC-Y1-v1.2-unblinded-reciso
-#SBATCH --array=5,16,17 # LRG z0.8-1.1 NGC and both QSO
-##SBATCH --array=0-5,8-11,14-17 # full job array: excluding LRG and ELG full ranges
+#SBATCH --job-name=RascalC-Y1-v1.2-unblinded-recon
+#SBATCH --array=0-5,8-11,14-17 # full job array: excluding LRG and ELG full ranges
 
 # load cosmodesi environment
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
