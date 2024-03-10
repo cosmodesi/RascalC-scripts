@@ -114,7 +114,6 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
     reg_results = []
     # get options automatically
     xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
-    xi_setup["mode"] = "reciso" # manually override the mode (from recsym to reciso)
     xi_setup.update({"version": version, "tracer": tracer, "region": regs, "zrange": z_range, "cut": None}) # specify regions, version, z range and no cut; no need for jackknives
     if jackknife: reg_results_jack = []
     for reg in regs:
