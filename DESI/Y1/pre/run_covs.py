@@ -2,17 +2,21 @@
 import sys, os
 import numpy as np
 from astropy.table import Table, vstack
+import desi_y1_files.file_manager as desi_y1_file_manager
 from pycorr import TwoPointCorrelationFunction, KMeansSubsampler
 from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
 
-def prevent_override(filename: str, max_num: int = 10) -> str: # append _{number} to filename to prevent override
+def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory exists, rename it with a numeric suffix
+    if not os.path.exists(filename): return
     for i in range(max_num+1):
-        trial_name = filename + ("_" + str(i)) * bool(i) # will be filename for i=0
-        if not os.path.exists(trial_name): return trial_name
-    print(f"Could not prevent override of {filename}, aborting.")
-    sys.exit(1)
+        trial_name = filename + ("_" + str(i))
+        if not os.path.exists(trial_name):
+            os.rename(filename, trial_name)
+            print(f"Found existing {filename}, renamed into {trial_name}.")
+            return
+    raise RuntimeError(f"Could not back up {filename}, aborting.")
 
 def read_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, FKP_weight: bool = True):
     catalog = Table.read(filename)
@@ -51,48 +55,61 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames; many are decided by the first command-line argument
-version_label = "v0.6/blinded"
+version = "v1.2"
+conf = "unblinded"
+
+# Set DESI CFS before creating the file manager
+os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
+
+fm = desi_y1_file_manager.get_data_file_manager(conf)
 
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 # known cases where more loops are needed consistently
 if id in (4,): n_loops *= 2
-elif id in (0, 1, 3, 15): n_loops *= 3
-elif id in (2, 14): n_loops *= 4
+elif id in (1, 3, 15): n_loops *= 3
+elif id in (2, 8): n_loops *= 4
+elif id in (0, 14): n_loops *= 6
+elif id in (17,): n_loops //= 2 # QSO NGC converge well and take rather long time
 
 id //= 2 # extracted all needed info from parity, move on
 tracers = ['LRG'] * 4 + ['ELG_LOPnotqso'] * 3 + ['BGS_BRIGHT-21.5', 'QSO']
 zs = [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1], [0.4, 1.1], [0.8, 1.1], [1.1, 1.6], [0.8, 1.6], [0.1, 0.4], [0.8, 2.1]]
-ns_randoms = [4] * 7 + [1, 4] # will need to be updated
 # need 2 * 9 = 18 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
-nrandoms = ns_randoms[id]
-z_min, z_max = zs[id] # for redshift cut and filenames
+z_range = tuple(zs[id]) # for redshift cut and filenames
+z_min, z_max = z_range
+nrandoms = desi_y1_file_manager.list_nran[tlabels[0]]
 
 if nrandoms >= 8: n_loops //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
 
+common_setup = {"region": reg, "version": version}
+xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
+xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives
+
 # Output and temporary directories
 
-outdir_base = os.path.join(version_label, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
-outdir = prevent_override(os.path.join("outdirs", outdir_base)) # output file directory
+outdir_base = os.path.join(version, conf, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
+preserve(outdir) # rename the directory if it exists to prevent overwriting
 
 # Form correlation function labels
 assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
 corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
-# Common part of the path to avoid repetitions
-input_dir = f"/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/iron/LSScats/{version_label}/"
-
 # Filenames for saved pycorr counts
-split_above = 20
-pycorr_filenames = [[input_dir + f"xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split{split_above}.npy"] for corlabel in corlabels] # will need to be updated
+pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_y1', tracer = corlabel, **common_setup, **xi_setup)] for corlabel in corlabels]
+print("pycorr filenames:", pycorr_filenames)
 
 # Filenames for randoms and galaxy catalogs
-random_filenames = [[input_dir + f"{tlabel}_{reg}_{i}_clustering.ran.fits" for i in range(nrandoms)] for tlabel in tlabels]
-if njack: data_ref_filenames = [input_dir + f"{tlabel}_{reg}_clustering.dat.fits" for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+random_filenames = [[f.filepath for f in fm.select(id = 'catalog_randoms_y1', tracer = tlabel, iran = range(nrandoms), **common_setup)] for tlabel in tlabels]
+print("Random filenames:", random_filenames)
+if njack:
+    data_ref_filenames = [fm.select(id = 'catalog_data_y1', tracer = tlabel, **common_setup)[0].filepath for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+    print("Data filenames:", data_ref_filenames)
 
 # Load pycorr counts
 pycorr_allcounts = [0] * len(pycorr_filenames)
