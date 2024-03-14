@@ -2,11 +2,11 @@
 #SBATCH --account=desi
 #SBATCH --constraint=cpu
 #SBATCH --qos=regular
-#SBATCH --time=12:00:00
+#SBATCH --time=18:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --job-name=RascalC-Y1-v1.2-unblinded
-#SBATCH --array=2,11 # underconverged jobs
+#SBATCH --array=11 # underconverged jobs
 ##SBATCH --array=0-5,8-11,14-17 # full job array: excluding LRG and ELG full ranges
 
 # load cosmodesi environment
