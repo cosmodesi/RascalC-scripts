@@ -82,7 +82,9 @@ z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
 nrandoms = desi_y1_file_manager.list_nran[tlabels[0]]
 
-if nrandoms >= 8: n_loops //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
+if nrandoms >= 8:
+    nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
+    loops_per_sample *= 2 # to keep the number of configurations ~same per output sample
 
 common_setup = {"region": reg, "version": version}
 xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
