@@ -66,7 +66,7 @@ fm = desi_y1_file_manager.get_data_file_manager(conf)
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 # known cases where more loops are needed consistently
-if id in (4, 11): n_loops *= 2
+if id in (4,): n_loops *= 2
 elif id in (1, 3, 15): n_loops *= 3
 elif id in (2, 8): n_loops *= 4
 elif id in (0, 14): n_loops *= 6
