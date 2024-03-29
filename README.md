@@ -16,7 +16,7 @@ pip install -e /global/common/software/desi/users/mrash/RascalC
 ```
 
 You may need to additionally install the LSS package (<https://github.com/desihub/LSS>) for cutsky computations (fiducial DESI cosmology to convert redshift to distance).
-The data runs rely on <https://github.com/cosmodesi/desi-y1-kp> installed to retrieve the filenames.
+The data runs rely on [cosmodesi/desi-y1-kp at commit 0415420](https://github.com/cosmodesi/desi-y1-kp/tree/04154201259ffd8f89d8203fd599724e37f45763) installed to retrieve the filenames.
 
 ## Usage remarks
 
