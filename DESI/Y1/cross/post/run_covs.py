@@ -46,7 +46,7 @@ mbin_cf = 10 # number of angular (mu) bins for input 2PCF
 
 # Settings related to time and convergence
 
-nthread = 256 # number of OMP threads to use
+nthread = 128 # number of OMP threads to use
 n_loops = 1024 # number of integration loops per filename
 loops_per_sample = 64 # number of loops to collapse into one subsample
 N2 = 5 # number of secondary cells/particles per primary cell
