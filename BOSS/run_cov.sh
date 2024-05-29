@@ -11,13 +11,13 @@
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
 
 # OpenMP settings
-export OMP_PROC_BIND=spread
-export OMP_PLACES=threads
-export OMP_NUM_THREADS=256 # should match what is set in python script
+# export OMP_PROC_BIND=spread
+# export OMP_PLACES=threads
+# export OMP_NUM_THREADS=256 # should match what is set in python script
 
 # Hopefully let numpy use all threads
-export NUMEXPR_MAX_THREADS=256
+# export NUMEXPR_MAX_THREADS=256
 # Limit OpenBLAS thread usage (for jackknife assignment, error otherwise)
-export OPENBLAS_NUM_THREADS=1
+# export OPENBLAS_NUM_THREADS=1
 
-srun python -u run_cov.py
+python -u run_cov.py

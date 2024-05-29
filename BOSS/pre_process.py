@@ -1,61 +1,46 @@
 # This is a custom pre-processing script.
 # Not computationally heavy so could be run on login nodes to save time allocation
+# Currently wrapped into a function to be imported by the other scripts
 
-import os
 import numpy as np
-import h5py
-from RascalC.pre_process.convert_to_xyz import convert_to_xyz_files
-from RascalC.pre_process.create_jackknives_pycorr import create_jackknives_pycorr_files
+from astropy.table import Table
+from RascalC.pre_process.convert_to_xyz import comoving_distance_Mpch
+from RascalC.pre_process.create_jackknives_pycorr import get_subsampler_xirunpc
+
+def get_rdd_positions(catalog: Table) -> tuple[np.ndarray[float]]: # utility function to format positions from a catalog
+    return (catalog["RA"], catalog["DEC"], catalog["comov_dist"])
 
 z_min, z_max = 0.43, 0.7
 
 Omega_m = 0.3089
 Omega_k = 0
-w_dark_energy = -1
+w_DE = -1
 
-njack = 60
+n_jack = 60
 
 data_filename = "/global/cfs/projectdirs/desi/mocks/Uchuu/SKIES_AND_UNIVERSE/Obs_data/CMASS_N_data.dat.h5"
 random_filename = "/global/cfs/projectdirs/desi/mocks/Uchuu/SKIES_AND_UNIVERSE/Obs_data/CMASS_N_data.ran.h5"
-tmpdir = f"CMASS_N_data_{z_min}_{z_max}"
 
-os.makedirs(tmpdir, exist_ok=1)
+def prepare_galaxy_random_catalogs() -> tuple[Table]:
+    # read data
+    galaxies = Table.read(data_filename, include_columns = ["RA", "DEC", "Z", "WEIGHT_SYSTOT", "WEIGHT_CP", "WEIGHT_NOZ", "WEIGHT_FKP"])
+    galaxies["WEIGHT"] = galaxies["WEIGHT_SYSTOT"] * (galaxies["WEIGHT_CP"] + galaxies["WEIGHT_NOZ"] - 1) * galaxies["WEIGHT_FKP"]
+    galaxies.remove_columns(["WEIGHT_SYSTOT", "WEIGHT_CP", "WEIGHT_NOZ", "WEIGHT_FKP"])
+    galaxies = galaxies[np.logical_and(galaxies["Z"] >= z_min, galaxies["Z"] <= z_max)]
 
-def change_extension(name: str, ext: str) -> str:
-    return os.path.join(tmpdir, os.path.basename(".".join(name.split(".")[:-1] + [ext]))) # change extension and switch to tmpdir
+    # read randoms, handling weights differently
+    randoms = Table.read(random_filename, include_columns = ["RA", "DEC", "Z", "WEIGHT_FKP"])
+    randoms["WEIGHT"] = randoms["WEIGHT_FKP"]
+    randoms.remove_column("WEIGHT_FKP")
+    randoms = randoms[np.logical_and(randoms["Z"] >= z_min, randoms["Z"] <= z_max)]
 
-def append_to_filename(name: str, appendage: str) -> str:
-    return os.path.join(tmpdir, os.path.basename(name + appendage)) # append part and switch to tmpdir
+    # compute comoving distance
+    galaxies["comov_dist"] = comoving_distance_Mpch(galaxies["Z"], Omega_m, Omega_k, w_DE)
+    randoms["comov_dist"] = comoving_distance_Mpch(randoms["Z"], Omega_m, Omega_k, w_DE)
 
-# read data
-with h5py.File(data_filename) as f:
-    data_ra, data_dec, data_z, data_w_systot, data_w_cp, data_w_noz, data_w_fkp = (np.array(f[key]) for key in ("RA", "DEC", "Z", "WEIGHT_SYSTOT", "WEIGHT_CP", "WEIGHT_NOZ", "WEIGHT_FKP"))
-data_w = data_w_systot * (data_w_cp + data_w_noz - 1) * data_w_fkp
-data_filename_rdzw = change_extension(data_filename, "rdzw")
-np.savetxt(data_filename_rdzw, np.array((data_ra, data_dec, data_z, data_w)).T[np.logical_and(data_z >= z_min, data_z <= z_max)])
+    # assign jackknives
+    subsampler = get_subsampler_xirunpc(get_rdd_positions(galaxies), n_jack, position_type = "rdd") # "rdd" means RA, DEC in degrees and then distance (corresponding to pycorr)
+    galaxies["JACK"] = subsampler.label(get_rdd_positions(galaxies), position_type = "rdd")
+    randoms["JACK"] = subsampler.label(get_rdd_positions(randoms), position_type = "rdd")
 
-# read randoms differently
-with h5py.File(random_filename) as f:
-    random_ra, random_dec, random_z, random_w = (np.array(f[key]) for key in ("RA", "DEC", "Z", "WEIGHT_FKP"))
-random_filename = change_extension(random_filename, "rdzw")
-np.savetxt(random_filename, np.array((random_ra, random_dec, random_z, random_w)).T[np.logical_and(random_z >= z_min, random_z <= z_max)])
-
-# convert data to xyz
-xyzw_filename = change_extension(data_filename_rdzw, "xyzw")
-convert_to_xyz_files(data_filename_rdzw, xyzw_filename, Omega_m, Omega_k, w_dark_energy)
-data_filename = xyzw_filename
-
-# convert randoms to xyz
-xyzw_filename = change_extension(random_filename, "xyzw")
-convert_to_xyz_files(random_filename, xyzw_filename, Omega_m, Omega_k, w_dark_energy)
-random_filename = xyzw_filename
-
-# create jackknives for data
-xyzwj_filename = change_extension(data_filename, "xyzwj")
-create_jackknives_pycorr_files(data_filename_rdzw, data_filename, xyzwj_filename, njack)
-data_filename = xyzwj_filename
-
-# create jackknives for randoms
-xyzwj_filename = change_extension(random_filename, "xyzwj")
-create_jackknives_pycorr_files(data_filename_rdzw, random_filename, xyzwj_filename, njack)
-random_filename = xyzwj_filename
+    return galaxies, randoms
