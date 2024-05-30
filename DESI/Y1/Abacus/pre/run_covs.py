@@ -94,7 +94,7 @@ xi_setup.update({"zrange": z_range, "cut": None}) # specify z_range and no cut
 
 # Output and temporary directories
 
-outdir_base = os.path.join(f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir_base = os.path.join(version, fa, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 preserve(outdir) # rename the directory if it exists to prevent overwriting
@@ -157,7 +157,7 @@ for t in range(len(tlabels)):
     if njack:
         data_catalog = read_catalog(data_ref_filenames[t], z_min = z_min, z_max = z_max)
         subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', nsamples = njack, nside = 512, random_state = 42)
-        randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
+        randoms_samples[t] = subsampler.label(positions = np.array([random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], dtype = np.float64), position_type = 'rdd')
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
 
