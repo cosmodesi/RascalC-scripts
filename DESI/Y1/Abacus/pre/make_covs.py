@@ -35,7 +35,8 @@ make_mock_cov = 1
 mock_post_processing = 1 # this is about mock post-processing, i.e. fitting RascalC cov to the mock sample cov and not jackknife
 
 # Settings for filenames
-version = "v4_2"
+version_main = "v4_2"
+version_alt = "v1" # for BGS, further versions not available (yet)
 fa = "altmtl" # fiber assignment method
 
 # Set DESI CFS before creating the file manager
@@ -120,6 +121,7 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
 
 # Make steps for making covs
 for tracer, (z_min, z_max) in zip(tracers, zs):
+    version = version_alt if tracer.startswith("BGS") else version_main # different version for BGS
     tlabels = [tracer]
     z_range = (z_min, z_max)
     # get options automatically
