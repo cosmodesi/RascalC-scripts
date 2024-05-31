@@ -158,7 +158,7 @@ for t in range(len(tlabels)):
     # create jackknives
     if njack:
         data_catalog = read_catalog(data_ref_filenames[t], z_min = z_min, z_max = z_max)
-        subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', nsamples = njack, nside = 512, random_state = 42)
+        subsampler = KMeansSubsampler('angular', positions = np.array([data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], dtype = np.float64), position_type = 'rdd', nsamples = njack, nside = 512, random_state = 42)
         randoms_samples[t] = subsampler.label(positions = np.array([random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], dtype = np.float64), position_type = 'rdd')
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
