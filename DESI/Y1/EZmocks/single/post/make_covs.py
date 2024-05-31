@@ -125,7 +125,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
     # get options automatically
     xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True)
     xi_setup = {key: value for key, value in xi_setup.items() if not key.startswith("recon")} # remove some options lacking for EZmocks
-    xi_setup.update({"version": version, "tracer": tracer, "zrange": z_range, "cut": None}) # specify regions, version, z range and no cut; no need for jackknives
+    xi_setup.update({"version": version, "tracer": tracer, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
     sm = int(xi_setup["smoothing_radius"]) # smoothing scale in Mpc/h for filenames
     rectype = xi_setup["algorithm"] + "_" + xi_setup["mode"] # reconstruction type for filenames
     for mock_id in mock_ids:
@@ -210,7 +210,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
                     convergence_check_extra(results, print_function = print_and_log)
 
                 # RascalC results depend on full output (most straightforwardly)
-                my_make(results_name_mocks, [raw_name], make_rescaled_cov)
+                my_make(results_name_mocks, [raw_name, mock_cov_name], make_rescaled_cov)
                 # Recipe: run post-processing
                 # Also perform convergence check (optional but nice)
 

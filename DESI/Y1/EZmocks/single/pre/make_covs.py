@@ -124,7 +124,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
     z_range = (z_min, z_max)
     # get options automatically
     xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
-    xi_setup.update({"version": version, "tracer": tracer, "zrange": z_range, "cut": None}) # specify regions, version, z range and no cut; no need for jackknives
+    xi_setup.update({"version": version, "tracer": tracer, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
     for mock_id in mock_ids:
         reg_results = []
         if jackknife: reg_results_jack = []
@@ -136,7 +136,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
             
             if make_mock_cov and mock_id == mock_ids[0]:
                 # Make the mock sample covariance matrix
-                this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg, **xi_setup)]
+                this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_ez_y1', imock = all_mock_ids, region = reg, **xi_setup)]
                 if len(this_reg_pycorr_filenames) > 0: # only if any files found
                     my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
 
@@ -207,7 +207,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
                     convergence_check_extra(results, print_function = print_and_log)
 
                 # RascalC results depend on full output (most straightforwardly)
-                my_make(results_name_mocks, [raw_name], make_rescaled_cov)
+                my_make(results_name_mocks, [raw_name, mock_cov_name], make_rescaled_cov)
                 # Recipe: run post-processing
                 # Also perform convergence check (optional but nice)
 
