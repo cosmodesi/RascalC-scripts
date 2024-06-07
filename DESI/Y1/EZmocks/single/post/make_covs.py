@@ -32,6 +32,8 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 make_mock_cov = 1
+other_cut = ('theta', 0.05)
+if other_cut: other_cut_label = other_cut[0] + 'cut' + str(other_cut[1])
 mock_post_processing = 1 # this is about mock post-processing, i.e. fitting RascalC cov to the mock sample cov and not jackknife
 
 # Settings for filenames; many are decided by the first command-line argument
@@ -142,6 +144,13 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
                 this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg, **xi_setup)]
                 if len(this_reg_pycorr_filenames) > 0: # only if any files found
                     my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
+                
+                if other_cut:
+                    # Make the mock sample covariance matrix with other cut
+                    mock_cov_name_other = "cov_txt/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_{other_cut_label}_cov_sample.txt"
+                    this_reg_pycorr_filenames_other = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg, **(xi_setup | {"cut": other_cut}))]
+                    if len(this_reg_pycorr_filenames_other) > 0: # only if any files found
+                        my_make(mock_cov_name_other, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames_other], mock_cov_name_other, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
 
             outdir = os.path.join(f"outdirs/mock{mock_id}/recon_sm{sm}_{rectype}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
             if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
@@ -252,6 +261,13 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
             this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg_comb, **xi_setup)]
             if len(this_reg_pycorr_filenames) > 0: # only if any files found
                 my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
+
+            if other_cut:
+                # Make the mock sample covariance matrix for reg_comb with other cut
+                mock_cov_name = "cov_txt/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_{other_cut_label}_cov_sample.txt"
+                this_reg_pycorr_filenames = [f.filepath for f in fm.select(id = 'correlation_recon_ez_y1', imock = all_mock_ids, region = reg_comb, **(xi_setup | {"cut": other_cut}))]
+                if len(this_reg_pycorr_filenames) > 0: # only if any files found
+                    my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
 
 # Save the updated hash dictionary
 with open(hash_dict_file, "wb") as f:
