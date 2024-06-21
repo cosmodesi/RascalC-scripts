@@ -55,7 +55,7 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames; many are decided by the first command-line argument
-version = "v1.4"
+version = "v1.5"
 conf = "unblinded"
 
 # Set DESI CFS before creating the file manager

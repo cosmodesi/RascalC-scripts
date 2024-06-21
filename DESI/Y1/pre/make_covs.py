@@ -30,7 +30,7 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames; many are decided by the first command-line argument
-version = "v1.4"
+version = "v1.5"
 conf = "unblinded"
 
 # Set DESI CFS before creating the file manager

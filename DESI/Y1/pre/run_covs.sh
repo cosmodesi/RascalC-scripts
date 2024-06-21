@@ -5,8 +5,8 @@
 #SBATCH --time=18:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --job-name=RascalC-Y1-v1.4-unblinded
-#SBATCH --array=0,8 # underconverged cases
+#SBATCH --job-name=RascalC-Y1-v1.5-unblinded
+#SBATCH --array=8-11,16-17 # only ELG and QSO, LRG and BGS identical to v1.4
 ##SBATCH --array=0-5,8-11,14-17 # full job array: excluding LRG and ELG full ranges
 
 # load cosmodesi environment
