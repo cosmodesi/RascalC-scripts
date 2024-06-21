@@ -55,7 +55,7 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames; many are decided by the first command-line argument
-version = "v1.2"
+version = "v1.5"
 conf = "unblinded"
 
 # Set DESI CFS before creating the file manager
@@ -78,6 +78,7 @@ common_setup = {"region": reg, "version": version}
 xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True)
 xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives
 recon_setup = desi_y1_file_manager.get_baseline_recon_setup(tlabels[0], z_range)
+recon_setup.pop("zrange")
 
 sm = int(xi_setup["smoothing_radius"]) # smoothing scale in Mpc/h for filenames
 rectype = xi_setup["algorithm"] + "_" + xi_setup["mode"] # reconstruction type for filenames
