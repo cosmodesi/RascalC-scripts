@@ -96,11 +96,12 @@ def hash_check(goal: str, srcs: list[str], force: bool = False, verbose: bool = 
             return False, current_src_hashes
         current_src_hashes[src] = sha256sum(src)
     if not os.path.exists(goal) or force: return True, current_src_hashes # need to make if goal is missing or we are forcing, but hashes needed to be collected beforehand, also ensuring the existence of sources
+    elif len(srcs) == 0: return False, current_src_hashes # no need to make if the condiiton above is true and there are no sources
     try:
         if set(current_src_hashes.values()) == set(hash_dict[goal].values()): # comparing to hashes of sources used to build the goal last, regardless of order and names. Collisions seem unlikely
             if verbose: print_and_log(f"{goal} uses the same {srcs} as previously, no need to make\n")
             return False, current_src_hashes
-    except KeyError: pass # if hash dict is empty need to make, just proceed
+    except KeyError: pass # if hash dict does not have the goal key need to make, just proceed
     return True, current_src_hashes
 
 def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https://stackoverflow.com/a/44873382
