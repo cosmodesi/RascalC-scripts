@@ -105,7 +105,7 @@ print("pycorr filenames:", pycorr_filenames)
 random_filenames = [[input_dir + f"{tlabel}_{reg}_{i}_clustering.{rectype}.ran.fits" for i in range(nrandoms)] for tlabel in tlabels]
 print("Random filenames:", random_filenames)
 if njack:
-    data_ref_filenames = [[input_dir + f"{tlabel}_{reg}_clustering.{rectype}.dat.fits"] for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+    data_ref_filenames = [input_dir + f"{tlabel}_{reg}_clustering.{rectype}.dat.fits" for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
     print("Data filenames:", data_ref_filenames)
 
 # Load pycorr counts
