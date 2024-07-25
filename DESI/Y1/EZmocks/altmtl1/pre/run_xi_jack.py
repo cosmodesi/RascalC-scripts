@@ -41,8 +41,8 @@ os.makedirs(output_dir, exist_ok = True)
 n_mu_bins = 200 # between -1 and 1
 s_max = 200
 split_above = 20
-# tuple of edges, so that non-split randoms are below split_above and above they are split
-all_edges = ((s_edges, np.linspace(-1, 1, n_mu_bins+1)) for s_edges in (np.arange(split_above+1), np.arange(split_above, s_max+1)))
+# list of edge configurations, so that non-split randoms are below split_above and above they are split
+all_edges = [(s_edges, np.linspace(-1, 1, n_mu_bins+1)) for s_edges in (np.arange(split_above+1), np.arange(split_above, s_max+1))]
 
 n_jack = 60
 
