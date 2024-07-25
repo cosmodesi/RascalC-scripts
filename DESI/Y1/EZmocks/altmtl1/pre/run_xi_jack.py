@@ -80,7 +80,6 @@ for tracer, z_ranges in desi_y1_file_manager.list_zrange.items():
                                                     data_positions1 = get_rdd_positions(galaxies), data_weights1 = galaxies["WEIGHT"], data_samples1 = galaxies["JACK"],
                                                     randoms_positions1 = get_rdd_positions(these_randoms), randoms_weights1 = these_randoms["WEIGHT"], randoms_samples1 = these_randoms["JACK"],
                                                     position_type = 'rdd', engine = 'corrfunc', D1D2 = D1D2, gpu = True, nthreads = 4)
-                    # position_type='pos' corresponds to (N, 3) x,y,z positions shape like we have here
                     D1D2 = tmp.D1D2
                     result += tmp
                 results.append(result)
