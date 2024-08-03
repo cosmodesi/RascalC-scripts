@@ -24,7 +24,11 @@ def read_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, F
     if FKP_weight: catalog["WEIGHT"] *= catalog["WEIGHT_FKP"] # apply FKP weight multiplicatively
     catalog.keep_columns(["RA", "DEC", "Z", "WEIGHT"]) # discard everything else
     filtering = np.logical_and(catalog["Z"] >= z_min, catalog["Z"] <= z_max) # logical index of redshifts within the range
-    return catalog[filtering] # filtered catalog
+    catalog = catalog[filtering] # filtered catalog
+    for key in catalog.keys():
+        if catalog[key].dtype != float:
+            catalog[key] = catalog[key].astype(float) # ensure everything is float(64)
+    return catalog
 
 # Mode settings
 
@@ -140,7 +144,7 @@ for t in range(len(tlabels)):
     # create jackknives
     if njack:
         data_catalog = read_catalog(data_ref_filenames[t], z_min = z_min, z_max = z_max)
-        subsampler = get_subsampler_xirunpc([data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], nsamples = njack)
+        subsampler = get_subsampler_xirunpc([data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], njack)
         randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
