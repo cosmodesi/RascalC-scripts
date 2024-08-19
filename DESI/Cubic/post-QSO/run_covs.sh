@@ -3,8 +3,7 @@
 #SBATCH --constraint=cpu
 #SBATCH --qos=regular
 #SBATCH --time=10:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks=1
 #SBATCH --job-name=RascalC-cubic-QSO-post
 #SBATCH --array=1-4 # all HODs
 

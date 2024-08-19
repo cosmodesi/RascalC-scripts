@@ -3,8 +3,7 @@
 #SBATCH --constraint=cpu
 #SBATCH --qos=regular
 #SBATCH --time=12:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks=1
 #SBATCH --job-name=RascalC-Y1-Abacus-v4_2
 #SBATCH --array=14,15 # BGS reconfigured
 ##SBATCH --array=0-5,8-11,14-17 # full job array: excluding LRG and ELG full ranges

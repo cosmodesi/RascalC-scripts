@@ -3,8 +3,7 @@
 #SBATCH --constraint=cpu
 #SBATCH --qos=regular
 #SBATCH --time=12:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks=1
 #SBATCH --job-name=RascalC-Y1-EZmocks-avg
 #SBATCH --array=0-4,8-11,16-17 # excluding LRG NGC z0.8-1.1, which has already been run
 ##SBATCH --array=0-5,8-11,16-17 # full job array: excluding LRG and ELG full ranges, and BGS due to different directory structure

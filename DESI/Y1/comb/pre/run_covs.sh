@@ -3,8 +3,7 @@
 #SBATCH --constraint=cpu
 #SBATCH --qos=regular
 #SBATCH --time=12:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks=1
 #SBATCH --job-name=RascalC-Y1-v1.5-unblinded-LRG+ELG
 #SBATCH --array=0-1
 

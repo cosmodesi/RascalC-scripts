@@ -3,8 +3,7 @@
 #SBATCH --constraint=cpu
 #SBATCH --qos=regular
 #SBATCH --time=12:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks=1
 #SBATCH --job-name=RascalC-Y1-EZmocks-recon-single
 #SBATCH --array=20,25,34,44,49,50,52,58,59 # 10 mocks, SGC and NGC, no LRG but ELG and BGS
 ##SBATCH --array=0-59 # full job array: 10 mocks, SGC and NGC, LRG, ELG and BGS

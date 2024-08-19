@@ -3,8 +3,7 @@
 #SBATCH --constraint=cpu
 #SBATCH --qos=shared
 #SBATCH --time=12:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128 # 128 hyperthreads = 64 physical cores
 #SBATCH --job-name=RascalC-Y1-v1.2-unblinded-recon-growth-bias-weights
 #SBATCH --array=16,17 # QSO only
