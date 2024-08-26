@@ -58,8 +58,6 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 version = "v1.2"
 conf = "unblinded"
 
-fm = desi_y1_file_manager.get_data_file_manager(conf)
-
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 # known cases where more loops are needed consistently

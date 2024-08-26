@@ -35,8 +35,6 @@ conf = "unblinded"
 
 rectype = "IFTrecsym" # reconstruction type for filenames
 
-fm = desi_y1_file_manager.get_data_file_manager(conf)
-
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
