@@ -56,7 +56,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames; many are decided by the first command-line argument
 version = "v1.5pip"
-conf = "unblinded"
+conf = "" # presumably unblinded, but no such subdirectory
 
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
@@ -77,10 +77,6 @@ z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
 nrandoms = desi_y1_file_manager.list_nran[tlabels[0]]
 
-if nrandoms >= 8:
-    nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
-    loops_per_sample *= 2 # to keep the number of configurations ~same per output sample
-
 input_dir = f"/dvs_ro/cfs/cdirs/desi/survey/catalogs/Y1/LSS/iron/LSScats/{version}/{conf}/"
 
 # Output and temporary directories
@@ -100,6 +96,10 @@ split_above = 20
 # Filenames for saved pycorr counts
 pycorr_filenames = [[input_dir + f"xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split{split_above}.npy"] for corlabel in corlabels]
 print("pycorr filenames:", pycorr_filenames)
+
+if nrandoms >= 8:
+    nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
+    loops_per_sample *= 2 # to keep the number of configurations ~same per output sample
 
 # Filenames for randoms and galaxy catalogs
 random_filenames = [[input_dir + f"{tlabel}_{reg}_{i}_clustering.ran.fits" for i in range(nrandoms)] for tlabel in tlabels]
