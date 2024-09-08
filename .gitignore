@@ -4,6 +4,7 @@ outdirs
 cov_txt
 slurm-*.out
 make_covs.*.*
+*.npy
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
