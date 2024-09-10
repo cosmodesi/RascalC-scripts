@@ -48,7 +48,6 @@ mbin_cf = 10 # number of angular (mu) bins for input 2PCF
 # Settings related to time and convergence
 
 nthread = 64 # number of OMP threads to use
-n_loops = 1024 # number of integration loops per filename
 loops_per_sample = 64 # number of loops to collapse into one subsample
 N2 = 5 # number of secondary cells/particles per primary cell
 N3 = 10 # number of third cells/particles per secondary cell/particle
@@ -60,9 +59,25 @@ conf = "BAO/blinded"
 
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
-# known cases where more loops are needed consistently
-if id in (12, 13): n_loops //= 2 # QSO NGC converge well and take rather long time
-# other cases have been reset
+
+# set the number of integration loops based on ID
+n_loops = {0: 1536,
+           1: 1536,
+           2: 1536,
+           3: 1024,
+           4: 1024,
+           5: 768,
+           6: 768,
+           7: 512,
+           8: 512,
+           9: 384,
+           10: 2048,
+           11: 1024,
+           12: 256,
+           13: 256}[id]
+
+assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
+assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
 id //= 2 # extracted all needed info from parity, move on
 tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['BGS_BRIGHT-21.5', 'QSO']
@@ -94,9 +109,7 @@ split_above = 20
 pycorr_filenames = [[input_dir + f"desipipe/2pt/xi/smu/allcounts_{corlabel}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{nrandoms}_njack{njack}_split{split_above}.npy"] for corlabel in corlabels]
 print("pycorr filenames:", pycorr_filenames)
 
-if nrandoms >= 8:
-    nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
-    loops_per_sample *= 2 # to keep the number of configurations ~same per output sample
+if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
 
 # Filenames for randoms and galaxy catalogs
 random_filenames = [[input_dir + f"{tlabel}_{reg}_{i}_clustering.ran.fits" for i in range(nrandoms)] for tlabel in tlabels]
