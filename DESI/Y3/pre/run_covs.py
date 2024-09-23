@@ -2,7 +2,7 @@
 import sys, os
 import numpy as np
 from astropy.table import Table, vstack
-import desi_y1_files.file_manager as desi_y1_file_manager
+import desi_y3_files.file_manager as desi_y3_file_manager
 from pycorr import TwoPointCorrelationFunction, KMeansSubsampler
 from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
@@ -53,9 +53,15 @@ N2 = 5 # number of secondary cells/particles per primary cell
 N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
-# Settings for filenames; many are decided by the first command-line argument
+# Settings for filenames
+verspec = 'jura-v1'
 version = "v0.1"
 conf = "BAO/blinded"
+
+# Set DESI CFS before creating the file manager
+os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path 
+
+fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
@@ -87,9 +93,13 @@ zs = [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1], [0.8, 1.1], [1.1, 1.6], [0.1, 0.4], [0
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
-nrandoms = desi_y1_file_manager.list_nran[tlabels[0]]
+nrandoms = desi_y3_file_manager.list_nran[tlabels[0]]
 
-input_dir = f"/dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/LSS/jura-v1/LSScats/{version}/{conf}/"
+if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
+
+common_setup = {"region": reg, "version": version}
+xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
+xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives
 
 # Output and temporary directories
 
@@ -103,19 +113,15 @@ assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
 corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
-split_above = 20
-
 # Filenames for saved pycorr counts
-pycorr_filenames = [[input_dir + f"desipipe/2pt/xi/smu/allcounts_{corlabel}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{nrandoms}_njack{njack}_split{split_above}.npy"] for corlabel in corlabels]
+pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_y1', tracer = corlabel, **common_setup, **xi_setup)] for corlabel in corlabels]
 print("pycorr filenames:", pycorr_filenames)
 
-if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
-
 # Filenames for randoms and galaxy catalogs
-random_filenames = [[input_dir + f"{tlabel}_{reg}_{i}_clustering.ran.fits" for i in range(nrandoms)] for tlabel in tlabels]
+random_filenames = [[f.filepath for f in fm.select(id = 'catalog_randoms_y1', tracer = tlabel, iran = range(nrandoms), **common_setup)] for tlabel in tlabels]
 print("Random filenames:", random_filenames)
 if njack:
-    data_ref_filenames = [input_dir + f"{tlabel}_{reg}_clustering.dat.fits" for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+    data_ref_filenames = [fm.select(id = 'catalog_data_y1', tracer = tlabel, **common_setup)[0].filepath for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
     print("Data filenames:", data_ref_filenames)
 
 # Load pycorr counts

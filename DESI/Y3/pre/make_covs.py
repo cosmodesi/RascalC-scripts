@@ -5,7 +5,7 @@ from datetime import datetime
 import pickle
 import hashlib
 from typing import Callable
-import desi_y1_files.file_manager as desi_y1_file_manager
+import desi_y3_files.file_manager as desi_y3_file_manager
 from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect_raw_covariance_matrices
 from RascalC.post_process.legendre import post_process_legendre
 from RascalC.post_process.legendre_mix_jackknife import post_process_legendre_mix_jackknife
@@ -30,8 +30,14 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
+verspec = 'jura-v1'
 version = "v0.1"
 conf = "BAO/blinded"
+
+# Set DESI CFS before creating the file manager
+os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path 
+
+fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
@@ -106,8 +112,10 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
 for tracer, (z_min, z_max) in zip(tracers, zs):
     tlabels = [tracer]
     z_range = (z_min, z_max)
-    nrandoms = desi_y1_file_manager.list_nran[tracer]
     reg_results = []
+    # get options automatically
+    xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
+    xi_setup.update({"version": version, "tracer": tracer, "region": regs, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
     if jackknife: reg_results_jack = []
     for reg in regs:
         outdir = os.path.join("outdirs", version, conf, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
@@ -168,7 +176,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
             # Recipe: run convert cov
 
     # obtain the counts names
-    reg_pycorr_names = [f"/dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/LSS/jura-v1/LSScats/{version}/{conf}/desipipe/2pt/xi/smu/allcounts_{tracer}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{nrandoms}_njack{0}_split{20}.npy" for reg in regs]
+    reg_pycorr_names = [f.filepath for f in fm.select(id = 'correlation_y1', **xi_setup)]
 
     if len(reg_pycorr_names) == len(regs): # if we have pycorr files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions
