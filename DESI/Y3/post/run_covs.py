@@ -170,8 +170,6 @@ for t in range(len(tlabels)):
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
 
-sys.exit(0)
-
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
                   nthread = nthread, N2 = N2, N3 = N3, N4 = N4, n_loops = n_loops, loops_per_sample = loops_per_sample,
