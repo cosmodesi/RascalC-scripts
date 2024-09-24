@@ -116,7 +116,9 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
     # get options automatically
     xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True)
     xi_setup.update({"version": version, "tracer": tracer, "region": regs, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
-    recon_spec = 'recon_sm{smoothing_radius:.0f}_{algorithm}_{mode}{recon_zrange}{recon_weighting}/'.format_map(xi_setup) # recon specifier string
+    recon_spec = 'recon_sm{smoothing_radius:.0f}_{algorithm}_{mode}'.format_map(xi_setup) # recon specifier string
+    recon_spec += '' if (zr := xi_setup['recon_zrange']) is None else '_z{zrange[0]:.1f}-{zrange[1]:.1f}'.format(zrange = zr)
+    recon_spec += '' if (w := xi_setup['recon_weighting']) == 'default' else '_{}'.format(w)
     if jackknife: reg_results_jack = []
     for reg in regs:
         outdir = os.path.join("outdirs", version, conf, recon_spec, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory

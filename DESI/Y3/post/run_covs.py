@@ -104,9 +104,13 @@ xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_ra
 recon_setup = desi_y3_file_manager.get_baseline_recon_setup(tlabels[0], z_range)
 recon_setup.pop("zrange")
 
+recon_spec = 'recon_sm{smoothing_radius:.0f}_{algorithm}_{mode}'.format_map(xi_setup) # recon specifier string
+recon_spec += '' if (zr := xi_setup['recon_zrange']) is None else '_z{zrange[0]:.1f}-{zrange[1]:.1f}'.format(zrange = zr)
+recon_spec += '' if (w := xi_setup['recon_weighting']) == 'default' else '_{}'.format(w)
+
 # Output and temporary directories
 
-outdir_base = os.path.join(version, conf, 'recon_sm{smoothing_radius:.0f}_{algorithm}_{mode}{recon_zrange}{recon_weighting}/'.format_map(xi_setup), "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir_base = os.path.join(version, conf, recon_spec, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 preserve(outdir) # rename the directory if it exists to prevent overwriting
@@ -165,6 +169,8 @@ for t in range(len(tlabels)):
         randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
+
+sys.exit(0)
 
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
