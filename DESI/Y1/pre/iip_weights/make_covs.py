@@ -31,7 +31,7 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames; many are decided by the first command-line argument
 version = "v1.5pip"
-conf = "unblinded"
+conf = ""
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
@@ -168,7 +168,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
             # Recipe: run convert cov
 
     # obtain the counts names
-    reg_pycorr_names = [f"/dvs_ro/cfs/cdirs/desi/survey/catalogs/Y1/LSS/iron/LSScats/{version}/{conf}/smu/allcounts_{tracer}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split20.npy" for reg in regs]
+    reg_pycorr_names = [f"/dvs_ro/cfs/cdirs/desi/survey/catalogs/Y1/LSS/iron/LSScats/{version}/{conf}/xi/smu/allcounts_{tracer}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split20.npy" for reg in regs]
 
     if len(reg_pycorr_names) == len(regs): # if we have pycorr files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions
