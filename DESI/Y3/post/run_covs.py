@@ -67,21 +67,20 @@ id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 # set the number of integration loops based on ID
-n_loops = {0: 1536,
-           1: 1536,
-           2: 1536,
+n_loops = {0: 2048,
+           1: 2048,
+           2: 2048,
            3: 1024,
            4: 1024,
-           5: 768,
+           5: 512,
            6: 768,
            7: 512,
            8: 512,
            9: 384,
-           10: 2048,
-           11: 1024,
+           10: 3072,
+           11: 1536,
            12: 256,
            13: 256}[id]
-# copied from pre-recon
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
