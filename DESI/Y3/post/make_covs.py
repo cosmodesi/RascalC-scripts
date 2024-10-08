@@ -42,8 +42,8 @@ fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['BGS_BRIGHT-21.5', 'QSO']
-zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.1, 0.4), (0.8, 2.1)]
+tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['BGS_BRIGHT-21.5', 'BGS_BRIGHT-20.2', 'QSO']
+zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.1, 0.4), (0.1, 0.4), (0.8, 2.1)]
 
 hash_dict_file = "make_covs.hash_dict.pkl"
 if os.path.isfile(hash_dict_file):
