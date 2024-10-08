@@ -30,8 +30,8 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
-verspec = 'jura-v1'
-version = "v0.1"
+verspec = 'kibo-v1'
+version = "v1"
 conf = "BAO/blinded"
 
 # Set DESI CFS before creating the file manager
@@ -43,7 +43,7 @@ regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
 tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['BGS_BRIGHT-21.5', 'QSO']
-zs = [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1], [0.8, 1.1], [1.1, 1.6], [0.1, 0.4], [0.8, 2.1]]
+zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.1, 0.4), (0.8, 2.1)]
 
 hash_dict_file = "make_covs.hash_dict.pkl"
 if os.path.isfile(hash_dict_file):

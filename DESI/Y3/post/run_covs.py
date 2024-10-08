@@ -54,8 +54,8 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
-verspec = 'jura-v1'
-version = "v0.1"
+verspec = 'kibo-v1'
+version = "v1"
 conf = "BAO/blinded"
 
 # Set DESI CFS before creating the file manager
