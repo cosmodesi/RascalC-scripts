@@ -66,28 +66,9 @@ fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
-# set the number of integration loops based on ID
-n_loops = {0: 2048,
-           1: 2048,
-           2: 2048,
-           3: 1024,
-           4: 1024,
-           5: 512,
-           6: 768,
-           7: 512,
-           8: 512,
-           9: 384,
-           10: 3072,
-           11: 1536,
-           12: 256,
-           13: 256}[id]
-
-assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
-assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
-
 id //= 2 # extracted all needed info from parity, move on
 tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['BGS_BRIGHT-21.5', 'QSO']
-zs = [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1], [0.8, 1.1], [1.1, 1.6], [0.1, 0.4], [0.8, 2.1]]
+zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.1, 0.4), (0.8, 2.1)]
 # need 2 * 7 = 14 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
@@ -96,6 +77,25 @@ z_min, z_max = z_range
 nrandoms = desi_y3_file_manager.list_nran[tlabels[0]]
 
 if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
+
+# set the number of integration loops based on tracer, z range and region
+n_loops = {'LRG': {(0.4, 0.6): {'SGC': 2048,
+                                'NGC': 2048},
+                   (0.6, 0.8): {'SGC': 2048,
+                                'NGC': 1024},
+                   (0.8, 1.1): {'SGC': 1024,
+                                'NGC': 512}},
+           'ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 768,
+                                          'NGC': 512},
+                             (1.1, 1.6): {'SGC': 512,
+                                          'NGC': 384}},
+           'BGS_BRIGHT-21.5': {(0.1, 0.4): {'SGC': 3072,
+                                            'NGC': 1536}},
+           'QSO': {(0.8, 2.1): {'SGC': 256,
+                                'NGC': 256}}}[tlabels[0]][z_range][reg]
+
+assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
+assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
 common_setup = {"region": reg, "version": version}
 xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True)
