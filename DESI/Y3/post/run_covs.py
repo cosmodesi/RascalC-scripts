@@ -78,7 +78,10 @@ nrandoms = desi_y3_file_manager.list_nran[tlabels[0]]
 
 if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
 if tlabels[0].startswith("BGS"): nrandoms = 1 # override 1 random catalog for any BGS
-if tlabels[0] == 'BGS_BRIGHT-20.2': N3 *= 2; N4 *= 2
+
+if tlabels[0] == 'BGS_BRIGHT-20.2':
+    N3 *= 2
+    N4 *= 4
 
 # set the number of integration loops based on tracer, z range and region
 n_loops = {'LRG': {(0.4, 0.6): {'SGC': 2048,
@@ -95,8 +98,8 @@ n_loops = {'LRG': {(0.4, 0.6): {'SGC': 2048,
                                             'NGC': 1536}},
            'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 3072,
                                              'NGC': 1536}},
-           'BGS_BRIGHT-20.2': {(0.1, 0.4): {'SGC': 1024,
-                                            'NGC': 768}},
+           'BGS_BRIGHT-20.2': {(0.1, 0.4): {'SGC': 2048,
+                                            'NGC': 1024}},
            'QSO': {(0.8, 2.1): {'SGC': 256,
                                 'NGC': 256}}}[tlabels[0]][z_range][reg]
 
