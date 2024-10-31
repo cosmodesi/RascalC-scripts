@@ -67,9 +67,9 @@ id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
-tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['LRG+ELG_LOPnotqso', 'BGS_BRIGHT-21.5', 'BGS_BRIGHT-21.35', 'BGS_BRIGHT-20.2', 'QSO']
-zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 1.1), (0.1, 0.4), (0.1, 0.4), (0.1, 0.4), (0.8, 2.1)]
-# need 2 * 10 = 20 jobs in this array
+tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['LRG+ELG_LOPnotqso', 'BGS_BRIGHT-21.5'] + ['BGS_BRIGHT-21.35'] * 2 + ['BGS_BRIGHT-20.2'] * 2 + ['QSO']
+zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 1.1), (0.1, 0.4), (0.1, 0.4), (0.25, 0.4), (0.1, 0.25), (0.1, 0.4), (0.8, 2.1)]
+# need 2 * 12 = 24 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
@@ -96,8 +96,12 @@ n_loops = {'LRG': {(0.4, 0.6): {'SGC': 1536,
            'BGS_BRIGHT-21.5': {(0.1, 0.4): {'SGC': 2048,
                                             'NGC': 1024}},
            'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 2048,
-                                             'NGC': 1024}},
-           'BGS_BRIGHT-20.2': {(0.1, 0.4): {'SGC': 1024,
+                                             'NGC': 1024},
+                                (0.25, 0.4): {'SGC': 2048,
+                                              'NGC': 1024}},
+           'BGS_BRIGHT-20.2': {(0.1, 0.25): {'SGC': 1024,
+                                             'NGC': 512},
+                               (0.1, 0.4): {'SGC': 1024,
                                             'NGC': 512}},
            'QSO': {(0.8, 2.1): {'SGC': 256,
                                 'NGC': 256}}}[tlabels[0]][z_range][reg]
