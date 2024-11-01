@@ -47,8 +47,7 @@ mbin_cf = 10 # number of angular (mu) bins for input 2PCF
 
 # Settings related to time and convergence
 
-nthread = 128 # number of OMP threads to use
-n_loops = 1024 # number of integration loops per filename
+nthread = 64 # number of OMP threads to use
 loops_per_sample = 64 # number of loops to collapse into one subsample
 N2 = 5 # number of secondary cells/particles per primary cell
 N3 = 10 # number of third cells/particles per secondary cell/particle
@@ -65,17 +64,11 @@ fm = desi_y1_file_manager.get_data_file_manager(conf)
 
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
-# known cases where more loops are needed consistently
-if id in (4,): n_loops *= 2
-elif id in (1, 3, 15): n_loops *= 3
-elif id in (2, 8): n_loops *= 4
-elif id in (0, 14): n_loops *= 6
-elif id in (17,): n_loops //= 2 # QSO NGC converge well and take rather long time
 
 id //= 2 # extracted all needed info from parity, move on
-tracers = ['LRG'] * 4 + ['ELG_LOPnotqso'] * 3 + ['BGS_BRIGHT-21.5', 'QSO']
-zs = [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1], [0.4, 1.1], [0.8, 1.1], [1.1, 1.6], [0.8, 1.6], [0.1, 0.4], [0.8, 2.1]]
-# need 2 * 9 = 18 jobs in this array
+tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['BGS_BRIGHT-21.5', 'QSO']
+zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.1, 0.4), (0.8, 2.1)]
+# need 2 * 7 = 14 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
@@ -85,6 +78,25 @@ nrandoms = desi_y1_file_manager.list_nran[tlabels[0]]
 if nrandoms >= 8:
     nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
     loops_per_sample *= 2 # to keep the number of configurations ~same per output sample
+
+# set the number of integration loops based on tracer, z range and region
+n_loops = {'LRG': {(0.4, 0.6): {'SGC': 6144,
+                                'NGC': 3072},
+                   (0.6, 0.8): {'SGC': 4096,
+                                'NGC': 3072},
+                   (0.8, 1.1): {'SGC': 2048,
+                                'NGC': 1024}},
+           'ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 4096,
+                                          'NGC': 1024},
+                             (1.1, 1.6): {'SGC': 1024,
+                                          'NGC': 1024}},
+           'BGS_BRIGHT-21.5': {(0.1, 0.4): {'SGC': 6144,
+                                            'NGC': 3072}},
+           'QSO': {(0.8, 2.1): {'SGC': 1024,
+                                'NGC': 512}}}[tlabels[0]][z_range][reg]
+
+assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
+assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
 common_setup = {"region": reg, "version": version}
 xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
