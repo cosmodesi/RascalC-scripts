@@ -119,7 +119,7 @@ recon_setup = desi_y3_file_manager.get_baseline_recon_setup(tlabels[0], z_range)
 recon_setup.pop("zrange")
 
 recon_spec = 'recon_sm{smoothing_radius:.0f}_{algorithm}_{mode}'.format_map(xi_setup) # recon specifier string
-recon_spec += '' if (zr := xi_setup['recon_zrange']) is None else '_z{zrange[0]:.1f}-{zrange[1]:.1f}'.format(zrange = zr)
+recon_spec += '' if (zr := xi_setup['recon_zrange']) is None else '_z{zrange[0]:g}-{zrange[1]:g}'.format(zrange = zr)
 recon_spec += '' if (w := xi_setup['recon_weighting']) == 'default' else '_{}'.format(w)
 
 # Output and temporary directories
