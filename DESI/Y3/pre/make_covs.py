@@ -176,7 +176,7 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
             # Recipe: run convert cov
 
     # obtain the counts names
-    reg_pycorr_names = [f.filepath for f in fm.select(id = 'correlation_y1', **xi_setup)]
+    reg_pycorr_names = [f.filepath for f in fm.select(id = 'correlation_y3', **xi_setup)]
 
     if len(reg_pycorr_names) == len(regs): # if we have pycorr files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions
