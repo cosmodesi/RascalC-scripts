@@ -115,7 +115,7 @@ xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_ra
 
 # Output and temporary directories
 
-outdir_base = os.path.join(version, conf, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir_base = os.path.join(verspec, version, conf, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 preserve(outdir) # rename the directory if it exists to prevent overwriting
@@ -126,14 +126,14 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved pycorr counts
-pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_y1', tracer = corlabel, **common_setup, **xi_setup)] for corlabel in corlabels]
+pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_y3', tracer = corlabel, **common_setup, **xi_setup)] for corlabel in corlabels]
 print("pycorr filenames:", pycorr_filenames)
 
 # Filenames for randoms and galaxy catalogs
-random_filenames = [[f.filepath for f in fm.select(id = 'catalog_randoms_y1', tracer = tlabel, iran = range(nrandoms), **common_setup)] for tlabel in tlabels]
+random_filenames = [[f.filepath for f in fm.select(id = 'catalog_randoms_y3', tracer = tlabel, iran = range(nrandoms), **common_setup)] for tlabel in tlabels]
 print("Random filenames:", random_filenames)
 if njack:
-    data_ref_filenames = [fm.select(id = 'catalog_data_y1', tracer = tlabel, **common_setup)[0].filepath for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+    data_ref_filenames = [fm.select(id = 'catalog_data_y3', tracer = tlabel, **common_setup)[0].filepath for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
     print("Data filenames:", data_ref_filenames)
 
 # Load pycorr counts
