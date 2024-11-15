@@ -54,7 +54,7 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
-verspec = 'kibo-v1'
+verspec = 'loa-v1'
 version = "v1"
 conf = "BAO/blinded"
 

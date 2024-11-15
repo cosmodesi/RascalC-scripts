@@ -30,7 +30,7 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
-verspec = 'kibo-v1'
+verspec = 'loa-v1'
 version = "v1"
 conf = "BAO/blinded"
 

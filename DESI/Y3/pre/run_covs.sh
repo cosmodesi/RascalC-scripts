@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=128 # 128 hyperthreads = 64 physical cores
 #SBATCH --job-name=RascalC-Y3-v1-BAO-blinded
 ##SBATCH --array=0-23 # full job array
-#SBATCH --array=18-19 # BGS_BRIGHT-20.2 z0.1-0.25
+#SBATCH --array=0-15,22,23 # only -21.5 and -21.35 z0.1-0.4 for BGS, and all other tracers
 
 # load cosmodesi environment
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
