@@ -7,6 +7,12 @@ from pycorr import TwoPointCorrelationFunction, KMeansSubsampler
 from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
+import argparse
+
+parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 pre-recon single-tracer")
+parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
+parser.add_argument("-t", "--test", action = "store_true", help = "test the input files, abort before the main computation")
+args = parser.parse_args()
 
 def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory exists, rename it with a numeric suffix
     if not os.path.exists(filename): return
@@ -63,7 +69,7 @@ os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
 
 fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 
-id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
+id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
@@ -174,6 +180,8 @@ for t in range(len(tlabels)):
         randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
+
+if args.test: sys.exit(0) # exit with an ok status in a test run
 
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
