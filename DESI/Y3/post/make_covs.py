@@ -31,7 +31,7 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
 verspec = 'loa-v1'
-version = "v1"
+version = "v1.1"
 conf = "BAO/blinded"
 
 # Set DESI CFS before creating the file manager

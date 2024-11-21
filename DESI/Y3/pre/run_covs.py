@@ -61,7 +61,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
 verspec = 'loa-v1'
-version = "v1"
+version = "v1.1"
 conf = "BAO/blinded"
 
 # Set DESI CFS before creating the file manager
