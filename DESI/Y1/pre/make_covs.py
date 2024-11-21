@@ -168,7 +168,6 @@ for tracer, (z_min, z_max) in zip(tracers, zs):
             # Recipe: run post-processing
             # Also perform convergence check (optional but nice)
 
-            # Load shot-noise rescaling and make name, if the jack results file exists, otherwise can't do it anyway
             cov_name_jack = f"cov_txt/{version}/{conf}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_rescaled.txt"
             # Individual cov file depends on RascalC results
             my_make(cov_name_jack, [results_name_jack], lambda: export_cov_legendre(results_name_jack, max_l, cov_name_jack))

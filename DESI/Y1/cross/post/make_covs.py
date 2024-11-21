@@ -160,7 +160,6 @@ for tlabels, (z_min, z_max), these_alphas_ext in zip(tracers, zs, alphas_ext):
             # Recipe: run post-processing
             # Also perform convergence check (optional but nice)
 
-            # Load shot-noise rescaling and make name
             cov_name_rescaled = f"cov_txt/{version}/{conf}/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_rescaled.txt"
             # Individual cov file depends on RascalC results
             my_make(cov_name_rescaled, [results_name_rescaled], lambda: export_cov_legendre_multi(results_name_rescaled, max_l, cov_name_rescaled))
