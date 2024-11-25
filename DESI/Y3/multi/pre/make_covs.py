@@ -44,7 +44,7 @@ reg_comb = "GCcomb"
 
 tracers = [['LRG', 'ELG_LOPnotqso']]
 zs = [(0.8, 1.1)]
-alphas_ext = [[[None, None], [None, None]]] # from single-tracer jackknives, external to these runs.
+alphas_ext = [[[0.905859, 0.863770], [0.911523, 0.848340]]] # from single-tracer jackknives, external to these runs.
 
 # for custom cross-counts
 nrandoms = 10
