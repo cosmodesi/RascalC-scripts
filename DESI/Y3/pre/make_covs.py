@@ -5,6 +5,7 @@ from datetime import datetime
 import pickle
 import hashlib
 from typing import Callable
+import traceback
 import desi_y3_files.file_manager as desi_y3_file_manager
 from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect_raw_covariance_matrices
 from RascalC.post_process.legendre import post_process_legendre
@@ -77,6 +78,7 @@ def my_make(goal: str, deps: list[str], recipe: Callable, force: bool = False, v
             # now can actually run
             recipe()
         except Exception as e:
+            traceback.print_exc()
             print_and_log(f"{goal} not built: {e}")
             return
         hash_dict[goal] = current_dep_hashes # update the dependency hashes only if the make was successfully performed
