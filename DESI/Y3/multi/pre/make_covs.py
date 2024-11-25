@@ -184,9 +184,9 @@ for tlabels, z_range, these_alphas_ext in zip(tracers, zs, alphas_ext):
     for tracer in tlabels:
         xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tracer, z_range)
         xi_setup.update({"version": version, "tracer": tracer, "region": regs, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
-        reg_pycorr_names += [f.filepath for f in fm.select(id = 'correlation_y3', **xi_setup)]
+        reg_pycorr_names += [[f.filepath for f in fm.select(id = 'correlation_y3', **xi_setup)]]
     # add the custom cross-counts filenames
-    reg_pycorr_names += [os.environ["DESICFS"] + f"/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/xi/smu/allcounts_{corlabels[1]}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split{split_above}.npy" for reg in regs]
+    reg_pycorr_names += [[os.environ["DESICFS"] + f"/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/xi/smu/allcounts_{corlabels[1]}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split{split_above}.npy" for reg in regs]]
     # finally, transpose so that the first index is region and the second is type of correlation in order: auto1, cross, auto2
     reg_pycorr_names = [[reg_pycorr_names[i_corr][i_reg] for i_corr in (0, -1, 1)] for i_reg in range(2)]
 
