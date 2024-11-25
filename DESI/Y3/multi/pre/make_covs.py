@@ -10,7 +10,7 @@ import desi_y3_files.file_manager as desi_y3_file_manager
 from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect_raw_covariance_matrices
 from RascalC.post_process.legendre_multi import post_process_legendre_multi
 from RascalC.convergence_check_extra import convergence_check_extra
-from RascalC.cov_utils import export_cov_legendre_multi
+from RascalC.cov_utils import export_cov_legendre_multi, export_cov_legendre_cross, convert_txt_cov_multi_to_cross
 from RascalC.comb.combine_covs_legendre_multi import combine_covs_legendre_multi
 
 max_l = 4
@@ -118,6 +118,7 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
 # Make steps for making covs
 for tlabels, z_range, these_alphas_ext in zip(tracers, zs, alphas_ext):
     corlabels = [tlabels[0], "_".join(tlabels), tlabels[1]]
+    tracers_label_full = "&".join(tlabels)
     z_min, z_max = z_range
     reg_results = []
     reg_results_rescaled = []
@@ -145,7 +146,7 @@ for tlabels, z_range, these_alphas_ext in zip(tracers, zs, alphas_ext):
         reg_results.append(results_name)
 
         cov_dir = f"cov_txt/{verspec}/{version}/{conf}"
-        cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
+        cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join([tracers_label_full, reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
         def make_gaussian_cov():
             results = post_process_legendre_multi(outdir, nbin, max_l, outdir, skip_r_bins = skip_r_bins, skip_l = skip_l, print_function = print_and_log)
@@ -159,6 +160,10 @@ for tlabels, z_range, these_alphas_ext in zip(tracers, zs, alphas_ext):
         # Individual cov file depends on RascalC results
         my_make(cov_name, [results_name], lambda: export_cov_legendre_multi(results_name, max_l, cov_name))
         # Recipe: export cov
+
+        # Export cross-only covariance to a filename with "_" instead of "&" between the tracers
+        cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
+        my_make(cov_name, [results_name], lambda: export_cov_legendre_cross(results_name, max_l, cov_name))
 
         # Post-processing with external alphas
         if alphas:
@@ -174,10 +179,14 @@ for tlabels, z_range, these_alphas_ext in zip(tracers, zs, alphas_ext):
             # Recipe: run post-processing
             # Also perform convergence check (optional but nice)
 
-            cov_name_rescaled = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt"
+            cov_name_rescaled = f"{cov_dir}/xi" + xilabel + "_" + "_".join([tracers_label_full, reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt"
             # Individual cov file depends on RascalC results
             my_make(cov_name_rescaled, [results_name_rescaled], lambda: export_cov_legendre_multi(results_name_rescaled, max_l, cov_name_rescaled))
-            # Recipe: run convert cov
+            # Recipe: export cov
+
+            # Export cross-only covariance to a filename with "_" instead of "&" between the tracers
+            cov_name_rescaled = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt"
+            my_make(cov_name_rescaled, [results_name_rescaled], lambda: export_cov_legendre_cross(results_name_rescaled, max_l, cov_name_rescaled))
 
     # get the pycorr filenames from the file manager
     reg_pycorr_names = []
@@ -193,19 +202,27 @@ for tlabels, z_range, these_alphas_ext in zip(tracers, zs, alphas_ext):
     if len(reg_pycorr_names) == len(regs): # if we have pycorr files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions
             # Combined Gaussian cov
-            cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # combined cov name
+            cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join([tracers_label_full, reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # combined cov name
 
             # Comb cov depends on the region RascalC results
             my_make(cov_name, reg_results, lambda: combine_covs_legendre_multi(*reg_results, *reg_pycorr_names, cov_name, max_l, r_step = r_step, skip_r_bins = skip_r_bins, print_function = print_and_log))
             # Recipe: run combine covs
 
+            # Export cross-only covariance to a filename with "_" instead of "&" between the tracers
+            cov_name_cross = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # combined cov name
+            my_make(cov_name_cross, [cov_name], lambda: convert_txt_cov_multi_to_cross(cov_name, cov_name_cross))
+
         if len(reg_results_rescaled) == len(regs): # if we have RascalC rescaled results for all regions
             # Combined rescaled cov
-            cov_name_rescaled = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # combined cov name
+            cov_name_rescaled = f"{cov_dir}/xi" + xilabel + "_" + "_".join([tracers_label_full, reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # combined cov name
 
             # Comb cov depends on the region RascalC results
             my_make(cov_name_rescaled, reg_results_rescaled, lambda: combine_covs_legendre_multi(*reg_results_rescaled, *reg_pycorr_names, cov_name_rescaled, max_l, r_step = r_step, skip_r_bins = skip_r_bins, print_function = print_and_log))
             # Recipe: run combine covs
+
+            # Export cross-only covariance to a filename with "_" instead of "&" between the tracers
+            cov_name_cross = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # combined cov name
+            my_make(cov_name_cross, [cov_name_rescaled], lambda: convert_txt_cov_multi_to_cross(cov_name_rescaled, cov_name_cross))
 
 # Save the updated hash dictionary
 with open(hash_dict_file, "wb") as f:
