@@ -108,9 +108,9 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
     return h.hexdigest()
 
 # Make steps for making covs
-for tracer, (z_min, z_max) in zip(tracers, zs):
+for tracer, z_range in zip(tracers, zs):
     tlabels = [tracer]
-    z_range = (z_min, z_max)
+    z_min, z_max = z_range
     reg_results = []
     # get options automatically
     xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
