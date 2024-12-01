@@ -65,7 +65,6 @@ fm = desi_y1_file_manager.get_abacus_file_manager()
 
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 mock_id = 0 # mock number, starting from 0
-# not very obvious; made for compatibility with the previous ordering where LRG runs had IDs 0 through 19 with each mock's S/NGC next to each other
 
 reg = "NGC" if id%2 else "SGC" # region for filenames
 # known cases where more loops are needed consistently
@@ -109,7 +108,7 @@ if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-corre
 # Filenames for saved pycorr counts
 input_xi_filenames = [[f.filepath for f in fm.select(id = 'correlation_abacus_y1', tracer = corlabel, njack = 0, **all_mocks_setup, **xi_setup)] for corlabel in corlabels]
 print("input xi filenames:", input_xi_filenames)
-counts_jack_filenames = [[f.filepath for f in fm.select(id = 'correlation_abacus_y1', tracer = corlabel, njack = 60, **single_mock_setup, **xi_setup)] for corlabel in corlabels]
+counts_jack_filenames = [[f.filepath for f in fm.select(id = 'correlation_abacus_y1', tracer = corlabel, njack = njack, **single_mock_setup, **xi_setup)] for corlabel in corlabels]
 print("counts/jack filenames:", counts_jack_filenames)
 
 # Filenames for randoms and galaxy catalogs
@@ -158,8 +157,8 @@ for t in range(len(tlabels)):
     # create jackknives
     if njack:
         data_catalog = read_catalog(data_ref_filenames[t], z_min = z_min, z_max = z_max)
-        subsampler = KMeansSubsampler('angular', positions = np.array([data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], dtype = np.float64), position_type = 'rdd', nsamples = njack, nside = 512, random_state = 42)
-        randoms_samples[t] = subsampler.label(positions = np.array([random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], dtype = np.float64), position_type = 'rdd')
+        subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', nsamples = njack, nside = 512, random_state = 42, dtype = np.float64)
+        randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
 
