@@ -31,7 +31,6 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
-version = "v2"
 fa = "altmtl" # fiber assignment method
 mock_id = 0 # mock number, starting from 0
 
@@ -114,6 +113,7 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
 for tracer, z_range in zip(tracers, zs):
     tlabels = [tracer]
     z_min, z_max = z_range
+    version = "v2" if tlabels[0].startswith("BGS") else "v4_1"
     reg_results = []
     # get options automatically
     xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)

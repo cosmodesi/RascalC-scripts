@@ -60,7 +60,6 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
-version = "v2"
 fa = "altmtl" # fiber assignment method
 mock_id = 0 # mock number, starting from 0
 
@@ -81,6 +80,8 @@ tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
 nrandoms = desi_y3_file_manager.list_nran[tlabels[0]]
+
+version = "v2" if tlabels[0].startswith("BGS") else "v4_1"
 
 if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
 if tlabels[0].startswith("BGS"): nrandoms = 1 # override 1 random catalog for any BGS
