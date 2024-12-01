@@ -49,8 +49,8 @@ mock_id = 0
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracers = ['LRG'] * 4 + ['ELG_LOPnotqso'] * 3 + ['BGS_BRIGHT-21.5', 'QSO']
-zs = [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1], [0.4, 1.1], [0.8, 1.1], [1.1, 1.6], [0.8, 1.6], [0.1, 0.4], [0.8, 2.1]]
+tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['BGS_BRIGHT-21.5', 'QSO']
+zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.1, 0.4), (0.8, 2.1)]
 
 hash_dict_file = "make_covs.hash_dict.pkl"
 if os.path.isfile(hash_dict_file):
@@ -120,10 +120,10 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
     return h.hexdigest()
 
 # Make steps for making covs
-for tracer, (z_min, z_max) in zip(tracers, zs):
+for tracer, z_range in zip(tracers, zs):
     version = version_alt if tracer.startswith("BGS") else version_main # different version for BGS
     tlabels = [tracer]
-    z_range = (z_min, z_max)
+    z_min, z_max = z_range
     # get options automatically
     xi_setup = desi_y1_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
     xi_setup.update({"version": version, "fa": fa, "tracer": tracer, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
