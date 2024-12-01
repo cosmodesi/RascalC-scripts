@@ -86,7 +86,7 @@ n_loops = {('LRG', 'ELG_LOPnotqso'): {(0.8, 1.1): {'SGC': 512,
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
-common_setup = {"region": reg, "version": version}
+common_setup = {"region": reg, "version": version, "grid_cosmo": None}
 xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
 xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives
 
@@ -103,7 +103,7 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved pycorr counts
-pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_y3', tracer = tlabel, **common_setup, **xi_setup)] for tlabel in tlabels] # retrieve auto-correlations from the file manager
+pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_y3', tracer = tlabel, **(common_setup | xi_setup))] for tlabel in tlabels] # retrieve auto-correlations from the file manager
 split_above = 20
 pycorr_filenames = [pycorr_filenames[0], [os.environ["DESICFS"] + f"/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/xi/smu/allcounts_{corlabels[1]}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split{split_above}.npy"], pycorr_filenames[1]] # insert the customized cross-correlation path in the middle
 print("pycorr filenames:", pycorr_filenames)

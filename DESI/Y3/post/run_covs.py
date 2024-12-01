@@ -141,7 +141,7 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved pycorr counts
-pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_recon_y3', tracer = corlabel, **common_setup, **xi_setup)] for corlabel in corlabels]
+pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_recon_y3', tracer = corlabel, **(common_setup | xi_setup))] for corlabel in corlabels]
 print("pycorr filenames:", pycorr_filenames)
 
 # Filenames for randoms and galaxy catalogs
