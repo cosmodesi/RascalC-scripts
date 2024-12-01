@@ -32,6 +32,8 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
 version = "v2"
+fa = "altmtl" # fiber assignment method
+mock_id = 0 # mock number, starting from 0
 
 # Set DESI CFS before creating the file manager
 os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path 
@@ -115,7 +117,7 @@ for tracer, z_range in zip(tracers, zs):
     reg_results = []
     # get options automatically
     xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
-    xi_setup.update({"version": version, "tracer": tracer, "region": regs, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
+    xi_setup.update({"version": version, "tracer": tracer, "fa": fa, "imock": mock_id, "region": regs, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
     if jackknife: reg_results_jack = []
     for reg in regs:
         outdir = os.path.join("outdirs", version, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
