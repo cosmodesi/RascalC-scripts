@@ -142,7 +142,7 @@ for tracer, z_range in zip(tracers, zs):
         results_name = os.path.join(outdir, 'Rescaled_Covariance_Matrices_Legendre_n%d_l%d.npz' % (nbin, max_l))
         reg_results.append(results_name)
 
-        cov_dir = f"cov_txt/{version}"
+        cov_dir = f"cov_txt/{version}/{fa}"
         cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
         def make_gaussian_cov():
