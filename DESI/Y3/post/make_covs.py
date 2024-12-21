@@ -33,7 +33,7 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 # Settings for filenames
 verspec = 'loa-v1'
 version = "v1.1"
-conf = "BAO/blinded"
+conf = "BAO/unblinded"
 
 # Set DESI CFS before creating the file manager
 os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path 
