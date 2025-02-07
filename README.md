@@ -35,5 +35,18 @@ IMPORTANT: do not launch this script multi-threaded (e.g. at NERSC, do not set `
 The Python function `run_cov` for calling `RascalC` should set up OpenMP threads by itself based on `nthread` argument.
 If you need to run something besides `RascalC` on multiple threads, run it separately (one of the options is to create a child process).
 - `run_covs.sh` – SLURM batch script submitting an array of jobs doing the whole list of similar tasks.
-- `run_covs_test.sh` – dry-run Bash script to test for e.g. "file not found" errors.
+- `run_covs_test.sh` – dry-run Bash script to test for e.g. "file not found" errors. The list of job/task IDs is **not** kept in sync with `run_covs.sh` automatically, it needs to be adjusted manually.
 - `make_covs.py` – computation-light (usually ok to run on a login node) Python script to format the covariance matrices into text files (and combine SGC and NGC regions into GCcomb according to Appendix B of [Rashkovetskyi et al 2025](https://ui.adsabs.harvard.edu/abs/2025JCAP...01..145R/abstract) when applicable). **Only run when all the submitted jobs have finished.** The script tracks the dependencies: does not run the recipe if sources are missing or have not been changed since the previous run (but the dependencies are cached only when script terminates without critical failures).
+
+Thus a typical sequence for batch production of covariances in a single directory is:
+```
+bash run_covs_test.sh # when it exists
+```
+then, if no errors result,
+```
+sbatch run_covs.sh
+```
+then, **after all jobs in the resulting array finish and when no other `RascalC` job is writing output under the current directory**,
+```
+python make_covs.py
+```
