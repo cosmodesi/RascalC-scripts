@@ -36,7 +36,7 @@ version = "v1.1"
 conf = "BAO/unblinded"
 
 # Set DESI CFS before creating the file manager
-os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path 
+os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
 
 fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 

@@ -40,7 +40,7 @@ version_alt = "v1" # for BGS, further versions not available (yet)
 fa = "ffa" # fiber assignment method
 
 # Set DESI CFS before creating the file manager
-os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
+os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
 
 fm = desi_y1_file_manager.get_abacus_file_manager()
 

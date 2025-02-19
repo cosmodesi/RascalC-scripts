@@ -35,7 +35,7 @@ fa = "altmtl" # fiber assignment method
 mock_id = 0 # mock number, starting from 0
 
 # Set DESI CFS before creating the file manager
-os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path 
+os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
 
 fm = desi_y3_file_manager.get_abacus_file_manager()
 

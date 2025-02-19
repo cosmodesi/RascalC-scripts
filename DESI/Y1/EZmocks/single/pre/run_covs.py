@@ -58,7 +58,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 version = "v1"
 
 # Set DESI CFS before creating the file manager
-os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
+os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
 
 fm = desi_y1_file_manager.get_ez_file_manager()
 

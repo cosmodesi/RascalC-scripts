@@ -40,7 +40,7 @@ mock_post_processing = 1 # this is about mock post-processing, i.e. fitting Rasc
 version = "v1"
 
 # Set DESI CFS before creating the file manager
-os.environ["DESICFS"] = "/global/cfs/cdirs/desi"
+os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
 
 fm = desi_y1_file_manager.get_ez_file_manager()
 
