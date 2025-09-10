@@ -141,7 +141,7 @@ for tracer, z_range in zip(tracers, zs):
             if len(this_reg_pycorr_filenames) > 0: # only if any files found
                 my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of 1000 mock pycorr files has been taking long
 
-        outdir = os.path.join(f"outdirs", version, fa, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
+        outdir = os.path.join(f"outdirs", version, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
         if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
             outdirs_w_suffixes = [outdir + "_" + str(i) for i in range(11)] # append suffixes
             outdirs_w_suffixes = [dirname for dirname in outdirs_w_suffixes if os.path.isdir(dirname)] # filter only existing dirs
