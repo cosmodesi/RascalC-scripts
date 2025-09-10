@@ -154,7 +154,7 @@ for tracer, z_range in zip(tracers, zs):
 
         # Gaussian covariances
 
-        results_name = post_process_auto(outdir, jackknife=False, load_sample_cov=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log, dry_run=True)
+        results_name = post_process_auto(outdir, jackknife=False, load_sample_cov=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log, dry_run=True)["path"]
         reg_results.append(results_name)
 
         cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
@@ -186,7 +186,7 @@ for tracer, z_range in zip(tracers, zs):
         
         # Mock post-processing
         if mock_post_processing:
-            results_name_mocks = post_process_auto(outdir, xi_sample_cov=np.loadtxt(mock_cov_name), skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log, dry_run=True)
+            results_name_mocks = post_process_auto(outdir, xi_sample_cov=np.loadtxt(mock_cov_name), skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log, dry_run=True)["path"]
             reg_results_mocks.append(results_name_mocks)
 
             # RascalC results depend on full output (most straightforwardly)
