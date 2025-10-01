@@ -80,7 +80,7 @@ z_range = (1.1, 1.6) # for redshift cut and filenames
 z_min, z_max = z_range
 
 # set the number of integration loops based on tracers, z range and region
-n_loops = {('ELG_LOPnotqso', 'QSO'): {(0.8, 1.1): {'SGC': 512,
+n_loops = {('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 512,
                                                    'NGC': 512}}}[tlabels][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
@@ -109,7 +109,7 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved pycorr counts
-pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_y3', tracer = tlabel, **(common_setup | xi_setup))] for tlabel in tlabels[:1]] # retrieve the first auto-correlation from the file manager
+pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_recon_y3', tracer = tlabel, **(common_setup | xi_setup))] for tlabel in tlabels[:1]] # retrieve the first auto-correlation from the file manager
 split_above = 20
 pycorr_filenames += [[os.environ["DESICFS"] + f"/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/{recon_spec}/xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split{split_above}.npy"] for corlabel in corlabels[1:]] # add the customized path to the cross-correlation and second auto-correlation
 print("pycorr filenames:", pycorr_filenames)
@@ -117,10 +117,10 @@ print("pycorr filenames:", pycorr_filenames)
 if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
 
 # Filenames for randoms and galaxy catalogs
-random_filenames = [[f.filepath for f in fm.select(id = 'catalog_randoms_y3', tracer = tlabel, iran = range(nrandoms), **common_setup)] for tlabel in tlabels]
+random_filenames = [[f.filepath for f in fm.select(id = 'catalog_randoms_recon_y3', tracer = tlabel, iran = range(nrandoms), **(common_setup | recon_setup))] for tlabel in tlabels]
 print("Random filenames:", random_filenames)
 if njack:
-    data_ref_filenames = [fm.select(id = 'catalog_data_y3', tracer = tlabel, **common_setup)[0].filepath for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+    data_ref_filenames = [fm.select(id = 'catalog_data_recon_y3', tracer = tlabel, **(common_setup | recon_setup))[0].filepath for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
     print("Data filenames:", data_ref_filenames)
 
 # Load pycorr counts

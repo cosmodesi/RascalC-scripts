@@ -145,10 +145,10 @@ pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_recon_y3', 
 print("pycorr filenames:", pycorr_filenames)
 
 # Filenames for randoms and galaxy catalogs
-random_filenames = [[f.filepath for f in fm.select(id = 'catalog_randoms_recon_y3', tracer = tlabel, iran = range(nrandoms), **common_setup, **recon_setup)] for tlabel in tlabels]
+random_filenames = [[f.filepath for f in fm.select(id = 'catalog_randoms_recon_y3', tracer = tlabel, iran = range(nrandoms), **(common_setup | recon_setup))] for tlabel in tlabels]
 print("Random filenames:", random_filenames)
 if njack:
-    data_ref_filenames = [fm.select(id = 'catalog_data_recon_y3', tracer = tlabel, **common_setup, **recon_setup)[0].filepath for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+    data_ref_filenames = [fm.select(id = 'catalog_data_recon_y3', tracer = tlabel, **(common_setup | recon_setup))[0].filepath for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
     print("Data filenames:", data_ref_filenames)
 
 # Load pycorr counts
