@@ -163,8 +163,7 @@ for tracer, z_range in zip(tracers, zs):
         # RascalC results depend on full output (most straightforwardly)
         my_make(results_name, [raw_name],
                 lambda: post_process_auto(outdir, jackknife=False, load_sample_cov=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log))
-        # Recipe: run post-processing
-        # Also perform convergence check (optional but nice)
+        # Recipe: run post-processing; extra convergence check included by default
 
         # Individual cov file depends on RascalC results
         my_make(cov_name, [results_name], lambda: export_cov_legendre(results_name, max_l, cov_name))
