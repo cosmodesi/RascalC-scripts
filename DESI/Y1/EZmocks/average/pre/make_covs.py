@@ -123,13 +123,7 @@ for tracer, (z_min, z_max), nrandoms in zip(tracers, zs, ns_randoms):
         if not os.path.isdir(outdir): continue # if doesn't exist can't really do anything else
         
         raw_name = os.path.join(outdir, f"Raw_Covariance_Matrices_n{nbin}_l{max_l}.npz")
-
-        # detect the per-file dirs if any
-        outdirs_perfile = [int(name) for name in os.listdir(outdir) if name.isdigit()] # per-file dir names are pure integers
-        if len(outdirs_perfile) > 0: # if such dirs found, need to cat the raw covariance matrices
-            outdirs_perfile = [os.path.join(outdir, str(index)) for index in sorted(outdirs_perfile)] # sort integers, transform back to strings and prepend the parent directory
-            cat_raw_covariance_matrices(nbin, f"l{max_l}", outdirs_perfile, [None] * len(outdirs_perfile), outdir, print_function = print_and_log) # concatenate the subsamples
-        elif not os.path.isfile(raw_name): # run the raw matrix collection, which creates this file. Non-existing file breaks the logic in my_make()
+        if not os.path.isfile(raw_name): # run the raw matrix collection, which creates this file. Non-existing file breaks the logic in my_make()
             collect_raw_covariance_matrices(outdir, print_function = print_and_log)
 
         # Gaussian covariances
