@@ -82,6 +82,12 @@ z_min, z_max = z_range
 # set the number of integration loops based on tracers, z range and region
 n_loops = {('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 512,
                                                    'NGC': 512}}}[tlabels][z_range][reg]
+# set the base RNG seed (for reproducibility) also based on tracers, z range and region
+seed = {('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 5872789,
+                                                'NGC': 143307}}}[tlabels][z_range][reg]
+# skip the finished integrals in each case
+start_integral = {('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 6,
+                                                          'NGC': 4}}}[tlabels][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
@@ -175,4 +181,6 @@ results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
                   randoms_positions2 = randoms_positions[1], randoms_weights2 = randoms_weights[1], randoms_samples2 = randoms_samples[1],
                   normalize_wcounts = True,
                   out_dir = outdir, tmp_dir = tmpdir,
+                  seed = seed,
+                  start_integral_index = start_integral,
                   skip_s_bins = skip_nbin_post, skip_l = skip_l_post)
