@@ -186,6 +186,8 @@ for tlabels, z_range in zip(tracers, zs):
         reg_pycorr_names += [[f.filepath for f in fm.select(id = 'correlation_recon_y3', **xi_setup)]]
     # add the customized path to the cross-correlation and second auto-correlation
     reg_pycorr_names += [[os.environ["DESICFS"] + f"/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/{recon_spec}/xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split{split_above}.npy" for reg in regs] for corlabel in corlabels[1:]]
+    # finally, transpose so that the first index is region and the second is type of correlation in order: auto1, cross, auto2
+    reg_pycorr_names = [[reg_pycorr_names[i_corr][i_reg] for i_corr in range(3)] for i_reg in range(2)]
 
     if len(reg_pycorr_names) == len(regs): # if we have pycorr files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions
@@ -196,6 +198,10 @@ for tlabels, z_range in zip(tracers, zs):
             my_make(cov_name, reg_results, lambda: combine_covs_legendre_multi(*reg_results, *reg_pycorr_names, cov_name, max_l, r_step = r_step, skip_r_bins = skip_r_bins, print_function = print_and_log))
             # Recipe: run combine covs
 
+            # Export cross-only covariance to a filename with "_" instead of "&" between the tracers
+            cov_name_cross = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # cross-only cov name
+            my_make(cov_name_cross, [cov_name_rescaled], lambda: convert_txt_cov_multi_to_cross(cov_name_rescaled, cov_name_cross))
+
         if jackknife and len(reg_results_jack) == len(regs): # if jackknife and we have RascalC jack results for all regions
             # Combined rescaled cov
             cov_name_rescaled = f"{cov_dir}/xi" + xilabel + "_" + "_".join([tracers_label_full, reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # combined cov name
@@ -205,7 +211,7 @@ for tlabels, z_range in zip(tracers, zs):
             # Recipe: run combine covs
 
             # Export cross-only covariance to a filename with "_" instead of "&" between the tracers
-            cov_name_cross = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # combined cov name
+            cov_name_cross = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # cross-only cov name
             my_make(cov_name_cross, [cov_name_rescaled], lambda: convert_txt_cov_multi_to_cross(cov_name_rescaled, cov_name_cross))
 
 # Save the updated hash dictionary
