@@ -203,7 +203,7 @@ for tlabels, z_range, these_alphas_ext in zip(tracers, zs, alphas_ext):
             # Recipe: run combine covs
 
             # Export cross-only covariance to a filename with "_" instead of "&" between the tracers
-            cov_name_cross = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # combined cov name
+            cov_name_cross = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # cross-only cov name
             my_make(cov_name_cross, [cov_name], lambda: convert_txt_cov_multi_to_cross(cov_name, cov_name_cross))
 
         if len(reg_results_rescaled) == len(regs): # if we have RascalC rescaled results for all regions
@@ -215,7 +215,7 @@ for tlabels, z_range, these_alphas_ext in zip(tracers, zs, alphas_ext):
             # Recipe: run combine covs
 
             # Export cross-only covariance to a filename with "_" instead of "&" between the tracers
-            cov_name_cross = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # combined cov name
+            cov_name_cross = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # cross-only cov name
             my_make(cov_name_cross, [cov_name_rescaled], lambda: convert_txt_cov_multi_to_cross(cov_name_rescaled, cov_name_cross))
 
 # Save the updated hash dictionary
