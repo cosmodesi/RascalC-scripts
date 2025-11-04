@@ -113,6 +113,7 @@ if njack: data_ref_filenames = [input_dir + f"mock1/recon_sm{sm}_{rectype}/{tlab
 
 # Load pycorr counts
 pycorr_allcounts = [0] * len(pycorr_filenames)
+mock_xis = [[] for _ in pycorr_filenames]
 input_xis = [0] * len(pycorr_filenames)
 ndata = [None] * 2
 for c, pycorr_filenames_group in enumerate(pycorr_filenames):
@@ -122,7 +123,8 @@ for c, pycorr_filenames_group in enumerate(pycorr_filenames):
         cumulative_ndata += these_counts.D1D2.size1 # accumulate number of data
         # reshape for covariance
         if mbin: assert these_counts.shape[1] % (2 * mbin) == 0, "Angular rebinning is not possible"
-        pycorr_allcounts[c] += these_counts[::these_counts.shape[0] // nbin][skip_nbin_pre:, ::these_counts.shape[1] // 2 // mbin if mbin else 1].wrap()
+        mock_xis[c].append(these_counts[::these_counts.shape[0] // nbin][skip_nbin_pre:, ::these_counts.shape[1] // 2 // mbin if mbin else 1].wrap())
+        pycorr_allcounts[c] += mock_xis[c][-1]
         # reshape for input correlation function
         if mbin_cf: assert these_counts.shape[1] % (2 * mbin_cf) == 0, "Angular rebinning is not possible"
         input_xis[c] += these_counts[::these_counts.shape[0] // nbin_cf, ::these_counts.shape[1] // 2 // mbin_cf if mbin_cf else 1].wrap()
@@ -130,6 +132,7 @@ for c, pycorr_filenames_group in enumerate(pycorr_filenames):
 # add None's for missing counts
 ncorr_max = 3 # maximum number of correlations
 pycorr_allcounts += [None] * (ncorr_max - len(pycorr_filenames))
+mock_xis += [None] * (ncorr_max - len(pycorr_filenames))
 input_xis += [None] * (ncorr_max - len(pycorr_filenames))
 
 # Load randoms and galaxy catalogs
@@ -161,4 +164,5 @@ results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
                   randoms_positions2 = randoms_positions[1], randoms_weights2 = randoms_weights[1], randoms_samples2 = randoms_samples[1],
                   normalize_wcounts = True,
                   out_dir = outdir, tmp_dir = tmpdir,
+                  xi_11_samples = mock_xis[0], xi_12_samples = mock_xis[1], xi_22_samples = mock_xis[2],
                   skip_s_bins = skip_nbin_post, skip_l = skip_l_post)
