@@ -99,7 +99,7 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Common part of the path to avoid repetitions
-input_dir = f"/global/cfs/cdirs/desi/survey/catalogs/Y1/mocks/SecondGenMocks/EZmock/desipipe/{version_label}/ffa/2pt/"
+input_dir = f"/dvs_ro/cfs/cdirs/desi/survey/catalogs/Y1/mocks/SecondGenMocks/EZmock/desipipe/{version_label}/ffa/2pt/"
 
 # Filenames for saved pycorr counts
 split_above = 20
