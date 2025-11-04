@@ -44,7 +44,6 @@ mbin_cf = 10 # number of angular (mu) bins for input 2PCF
 # Settings related to time and convergence
 
 nthread = 128 # number of OMP threads to use
-n_loops = 1024 # number of integration loops per filename
 loops_per_sample = 64 # number of loops to collapse into one subsample
 N2 = 5 # number of secondary cells/particles per primary cell
 N3 = 10 # number of third cells/particles per secondary cell/particle
@@ -57,11 +56,6 @@ rectype = "IFFT_recsym" # reconstruction type
 
 id = int(sys.argv[1]) # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
-# known cases where more loops are needed consistently
-if id in (4,): n_loops *= 2
-elif id in (0, 1, 3, 15): n_loops *= 3
-elif id in (2, 14): n_loops *= 4
-elif id in (17,): n_loops //= 2 # QSO NGC converge well and take rather long time
 
 id //= 2 # extracted all needed info from parity, move on
 tracers = ['LRG'] * 4 + ['ELG_LOP'] * 3 + ['BGS_BRIGHT-21.5', 'QSO']
@@ -73,7 +67,23 @@ ns_randoms = [8] * 4 + [10] * 3 + [1, 4] # BGS missing but presumed 1 random
 tlabels = [tracers[id]] # tracer labels for filenames
 sm = sms[id] # smoothing scale in Mpc/h
 nrandoms = ns_randoms[id]
-z_min, z_max = zs[id] # for redshift cut and filenames
+z_min, z_max = (z_range := tuple(zs[id])) # for redshift cut and filenames
+
+# set the number of integration loops based on tracer, z range and region
+n_loops = {'LRG': {(0.4, 0.6): {'SGC': 3072,
+                                'NGC': 3072},
+                   (0.6, 0.8): {'SGC': 4096,
+                                'NGC': 3072},
+                   (0.8, 1.1): {'SGC': 2048,
+                                'NGC': 1024}},
+           'ELG_LOP': {(0.8, 1.1): {'SGC': 1024,
+                                    'NGC': 1024},
+                       (1.1, 1.6): {'SGC': 1024,
+                                    'NGC': 1024}},
+           'BGS_BRIGHT-21.5': {(0.1, 0.4): {'SGC': 4096,
+                                            'NGC': 3072}},
+           'QSO': {(0.8, 2.1): {'SGC': 1024,
+                                'NGC': 512}}}[tlabels[0]][z_range][reg]
 
 # Output and temporary directories
 
