@@ -7,12 +7,15 @@ from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
 
-def prevent_override(filename: str, max_num: int = 10) -> str: # append _{number} to filename to prevent override
+def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory exists, rename it with a numeric suffix
+    if not os.path.exists(filename): return
     for i in range(max_num+1):
-        trial_name = filename + ("_" + str(i)) * bool(i) # will be filename for i=0
-        if not os.path.exists(trial_name): return trial_name
-    print(f"Could not prevent override of {filename}, aborting.")
-    sys.exit(1)
+        trial_name = filename + ("_" + str(i))
+        if not os.path.exists(trial_name):
+            os.rename(filename, trial_name)
+            print(f"Found existing {filename}, renamed into {trial_name}.")
+            return
+    raise RuntimeError(f"Could not back up {filename}, aborting.")
 
 def read_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, FKP_weight: bool = True):
     catalog = Table.read(filename)
@@ -87,8 +90,10 @@ n_loops = {'LRG': {(0.4, 0.6): {'SGC': 3072,
 
 # Output and temporary directories
 
-outdir = prevent_override(os.path.join(f"recon_sm{sm}_{rectype}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")) # output file directory
-tmpdir = os.path.join("tmpdirs", outdir) # directory to write intermediate files, kept in a different subdirectory for easy deletion
+outdir_base = os.path.join(f"recon_sm{sm}_{rectype}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir = os.path.join("outdirs", outdir_base) # output file directory
+tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
+preserve(outdir) # rename the directory if it exists to prevent overwriting
 
 # Form correlation function labels
 assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
