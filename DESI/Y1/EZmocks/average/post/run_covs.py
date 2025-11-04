@@ -108,10 +108,14 @@ input_dir = f"/dvs_ro/cfs/cdirs/desi/survey/catalogs/Y1/mocks/SecondGenMocks/EZm
 # Filenames for saved pycorr counts
 split_above = 20
 pycorr_filenames = [[input_dir + f"mock{i+1}/recon_sm{sm}_{rectype}/xi/smu/allcounts_{corlabel}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{nrandoms}_njack{njack}_split{split_above}.npy" for i in range(1000)] for corlabel in corlabels]
+print("pycorr filenames:", pycorr_filenames)
 
 # Filenames for randoms and galaxy catalogs
 random_filenames = [[input_dir + f"mock1/recon_sm{sm}_{rectype}/{tlabel}_{reg}_{i}_clustering.ran.fits" for i in range(nrandoms)] for tlabel in tlabels]
-if njack: data_ref_filenames = [input_dir + f"mock1/recon_sm{sm}_{rectype}/{tlabel}_{reg}_clustering.dat.fits" for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+print("Random filenames:", random_filenames)
+if njack:
+    data_ref_filenames = [input_dir + f"mock1/recon_sm{sm}_{rectype}/{tlabel}_{reg}_clustering.dat.fits" for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+    print("Data filenames:", data_ref_filenames)
 
 # Load pycorr counts
 pycorr_allcounts = [0] * len(pycorr_filenames)
