@@ -5,12 +5,10 @@ from datetime import datetime
 import pickle
 import hashlib
 from typing import Callable
-from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect_raw_covariance_matrices
-from RascalC.post_process.legendre import post_process_legendre
-from RascalC.post_process.legendre_mix_jackknife import post_process_legendre_mix_jackknife
+from RascalC.raw_covariance_matrices import collect_raw_covariance_matrices
+from RascalC import post_process_auto
+from RascalC.utils import blank_function
 from RascalC.pycorr_utils.sample_cov_multipoles import sample_cov_multipoles_from_pycorr_files
-from RascalC.post_process.legendre_mocks import post_process_legendre_mocks
-from RascalC.convergence_check_extra import convergence_check_extra
 from RascalC.cov_utils import export_cov_legendre
 from RascalC.comb.combine_covs_legendre import combine_covs_legendre
 
@@ -27,7 +25,7 @@ mocks = 1
 version_label = "v1"
 rectype = "IFFT_recsym" # reconstruction type
 
-input_dir = f"/global/cfs/cdirs/desi/survey/catalogs/Y1/mocks/SecondGenMocks/EZmock/desipipe/{version_label}/ffa/2pt/"
+input_dir = f"/dvs_ro/cfs/cdirs/desi/survey/catalogs/Y1/mocks/SecondGenMocks/EZmock/desipipe/{version_label}/ffa/2pt/"
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
@@ -129,20 +127,15 @@ for tracer, (z_min, z_max), sm, nrandoms in zip(tracers, zs, sms, ns_randoms):
 
         # Gaussian covariances
 
-        results_name = os.path.join(outdir, 'Rescaled_Covariance_Matrices_Legendre_n%d_l%d.npz' % (nbin, max_l))
+        results_name = post_process_auto(outdir, load_sample_cov=False, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=blank_function, dry_run=True)["path"]
         reg_results.append(results_name)
-        cov_name = "cov_txt/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
-        this_reg_pycorr_filenames = [input_dir + f"mock{i+1}/recon_sm{sm}_{rectype}/xi/smu/allcounts_{tracer}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{nrandoms}_njack{njack}_split{split_above}.npy" for i in range(1000)]
-        reg_pycorr_names.append(this_reg_pycorr_filenames[0])
 
-        def make_gaussian_cov():
-            results = post_process_legendre(outdir, nbin, max_l, outdir, skip_r_bins = skip_r_bins, skip_l = skip_l, print_function = print_and_log)
-            convergence_check_extra(results, print_function = print_and_log)
+        cov_name = "cov_txt/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
         # RascalC results depend on full output (most straightforwardly)
-        my_make(results_name, [raw_name], make_gaussian_cov)
-        # Recipe: run post-processing
-        # Also perform convergence check (optional but nice)
+        my_make(results_name, [raw_name],
+                lambda: post_process_auto(outdir, load_sample_cov=False, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log))
+        # Recipe: run post-processing; extra convergence check included by default
 
         # Individual cov file depends on RascalC results
         my_make(cov_name, [results_name], lambda: export_cov_legendre(results_name, max_l, cov_name))
@@ -153,22 +146,20 @@ for tracer, (z_min, z_max), sm, nrandoms in zip(tracers, zs, sms, ns_randoms):
 
         # Jackknife post-processing
         if jackknife:
-            results_name_jack = os.path.join(outdir, 'Rescaled_Covariance_Matrices_Legendre_Jackknife_n%d_l%d_j%d.npz' % (nbin, max_l, njack))
+            results_name_jack = post_process_auto(outdir, load_sample_cov=False, jackknife=True, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=blank_function, dry_run=True)["path"]
             reg_results_rescaled.append(results_name_jack)
-            xi_jack_name = os.path.join(outdir, f"xi_jack/xi_jack_n{nbin}_m{mbin}_j{njack}_11.dat")
-
-            def make_rescaled_cov():
-                results = post_process_legendre_mix_jackknife(xi_jack_name, os.path.join(outdir, 'weights'), outdir, mbin, max_l, outdir, skip_r_bins = skip_r_bins, skip_l = skip_l, print_function = print_and_log)
-                convergence_check_extra(results, print_function = print_and_log)
 
             # RascalC results depend on full output (most straightforwardly)
-            my_make(results_name_jack, [raw_name], make_rescaled_cov)
-            # Recipe: run post-processing
-            # Also perform convergence check (optional but nice)
+            my_make(results_name_jack, [raw_name],
+                    lambda: post_process_auto(outdir, load_sample_cov=False, jackknife=True, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log))
+            # Recipe: run post-processing; extra convergence check included by default
 
             # Individual cov file depends on RascalC results
             my_make(cov_name_rescaled, [results_name_jack], lambda: export_cov_legendre(results_name_jack, max_l, cov_name_rescaled))
             # Recipe: run convert cov
+
+        this_reg_pycorr_filenames = [input_dir + f"mock{i+1}/recon_sm{sm}_{rectype}/xi/smu/allcounts_{tracer}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{nrandoms}_njack{njack}_split{split_above}.npy" for i in range(1000)]
+        reg_pycorr_names.append(this_reg_pycorr_filenames[0])
         
         # Mock post-processing
         if mocks:
@@ -176,17 +167,13 @@ for tracer, (z_min, z_max), sm, nrandoms in zip(tracers, zs, sms, ns_randoms):
             mock_cov_name = "cov_txt/xi" + xilabel + "_" + "_".join(tlabels + [rectype, f"sm{sm}", reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
             my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_pycorr_files([this_reg_pycorr_filenames], mock_cov_name, max_l = max_l, r_step = r_step, r_max = rmax)) # empty dependencies mean make only if does not exist
 
-            results_name_mocks = os.path.join(outdir, 'Rescaled_Covariance_Matrices_Legendre_Mocks_n%d_l%d.npz' % (nbin, max_l))
+            results_name_mocks = post_process_auto(outdir, load_sample_cov=True, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=blank_function, dry_run=True)["path"]
             reg_results_rescaled.append(results_name_mocks)
 
-            def make_rescaled_cov():
-                results = post_process_legendre_mocks(mock_cov_name, outdir, nbin, max_l, outdir, skip_r_bins = skip_r_bins, skip_l = skip_l, print_function = print_and_log)
-                convergence_check_extra(results, print_function = print_and_log)
-
             # RascalC results depend on full output (most straightforwardly)
-            my_make(results_name_mocks, [raw_name], make_rescaled_cov)
-            # Recipe: run post-processing
-            # Also perform convergence check (optional but nice)
+            my_make(results_name_mocks, [raw_name],
+                    lambda: post_process_auto(outdir, load_sample_cov=True, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log))
+            # Recipe: run post-processing; extra convergence check included by default
 
             # Individual cov file depends on RascalC results
             my_make(cov_name_rescaled, [results_name_mocks], lambda: export_cov_legendre(results_name_mocks, max_l, cov_name_rescaled))
