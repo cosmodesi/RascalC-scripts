@@ -63,7 +63,7 @@ reg = "NGC" if id%2 else "SGC" # region for filenames
 id //= 2 # extracted all needed info from parity, move on
 tracers = ['LRG'] * 3 + ['ELG_LOP'] * 2 + ['LRG+ELG_LOP', 'BGS_BRIGHT-21.5', 'QSO']
 zs = [[0.4, 0.6], [0.6, 0.8], [0.8, 1.1], [0.8, 1.1], [1.1, 1.6], [0.8, 1.1], [0.1, 0.4], [0.8, 2.1]]
-sms = [15] * 8 + [30]
+sms = [15] * 7 + [30]
 ns_randoms = [8] * 3 + [10] * 3 + [1, 4] # BGS missing but presumed 1 random
 # need 2 * 8 = 16 jobs in this array
 
