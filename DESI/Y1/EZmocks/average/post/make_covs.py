@@ -124,6 +124,7 @@ for tracer, (z_min, z_max), sm, nrandoms in zip(tracers, zs, sms, ns_randoms):
         raw_name = os.path.join(outdir, f"Raw_Covariance_Matrices_n{nbin}_l{max_l}.npz")
         if not os.path.isfile(raw_name): # run the raw matrix collection, which creates this file. Non-existing file breaks the logic in my_make()
             collect_raw_covariance_matrices(outdir, print_function = print_and_log)
+            if not os.path.isfile(raw_name): continue # if nothing was found, can not proceed — this will produce errors
 
         # Gaussian covariances
 
