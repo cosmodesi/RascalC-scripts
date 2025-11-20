@@ -18,7 +18,6 @@ rmax = 200 # maximum output cov radius in Mpc/h
 
 jackknife = 0
 njack = 60 if jackknife else 0
-if jackknife: mbin = 100
 
 mocks = 1
 
