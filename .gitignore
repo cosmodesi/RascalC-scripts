@@ -5,6 +5,7 @@ cov_txt
 slurm-*.out
 make_covs.*.*
 *.npy
+*.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
