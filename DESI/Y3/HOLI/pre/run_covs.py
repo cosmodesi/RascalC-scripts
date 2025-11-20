@@ -1,9 +1,10 @@
-### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2024).
+### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2025).
 import sys, os
 import numpy as np
-from astropy.table import Table, vstack
+from astropy.table import vstack
 import desi_y3_files.file_manager as desi_y3_file_manager
 from pycorr import TwoPointCorrelationFunction, KMeansSubsampler
+from LSS.common_tools import read_hdf5_blosc
 from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
@@ -25,7 +26,7 @@ def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory 
     raise RuntimeError(f"Could not back up {filename}, aborting.")
 
 def read_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, FKP_weight: bool = True):
-    catalog = Table.read(filename)
+    catalog = read_hdf5_blosc(filename)
     if FKP_weight: catalog["WEIGHT"] *= catalog["WEIGHT_FKP"] # apply FKP weight multiplicatively
     catalog.keep_columns(["RA", "DEC", "Z", "WEIGHT"]) # discard everything else
     filtering = np.logical_and(catalog["Z"] >= z_min, catalog["Z"] <= z_max) # logical index of redshifts within the range
@@ -60,14 +61,6 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
-verspec = 'loa-v1'
-version = "v1.1"
-conf = "BAO/unblinded"
-
-# Set DESI CFS before creating the file manager
-os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
-
-fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
@@ -115,13 +108,9 @@ n_loops = {'LRG': {(0.4, 0.6): {'SGC': 1536,
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
-common_setup = {"region": reg, "version": version, "grid_cosmo": None}
-xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
-xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives
-
 # Output and temporary directories
 
-outdir_base = os.path.join(verspec, version, conf, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir_base = "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}" # may want to add versioning later
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 preserve(outdir) # rename the directory if it exists to prevent overwriting
@@ -131,15 +120,19 @@ assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
 corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
+catalog_dir = "/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/Holi/seed0202/altmtl202/loa-v1/mock202/LSScats"
+
 # Filenames for saved pycorr counts
-pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_y3', tracer = corlabel, **(common_setup | xi_setup))] for corlabel in corlabels]
+# may want to move them into catalog_dir
+pycorr_filenames = [[f"xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran4_split20.npy"] for corlabel in corlabels]
+# will probably need to adjust the number of randoms when run beyond LRG
 print("pycorr filenames:", pycorr_filenames)
 
 # Filenames for randoms and galaxy catalogs
-random_filenames = [[f.filepath for f in fm.select(id = 'catalog_randoms_y3', tracer = tlabel, iran = range(nrandoms), **common_setup)] for tlabel in tlabels]
+random_filenames = [[f"{catalog_dir}/{tlabel}_{reg}_{i}_clustering.ran.h5" for i in range(nrandoms)] for tlabel in tlabels]
 print("Random filenames:", random_filenames)
 if njack:
-    data_ref_filenames = [fm.select(id = 'catalog_data_y3', tracer = tlabel, **common_setup)[0].filepath for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+    data_ref_filenames = [f"{catalog_dir}/{tlabel}_{reg}_clustering.dat.h5" for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
     print("Data filenames:", data_ref_filenames)
 
 # Load pycorr counts
@@ -176,7 +169,7 @@ for t in range(len(tlabels)):
     # create jackknives
     if njack:
         data_catalog = read_catalog(data_ref_filenames[t], z_min = z_min, z_max = z_max)
-        subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', nsamples = njack, nside = 512, random_state = 42)
+        subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
         randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]

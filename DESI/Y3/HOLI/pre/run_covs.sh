@@ -10,7 +10,7 @@
 ##SBATCH --array=0-11,14,15,22,23 # only -21.35 z0.1-0.4 for BGS, and all other tracers
 #SBATCH --array=0-5 # only LRG
 
-# load cosmodesi environment
+# load cosmodesi test environment
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh test
 
 python -u run_covs.py $SLURM_ARRAY_TASK_ID
