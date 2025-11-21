@@ -6,11 +6,9 @@ import pickle
 import hashlib
 from typing import Callable
 import traceback
-import desi_y3_files.file_manager as desi_y3_file_manager
 from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect_raw_covariance_matrices
-from RascalC.post_process.legendre import post_process_legendre
-from RascalC.post_process.legendre_mix_jackknife import post_process_legendre_mix_jackknife
-from RascalC.convergence_check_extra import convergence_check_extra
+from RascalC import post_process_auto
+from RascalC.utils import blank_function
 from RascalC.cov_utils import export_cov_legendre
 from RascalC.comb.combine_covs_legendre import combine_covs_legendre
 
@@ -20,7 +18,6 @@ rmax = 200 # maximum output cov radius in Mpc/h
 
 jackknife = 1
 njack = 60 if jackknife else 0
-if jackknife: mbin = 100
 
 skip_r_bins = 5
 skip_l = 0
@@ -31,14 +28,6 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
-verspec = 'loa-v1'
-version = "v1.1"
-conf = "BAO/unblinded"
-
-# Set DESI CFS before creating the file manager
-os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
-
-fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
@@ -115,12 +104,9 @@ for tracer, z_range in zip(tracers, zs):
     tlabels = [tracer]
     z_min, z_max = z_range
     reg_results = []
-    # get options automatically
-    xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tlabels[0], z_range)
-    xi_setup.update({"version": version, "tracer": tracer, "region": regs, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
     if jackknife: reg_results_jack = []
     for reg in regs:
-        outdir = os.path.join("outdirs", verspec, version, conf, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
+        outdir = os.path.join("outdirs", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory; may want to add versioning later
         if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
             outdirs_w_suffixes = [outdir + "_" + str(i) for i in range(11)] # append suffixes
             outdirs_w_suffixes = [dirname for dirname in outdirs_w_suffixes if os.path.isdir(dirname)] # filter only existing dirs
@@ -133,20 +119,16 @@ for tracer, z_range in zip(tracers, zs):
 
         # Gaussian covariances
 
-        results_name = os.path.join(outdir, 'Rescaled_Covariance_Matrices_Legendre_n%d_l%d.npz' % (nbin, max_l))
+        results_name = post_process_auto(outdir, load_sample_cov=False, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=blank_function, dry_run=True)["path"]
         reg_results.append(results_name)
 
-        cov_dir = f"cov_txt/{verspec}/{version}/{conf}"
+        cov_dir = "cov_txt" # may want to add versioning later
         cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
-        def make_gaussian_cov():
-            results = post_process_legendre(outdir, nbin, max_l, outdir, skip_r_bins = skip_r_bins, skip_l = skip_l, print_function = print_and_log)
-            convergence_check_extra(results, print_function = print_and_log)
-
         # RascalC results depend on full output (most straightforwardly)
-        my_make(results_name, [raw_name], make_gaussian_cov)
-        # Recipe: run post-processing
-        # Also perform convergence check (optional but nice)
+        my_make(results_name, [raw_name],
+                lambda: post_process_auto(outdir, load_sample_cov=False, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log))
+        # Recipe: run post-processing; extra convergence check included by default
 
         # Individual cov file depends on RascalC results
         my_make(cov_name, [results_name], lambda: export_cov_legendre(results_name, max_l, cov_name))
@@ -154,18 +136,13 @@ for tracer, z_range in zip(tracers, zs):
 
         # Jackknife post-processing
         if jackknife:
-            results_name_jack = os.path.join(outdir, 'Rescaled_Covariance_Matrices_Legendre_Jackknife_n%d_l%d_j%d.npz' % (nbin, max_l, njack))
+            results_name_jack = post_process_auto(outdir, load_sample_cov=False, jackknife=True, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=blank_function, dry_run=True)["path"]
             reg_results_jack.append(results_name_jack)
-            xi_jack_name = os.path.join(outdir, f"xi_jack/xi_jack_n{nbin}_m{mbin}_j{njack}_11.dat")
-
-            def make_rescaled_cov():
-                results = post_process_legendre_mix_jackknife(xi_jack_name, os.path.join(outdir, 'weights'), outdir, mbin, max_l, outdir, skip_r_bins = skip_r_bins, skip_l = skip_l, print_function = print_and_log)
-                convergence_check_extra(results, print_function = print_and_log)
 
             # RascalC results depend on full output (most straightforwardly)
-            my_make(results_name_jack, [raw_name], make_rescaled_cov)
-            # Recipe: run post-processing
-            # Also perform convergence check (optional but nice)
+            my_make(results_name_jack, [raw_name],
+                    lambda: post_process_auto(outdir, load_sample_cov=False, jackknife=True, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log))
+            # Recipe: run post-processing; extra convergence check included by default
 
             cov_name_jack = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt"
             # Individual cov file depends on RascalC results
@@ -173,7 +150,9 @@ for tracer, z_range in zip(tracers, zs):
             # Recipe: run convert cov
 
     # obtain the counts names
-    reg_pycorr_names = [f.filepath for f in fm.select(id = 'correlation_y3', **xi_setup)]
+    # may want to move them into catalog_dir
+    reg_pycorr_names = [f"xi/smu/allcounts_{tracer}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran4_split20.npy" for reg in regs]
+    # will probably need to adjust the number of randoms when run beyond LRG
 
     if len(reg_pycorr_names) == len(regs): # if we have pycorr files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions
