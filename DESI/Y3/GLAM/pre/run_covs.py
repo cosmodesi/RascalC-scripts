@@ -123,8 +123,7 @@ if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-corre
 catalog_dir = "/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/Glam-Uchuu_Y3/altmtl11/loa-v1/mock11/LSScats"
 
 # Filenames for saved pycorr counts
-# may want to move them into catalog_dir
-pycorr_filenames = [[f"xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran4_split20.npy"] for corlabel in corlabels]
+pycorr_filenames = [[f"{catalog_dir}/xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran4_split20.npy"] for corlabel in corlabels]
 # will probably need to adjust the number of randoms when run beyond LRG
 print("pycorr filenames:", pycorr_filenames)
 
