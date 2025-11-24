@@ -80,7 +80,7 @@ if tlabels[0].startswith("BGS"): nrandoms = 1 # override 1 random catalog for an
 if tlabels[0] == 'BGS_BRIGHT-20.2': N3 *= 2; N4 *= 4
 
 # set the number of integration loops based on tracer, z range and region
-n_loops = {'LRG': {(0.4, 0.6): {'SGC': 2048,
+n_loops = {'LRG': {(0.4, 0.6): {'SGC': 3072,
                                 'NGC': 1536},
                    (0.6, 0.8): {'SGC': 1536,
                                 'NGC': 1024},
