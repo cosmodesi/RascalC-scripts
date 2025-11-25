@@ -28,6 +28,7 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
+catalog_dir = "/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/Holi/seed0202/altmtl202/loa-v1/mock202/LSScats"
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
@@ -150,8 +151,7 @@ for tracer, z_range in zip(tracers, zs):
             # Recipe: run convert cov
 
     # obtain the counts names
-    # may want to move them into catalog_dir
-    reg_pycorr_names = [f"xi/smu/allcounts_{tracer}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran4_split20.npy" for reg in regs]
+    reg_pycorr_names = [f"{catalog_dir}/xi/smu/allcounts_{tracer}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran4_split20.npy" for reg in regs]
     # will probably need to adjust the number of randoms when run beyond LRG
 
     if len(reg_pycorr_names) == len(regs): # if we have pycorr files for all regions
