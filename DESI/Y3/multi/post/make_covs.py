@@ -43,8 +43,8 @@ fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracers = [['ELG_LOPnotqso', 'QSO']]
-zs = [(1.1, 1.6)]
+tracers = [['LRG', 'ELG_LOPnotqso'], ['ELG_LOPnotqso', 'QSO']]
+zs = [(0.8, 1.1), (1.1, 1.6)]
 
 # for custom cross-counts
 nrandoms = 5
@@ -180,12 +180,14 @@ for tlabels, z_range in zip(tracers, zs):
 
     # get the pycorr filenames from the file manager
     reg_pycorr_names = []
-    for tracer in tlabels[:1]:
-        xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tracer, z_range, recon=True)
-        xi_setup.update({"version": version, "tracer": tracer, "region": regs, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
-        reg_pycorr_names += [[f.filepath for f in fm.select(id = 'correlation_recon_y3', **xi_setup)]]
-    # add the customized path to the cross-correlation and second auto-correlation
-    reg_pycorr_names += [[os.environ["DESICFS"] + f"/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/{recon_spec}/xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split{split_above}.npy" for reg in regs] for corlabel in corlabels[1:]]
+    # customized path
+    reg_pycorr_names += [[os.environ["DESICFS"] + f"/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/{recon_spec}/xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split{split_above}.npy" for reg in regs] for corlabel in corlabels]
+    # substitute standard path when needed (inelegant but it works)
+    if tlabels == ['ELG_LOPnotqso', 'QSO']:
+        for tracer in tlabels[:1]:
+            xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tracer, z_range, recon=True)
+            xi_setup.update({"version": version, "tracer": tracer, "region": regs, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
+            reg_pycorr_names += [[f.filepath for f in fm.select(id = 'correlation_recon_y3', **xi_setup)]]
     # finally, transpose so that the first index is region and the second is type of correlation in order: auto1, cross, auto2
     reg_pycorr_names = [[reg_pycorr_names[i_corr][i_reg] for i_corr in range(3)] for i_reg in range(2)]
 
