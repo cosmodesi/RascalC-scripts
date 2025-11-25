@@ -72,21 +72,31 @@ fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
-# need 2 jobs in this array
 
-tlabels = ('ELG_LOPnotqso', 'QSO') # tracer labels for filenames
-nrandoms = 5
-z_range = (1.1, 1.6) # for redshift cut and filenames
+id //= 2 # extracted all needed info from parity, move on
+tracers = [('LRG', 'ELG_LOPnotqso'), ('ELG_LOPnotqso', 'QSO')]
+zs = [(0.8, 1.1), (1.1, 1.6)]
+# need 4 jobs in this array
+
+tlabels = tuple(tracers[id]) # tracer labels for filenames
+z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
+nrandoms = 5
 
 # set the number of integration loops based on tracers, z range and region
-n_loops = {('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 512,
+n_loops = {('LRG', 'ELG_LOPnotqso'): {(0.8, 1.1): {'SGC': 512,
+                                                   'NGC': 512}},
+           ('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 512,
                                                    'NGC': 512}}}[tlabels][z_range][reg]
 # set the base RNG seed (for reproducibility) also based on tracers, z range and region
-seed = {('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 5872789,
+seed = {('LRG', 'ELG_LOPnotqso'): {(0.8, 1.1): {'SGC': 7084102,
+                                                'NGC': 7084102}},
+        ('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 5872789,
                                                 'NGC': 143307}}}[tlabels][z_range][reg]
 # skip the finished integrals in each case
-start_integral = {('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 6,
+start_integral = {('LRG', 'ELG_LOPnotqso'): {(0.8, 1.1): {'SGC': 1,
+                                                          'NGC': 1}},
+                  ('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 6,
                                                           'NGC': 4}}}[tlabels][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
@@ -115,9 +125,13 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved pycorr counts
-pycorr_filenames = [[f.filepath for f in fm.select(id = 'correlation_recon_y3', tracer = tlabel, **(common_setup | xi_setup))] for tlabel in tlabels[:1]] # retrieve the first auto-correlation from the file manager
+# customized path
 split_above = 20
-pycorr_filenames += [[os.environ["DESICFS"] + f"/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/{recon_spec}/xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split{split_above}.npy"] for corlabel in corlabels[1:]] # add the customized path to the cross-correlation and second auto-correlation
+pycorr_filenames = [[os.environ["DESICFS"] + f"/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/{recon_spec}/xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split{split_above}.npy"] for corlabel in corlabels]
+# substitute some paths from the file manager
+if tlabels == ('ELG_LOPnotqso', 'QSO'):
+    for i_t, tracer in enumerate(tlabels[:1]):
+        pycorr_filenames[2*i_t] = [f.filepath for f in fm.select(id = 'correlation_recon_y3', tracer = tracer, **(common_setup | xi_setup))]
 print("pycorr filenames:", pycorr_filenames)
 
 if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms

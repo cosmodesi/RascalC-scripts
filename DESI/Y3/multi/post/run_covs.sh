@@ -6,6 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128 # 128 hyperthreads = 64 physical cores
 #SBATCH --job-name=RascalC-Y3-v1.1-BAO-unblinded-ELGxQSO
+##SBATCH --array=0-3 # all jobs
 #SBATCH --array=0-1
 
 # load cosmodesi environment
