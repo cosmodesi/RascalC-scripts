@@ -11,7 +11,7 @@
 ##SBATCH --array=0-5 # only LRG
 #SBATCH --array=0 # re-run the badly converged case
 
-# load cosmodesi test environment
-source /global/common/software/desi/users/adematti/cosmodesi_environment.sh test
+# load cosmodesi 2025_05 (old test) environment
+source /global/common/software/desi/users/adematti/cosmodesi_environment.sh 2025_05
 
 python -u run_covs.py $SLURM_ARRAY_TASK_ID
