@@ -110,7 +110,10 @@ assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}
 
 # Output and temporary directories
 
-outdir_base = "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}" # may want to add versioning later
+mock_id = 451
+catalog_dir = f"/global/cfs/cdirs/desi/mocks/cai/LSS/DA2/mocks/holi_v1/altmtl{mock_id}/loa-v1/mock{mock_id}/LSScats"
+
+outdir_base = os.path.join(f"altmtl{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 preserve(outdir) # rename the directory if it exists to prevent overwriting
@@ -119,8 +122,6 @@ preserve(outdir) # rename the directory if it exists to prevent overwriting
 assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
 corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
-
-catalog_dir = "/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/Holi/seed0202/altmtl202/loa-v1/mock202/LSScats"
 
 # Filenames for saved pycorr counts
 pycorr_filenames = [[f"{catalog_dir}/xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran4_split20.npy"] for corlabel in corlabels]

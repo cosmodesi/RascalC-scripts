@@ -28,7 +28,8 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
-catalog_dir = "/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/Holi/seed0202/altmtl202/loa-v1/mock202/LSScats"
+mock_id = 451
+catalog_dir = f"/global/cfs/cdirs/desi/mocks/cai/LSS/DA2/mocks/holi_v1/altmtl{mock_id}/loa-v1/mock{mock_id}/LSScats"
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
@@ -107,7 +108,7 @@ for tracer, z_range in zip(tracers, zs):
     reg_results = []
     if jackknife: reg_results_jack = []
     for reg in regs:
-        outdir = os.path.join("outdirs", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory; may want to add versioning later
+        outdir = os.path.join(f"outdirs/altmtl{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
         if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
             outdirs_w_suffixes = [outdir + "_" + str(i) for i in range(11)] # append suffixes
             outdirs_w_suffixes = [dirname for dirname in outdirs_w_suffixes if os.path.isdir(dirname)] # filter only existing dirs
@@ -123,7 +124,7 @@ for tracer, z_range in zip(tracers, zs):
         results_name = post_process_auto(outdir, load_sample_cov=False, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=blank_function, dry_run=True)["path"]
         reg_results.append(results_name)
 
-        cov_dir = "cov_txt" # may want to add versioning later
+        cov_dir = f"cov_txt/altmtl{mock_id}"
         cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
         # RascalC results depend on full output (most straightforwardly)
