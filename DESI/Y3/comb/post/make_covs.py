@@ -31,6 +31,7 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 verspec = 'loa-v1'
 version = "v1.1"
 conf = "unblinded"
+conf_alt = "BAO/unblinded"
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
@@ -110,7 +111,7 @@ for tracer, z_range, nrandoms, recon_zrange in zip(tracers, zs, ns_randoms, reco
     z_min, z_max = z_range
     reg_results = []
     # recon options
-    xi_setup = {'smoothing_radius': 15, 'algorithm': 'IFFT', 'mode': 'recsym', 'recon_zrange': recon_zranges[id], 'recon_weighting': 'default'}
+    xi_setup = {'smoothing_radius': 15, 'algorithm': 'IFFT', 'mode': 'recsym', 'recon_zrange': recon_zrange, 'recon_weighting': 'default'}
     recon_spec = 'recon_sm{smoothing_radius:.0f}_{algorithm}_{mode}'.format_map(xi_setup) # recon specifier string
     recon_spec += '' if (zr := xi_setup['recon_zrange']) is None else '_z{zrange[0]:.1f}-{zrange[1]:.1f}'.format(zrange = zr)
     recon_spec += '' if (w := xi_setup['recon_weighting']) == 'default' else '_{}'.format(w)
@@ -132,7 +133,7 @@ for tracer, z_range, nrandoms, recon_zrange in zip(tracers, zs, ns_randoms, reco
         results_name = post_process_auto(outdir, load_sample_cov=False, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=blank_function, dry_run=True)["path"]
         reg_results.append(results_name)
 
-        cov_dir = f"cov_txt/{verspec}/{version}/{conf}/{recon_spec}"
+        cov_dir = f"cov_txt/{verspec}/{version}/{conf_alt}/{recon_spec}"
         cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
         # RascalC results depend on full output (most straightforwardly)
