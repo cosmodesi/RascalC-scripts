@@ -60,7 +60,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
 verspec = 'loa-v1'
-version = "v1.1"
+version = "v2"
 conf = "PIP"
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
@@ -78,7 +78,7 @@ nrandoms = 1
 
 # set the number of integration loops based on tracer, z range and region
 n_loops = {'BGS_ANY-21.35': {(0.1, 0.4): {'SGC': 3072,
-                                             'NGC': 1024}}}[tlabels[0]][z_range][reg]
+                                          'NGC': 1536}}}[tlabels[0]][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
@@ -96,12 +96,12 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved pycorr counts
-catalog_subdir = f"{verspec}/LSScats/{version}/{conf}/"
+catalog_subdir = f"{verspec}/LSScats/{version}/{conf}"
 pycorr_filenames = [[f"{catalog_subdir}/xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split20.npy"] for corlabel in corlabels]
 print("pycorr filenames:", pycorr_filenames)
 
 # Filenames for randoms and galaxy catalogs
-catalog_dir = f"/dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/LSS/{catalog_subdir}/"
+catalog_dir = f"/dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/LSS/{catalog_subdir}"
 random_filenames = [[f"{catalog_dir}/{tlabel}_{reg}_{i}_clustering.ran.fits" for i in range(nrandoms)] for tlabel in tlabels]
 print("Random filenames:", random_filenames)
 if njack:

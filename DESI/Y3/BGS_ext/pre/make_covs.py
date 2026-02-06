@@ -29,7 +29,7 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
 verspec = 'loa-v1'
-version = "v1.1"
+version = "v2"
 conf = "PIP"
 
 catalog_subdir = f"{verspec}/LSScats/{version}/{conf}/"
