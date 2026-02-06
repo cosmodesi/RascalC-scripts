@@ -32,13 +32,15 @@ verspec = 'loa-v1'
 version = "v2"
 conf = "PIP"
 
-catalog_subdir = f"{verspec}/LSScats/{version}/{conf}/"
+catalog_subdir = f"{verspec}/LSScats/{version}/{conf}"
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
 tracers = ['BGS_ANY-21.35']
 zs = [(0.1, 0.4)]
+
+nrandoms = 1
 
 hash_dict_file = "make_covs.hash_dict.pkl"
 if os.path.isfile(hash_dict_file):
@@ -155,7 +157,7 @@ for tracer, z_range in zip(tracers, zs):
             # Recipe: run convert cov
 
     # obtain the counts names
-    reg_pycorr_names = [f"{catalog_subdir}/xi/smu/allcounts_{tracer}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran4_split20.npy" for reg in regs]
+    reg_pycorr_names = [f"{catalog_subdir}/xi/smu/allcounts_{tracer}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split20.npy" for reg in regs]
     # will probably need to adjust the number of randoms when run beyond LRG
 
     if len(reg_pycorr_names) == len(regs): # if we have pycorr files for all regions
