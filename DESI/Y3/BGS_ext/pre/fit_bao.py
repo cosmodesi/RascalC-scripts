@@ -68,7 +68,7 @@ if __name__ == '__main__':
                 setup_logging()
                     
                 template = BAOPowerSpectrumTemplate(z = zeff, fiducial = 'DESI', apmode = 'qiso' + 'qap' * (args.max_l > 0))
-                theory = DampedBAOWigglesTracerCorrelationFunctionMultipoles(template=template, broadband=args.broadband) # pre-recon, for post-recon need mode="recsym" or "reciso"
+                theory = DampedBAOWigglesTracerCorrelationFunctionMultipoles(template=template, ells=list(ells), broadband=args.broadband) # pre-recon, for post-recon need mode="recsym" or "reciso"
                 
                 output_fn = f"{output_dir}/minuit_prof"
                 if os.path.isfile(output_fn + ".npy") and not args.rerun: continue
@@ -84,7 +84,7 @@ if __name__ == '__main__':
                 
                 if os.path.isfile(output_fn + ".npy"): os.remove(output_fn + ".npy")
                 profiler = MinuitProfiler(likelihood, save_fn = output_fn + ".npy", seed = args.seed, mpicomm = comm)
-                profiles = profiler.maximize(niterations=3)
+                profiles = profiler.maximize(niterations=50)
                 # To print relevant information
                 print(profiles.to_stats(tablefmt='pretty', fn = output_fn + ".txt"))
                 profiles.save(output_fn + ".npy")
@@ -92,5 +92,5 @@ if __name__ == '__main__':
                 likelihood(**profiler.profiles.bestfit.choice(input=True))
                 observable.plot()
                 plt.gcf()
-                plt.savefig(f"{output_dir}/plot.png")
+                plt.savefig(f"{output_dir}/data_bestfit.png")
             
