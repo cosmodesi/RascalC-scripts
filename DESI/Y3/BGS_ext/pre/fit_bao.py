@@ -7,14 +7,10 @@ from desilike.likelihoods import ObservablesGaussianLikelihood
 from desilike.profilers import MinuitProfiler
 from desilike import setup_logging
 from pycorr import TwoPointCorrelationFunction
+import matplotlib.pyplot as plt
 import os
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
-
-# Settings for filenames
-verspec = 'loa-v1'
-version = "v2"
-conf = "PIP"
 
 REDSHIFTS = {'BGS_ANY-21.35': [(0.1, 0.4)]}
 EFFECTIVE_REDSHIFTS = {'BGS_ANY-21.35': [0.2]} # need to do better
@@ -35,6 +31,7 @@ if __name__ == '__main__':
     parser.add_argument("--smax", type = float, default = 152)
     parser.add_argument("--ds", type = float, default = 4)
     parser.add_argument("--max_l", type = int, default = 2)
+    parser.add_argument("--broadband", type = str, default = 'pcs2')
     
 
     args = parser.parse_args()
@@ -66,15 +63,15 @@ if __name__ == '__main__':
                 
                 
                 
-                output_dir = f"desilike_bao_minuit_xi_{tracer}_{cap}_z{zmin:.1f}-{zmax:.1f}/"
+                output_dir = f"{output_basedir}/desilike_bao_{tracer}_{cap}_z{zmin:.1f}-{zmax:.1f}_xi_{smin}-{smax}_lin{ds}_max_l{args.max_l}_{args.broadband}/"
                 os.makedirs(output_dir, exist_ok = True)
                     
                 setup_logging()
                     
-                template = BAOPowerSpectrumTemplate(z = zeff, fiducial = 'DESI', apmode = 'qisoqap')
-                theory = DampedBAOWigglesTracerCorrelationFunctionMultipoles(template=template, broadband='pcs2') # pre-recon, for post-recon need mode="recsym" or "reciso"
+                template = BAOPowerSpectrumTemplate(z = zeff, fiducial = 'DESI', apmode = 'qiso' + 'qap' * (args.max_l > 0))
+                theory = DampedBAOWigglesTracerCorrelationFunctionMultipoles(template=template, broadband=args.broadband) # pre-recon, for post-recon need mode="recsym" or "reciso"
                 
-                output_fn = f"{output_dir}/minuit_prof.txt"
+                output_fn = f"{output_dir}/minuit_prof"
                 if os.path.isfile(output_fn + ".npy") and not args.rerun: continue
                 observable = TracerCorrelationFunctionMultipolesObservable(data = TwoPointCorrelationFunction.load(xi_fn)[smin:smax:ds],  
                                                                     covariance = covariance,
@@ -86,15 +83,15 @@ if __name__ == '__main__':
                     param.update(derived='.auto')
                     
                 
-                if os.path.isfile(output_fn+".npy"): os.remove(output_fn+".npy")
-                profiler = MinuitProfiler(likelihood, save_fn = output_fn+".npy", seed = args.seed, mpicomm = comm)
+                if os.path.isfile(output_fn + ".npy"): os.remove(output_fn + ".npy")
+                profiler = MinuitProfiler(likelihood, save_fn = output_fn + ".npy", seed = args.seed, mpicomm = comm)
                 profiles = profiler.maximize(niterations=3)
                 # To print relevant information
-                print(profiles.to_stats(tablefmt='pretty', fn = output_fn))
-                profiles.save(output_fn+".npy")
-                #if j == 1:
-                # likelihood(**profiler.profiles.bestfit.choice(input=True))
-                # observable.plot()
-                # plt.gcf()
-                # plt.savefig("plots/SecondGen/desilike_ez_v_rc_direct_bestfit.png")
+                print(profiles.to_stats(tablefmt='pretty', fn = output_fn + ".txt"))
+                profiles.save(output_fn + ".npy")
+
+                likelihood(**profiler.profiles.bestfit.choice(input=True))
+                observable.plot()
+                plt.gcf()
+                plt.savefig(f"{output_dir}/plot.png")
             
