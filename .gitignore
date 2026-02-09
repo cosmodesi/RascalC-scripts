@@ -7,6 +7,10 @@ make_covs.*.*
 *.npy
 *.txt
 
+# plots
+*.png
+*.pdf
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
