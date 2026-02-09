@@ -54,8 +54,10 @@ if __name__ == '__main__':
                     continue
                 cov_rc = np.loadtxt(cov_fn)
                 # cut the covariance
-                cov_rc_l = np.concatenate([np.tile(ell, 45) for ell in (0, 2, 4)])
-                cov_rc_s = np.concatenate([np.arange(20, 200, 4) + 2 for ell in (0, 2, 4)])
+                cov_ells = (0, 2, 4)
+                cov_s = np.arange(20 + ds/2, 200, ds)
+                cov_rc_l = np.repeat(cov_ells, len(cov_s))
+                cov_rc_s = np.tile(cov_s, len(cov_ells))
                 cov_rc_cut_1d = np.logical_and(cov_rc_l <= args.max_l, np.logical_and(cov_rc_s >= args.smin, cov_rc_s <= args.smax))
                 cov_rc_cut_2d = np.ix_(cov_rc_cut_1d, cov_rc_cut_1d)
                 covariance = cov_rc[cov_rc_cut_2d]
