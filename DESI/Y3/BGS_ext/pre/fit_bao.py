@@ -12,9 +12,8 @@ import os
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
 
-REDSHIFTS = {'BGS_ANY-21.35': [(0.1, 0.4)]}
-EFFECTIVE_REDSHIFTS = {'BGS_ANY-21.35': [0.2]} # need to do better
-SMOOTHINGS = {'BGS_ANY-21.35': 15} # only post-recon
+EFFECTIVE_REDSHIFTS = {'BGS_ANY-21.35': {(0.1, 0.4): 0.295}} # outer dictionary is indexed by tracer names, the inner dictionary is indexed by redshift ranges. The effective redshift values are external at the moment
+# SMOOTHINGS = {'BGS_ANY-21.35': 15} # only post-recon
 
 CAPS = ["GCcomb", "NGC", "SGC"]
 
@@ -41,8 +40,8 @@ if __name__ == '__main__':
     cov_dir = f"cov_txt/{args.verspec}/{args.version}/{args.conf}"
     xi_dir = f"{args.verspec}/LSScats/{args.version}/{args.conf}/xi/smu"
     output_basedir = f"{args.verspec}/LSScats/{args.version}/{args.conf}/fits"
-    for tracer in REDSHIFTS.keys():
-        for zeff, (zmin, zmax) in zip(EFFECTIVE_REDSHIFTS[tracer], REDSHIFTS[tracer]):
+    for tracer, redshifts in EFFECTIVE_REDSHIFTS.items():
+        for (zmin, zmax), zeff in redshifts.items():
             for cap in CAPS:
                 print(f"Starting fit for {tracer} z={zmin}-{zmax} {cap}", flush = True)
 
