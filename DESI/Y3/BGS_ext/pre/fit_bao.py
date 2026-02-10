@@ -90,6 +90,9 @@ if __name__ == '__main__':
                 # To print relevant information
                 print(profiles.to_stats(tablefmt='pretty', fn = output_fn + ".txt"))
                 profiles.save(output_fn + ".npy")
+                # additional formats
+                profiles.to_stats(tablefmt='latex_raw', fn = output_fn + ".tex")
+                profiles.to_stats(tablefmt='tsv', fn = output_fn + ".tsv")
 
                 likelihood(**profiler.profiles.bestfit.choice(input=True))
                 observable.plot()
