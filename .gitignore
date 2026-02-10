@@ -6,6 +6,8 @@ slurm-*.out
 make_covs.*.*
 *.npy
 *.txt
+*.tex
+*.tsv
 
 # plots
 *.png
