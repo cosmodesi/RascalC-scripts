@@ -31,6 +31,7 @@ if __name__ == '__main__':
     parser.add_argument("--ds", type = float, default = 4)
     parser.add_argument("--max_l", type = int, default = 2)
     parser.add_argument("--broadband", type = str, default = 'pcs2')
+    parser.add_argument("--cov", choices=['', '_Gaussian'], default = '')
     
 
     args = parser.parse_args()
@@ -46,7 +47,7 @@ if __name__ == '__main__':
                 print(f"Starting fit for {tracer} z={zmin}-{zmax} {cap}", flush = True)
 
                 xi_fn = f"{xi_dir}/allcounts_{tracer}_{cap}_{zmin}_{zmax}_default_FKP_lin_njack60_nran1_split20.npy"
-                cov_fn = f"{cov_dir}/xi024_{tracer}_{cap}_z{zmin}-{zmax}_default_FKP_lin{ds}_s20-200_cov_RascalC.txt"
+                cov_fn = f"{cov_dir}/xi024_{tracer}_{cap}_z{zmin}-{zmax}_default_FKP_lin{ds}_s20-200_cov_RascalC{args.cov}.txt"
                 
                 print(f"Using covariance saved in {cov_fn}", flush = True)
                 if not os.path.isfile(cov_fn):
@@ -64,7 +65,7 @@ if __name__ == '__main__':
                 
                 
                 
-                output_dir = f"{output_basedir}/desilike_bao_{tracer}_{cap}_z{zmin:.1f}-{zmax:.1f}_xi_{smin}-{smax}_lin{ds}_max_l{args.max_l}_{args.broadband}/"
+                output_dir = f"{output_basedir}/desilike_bao_{tracer}_{cap}_z{zmin:.1f}-{zmax:.1f}_xi_{smin}-{smax}_lin{ds}_max_l{args.max_l}_{args.broadband}{args.cov}/"
                 os.makedirs(output_dir, exist_ok = True)
                     
                 setup_logging()
