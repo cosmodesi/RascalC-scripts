@@ -77,8 +77,8 @@ z_min, z_max = z_range
 nrandoms = 1
 
 # set the number of integration loops based on tracer, z range and region
-n_loops = {'BGS_ANY-21.35': {(0.1, 0.4): {'SGC': 3072,
-                                          'NGC': 1536}}}[tlabels[0]][z_range][reg]
+n_loops = {'BGS_ANY-21.35': {(0.1, 0.4): {'SGC': 12288,
+                                          'NGC': 4608}}}[tlabels[0]][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
