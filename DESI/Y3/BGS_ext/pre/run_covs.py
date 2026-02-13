@@ -11,6 +11,7 @@ import argparse
 parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 extended BGS pre-recon")
 parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
 parser.add_argument("-t", "--test", action = "store_true", help = "test the input files, abort before the main computation")
+parser.add_argument("--conf", help = "configuration specifying the catalogs subdirectory (default: PIP, can be nonKP or previously BAO/unblinded)", default='PIP')
 args = parser.parse_args()
 
 def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory exists, rename it with a numeric suffix
@@ -61,7 +62,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 # Settings for filenames
 verspec = 'loa-v1'
 version = "v2"
-conf = "PIP"
+conf: str = args.conf
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
