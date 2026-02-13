@@ -67,9 +67,9 @@ id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
-tracers = ['BGS_ANY-21.35']
-zs = [(0.1, 0.4)]
-# need 2 jobs in this array
+tracers = ['BGS_ANY-21.35', 'BGS_BRIGHT-21.35']
+zs = [(0.1, 0.4)] * 2
+# need 2*2=4 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
@@ -78,7 +78,9 @@ nrandoms = 1
 
 # set the number of integration loops based on tracer, z range and region
 n_loops = {'BGS_ANY-21.35': {(0.1, 0.4): {'SGC': 12288,
-                                          'NGC': 4608}}}[tlabels[0]][z_range][reg]
+                                          'NGC': 4608}},
+           'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 6144,
+                                             'NGC': 3072}}}[tlabels[0]][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
