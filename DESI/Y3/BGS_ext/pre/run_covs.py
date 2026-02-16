@@ -11,6 +11,7 @@ import argparse
 parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 extended BGS pre-recon")
 parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
 parser.add_argument("-t", "--test", action = "store_true", help = "test the input files, abort before the main computation")
+parser.add_argument("--conf", help = "configuration specifying the catalogs subdirectory (default: PIP, can be nonKP or previously BAO/unblinded)", default='PIP')
 args = parser.parse_args()
 
 def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory exists, rename it with a numeric suffix
@@ -61,15 +62,15 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 # Settings for filenames
 verspec = 'loa-v1'
 version = "v2"
-conf = "PIP"
+conf: str = args.conf
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
-tracers = ['BGS_ANY-21.35']
-zs = [(0.1, 0.4)]
-# need 2 jobs in this array
+tracers = ['BGS_ANY-21.35', 'BGS_BRIGHT-21.35']
+zs = [(0.1, 0.4)] * 2
+# need 2*2=4 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
@@ -77,8 +78,10 @@ z_min, z_max = z_range
 nrandoms = 1
 
 # set the number of integration loops based on tracer, z range and region
-n_loops = {'BGS_ANY-21.35': {(0.1, 0.4): {'SGC': 3072,
-                                          'NGC': 1536}}}[tlabels[0]][z_range][reg]
+n_loops = {'BGS_ANY-21.35': {(0.1, 0.4): {'SGC': 12288,
+                                          'NGC': 4608}},
+           'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 6144,
+                                             'NGC': 3072}}}[tlabels[0]][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"

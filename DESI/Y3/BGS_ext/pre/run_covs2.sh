@@ -12,4 +12,4 @@
 # load cosmodesi environment
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
 
-python -u run_covs.py $SLURM_ARRAY_TASK_ID
+python -u run_covs.py $SLURM_ARRAY_TASK_ID --conf nonKP
