@@ -1,4 +1,4 @@
-# This is the custom script to compute the 2PCF with jackknives
+# This is the custom script to compute the 2PCF with jackknives, separating the combined tracer into the original tracers
 
 import os
 import sys
@@ -23,8 +23,8 @@ def prepare_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf
     filtering = np.logical_and(catalog["Z"] >= z_min, catalog["Z"] <= z_max) # logical index of redshifts within the range
     catalog = catalog[filtering] # filtered catalog
     for key in catalog.keys():
-        if catalog[key].dtype != float:
-            catalog[key] = catalog[key].astype(float) # ensure everything is float(64)
+        if catalog[key].dtype != float and not key.startswith("TARGETID"): # ensure all columns except TARGETID are float(64) for pycorr
+            catalog[key] = catalog[key].astype(float)
     catalog["comov_dist"] = cosmology.comoving_radial_distance(catalog["Z"])
     if jack_sampler: catalog["JACK"] = jack_sampler.label(get_rdd_positions(catalog), position_type = 'rdd')
     return catalog
