@@ -31,6 +31,8 @@ def prepare_catalog(filename: str, ref_catalog: Table, z_min: float = -np.inf, z
     catalog: Table = Table.read(filename)
     if not np.array_equal(catalog['TARGETID'], ref_catalog['TARGETID']): # check match with reference TARGETIDs to ensure correct matching of separate tracers with the combined tracer
         raise ValueError(f"TARGETIDs in {filename} do not match the reference TARGETIDs, can't proceed")
+    if jack_sampler is not None and not np.array_equal(catalog['TARGETID_DATA'], ref_catalog['TARGETID_DATA']): # jack_sampler is not None for randoms. Then also check the match of TARGETID_DATA
+        raise ValueError(f"TARGETID_DATA in {filename} do not match the reference TARGETID_DATA, can't proceed")
     if FKP_weight: catalog["WEIGHT"] *= catalog["WEIGHT_FKP"] # apply FKP weight multiplicatively
     catalog.keep_columns(["RA", "DEC", "Z", "WEIGHT"]) # discard everything else, including TARGETID (which is no longer needed)
     filtering = np.logical_and(catalog["Z"] >= z_min, catalog["Z"] <= z_max) # logical index of redshifts within the range
@@ -81,29 +83,33 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
     for reg in ("SGC", "NGC"):
         my_logger.info(f"Region: {reg}")
 
-        tracer_TARGETIDs = []
+        data_refs = []
         for separate_tracer in separate_tracers:
             common_setup = {"tracer": separate_tracer, "region": reg, "version": version, "grid_cosmo": None}
             galaxy_files = [f.filepath for f in fm.select(id = 'catalog_data_y3', **common_setup)]
             if (n := len(galaxy_files)) != 1:
                 my_logger.error(f"Found not 1 but {n} galaxy files, can't proceed")
                 sys.exit(1)
-            tracer_TARGETIDs.append(Table.read(galaxy_files[0])["TARGETID"]) # save TARGETIDs for later use
-        data_ref = Table({"TARGETID": np.concatenate(tracer_TARGETIDs), "TRACERID": np.repeat(np.arange(len(separate_tracers)), [len(ids) for ids in tracer_TARGETIDs])}) # reference table to keep TARGETIDs of the full combined data catalog to match data with separate tracer index (TRACERID)
-        del tracer_TARGETIDs # no longer needed, free memory
+            data_refs.append(Table.read(galaxy_files[0]))
+            data_refs[-1].keep_columns(["TARGETID"]) # keep only TARGETID for checking the match with the combined catalog
+        data_ref = vstack(data_refs)
+        data_ref["TRACERID"] = np.repeat(np.arange(len(separate_tracers)), [len(data_ref) for data_ref in data_refs]) # add TRACERID to keep track of which separate tracer each object belongs to
+        del data_refs # no longer needed, free memory
 
         random_refs = []
         for i_random in range(n_randoms):
-            random_TARGETIDs = []
+            this_random_refs = []
             for separate_tracer in separate_tracers:
                 common_setup = {"tracer": separate_tracer, "region": reg, "version": version, "grid_cosmo": None}
                 random_files = [f.filepath for f in fm.select(id = 'catalog_randoms_y3', iran = i_random, **common_setup)]
                 if (n := len(random_files)) != 1:
                     my_logger.error(f"Found not 1 but {n} random files for {separate_tracer} {i_random}, can't proceed")
                     sys.exit(1)
-                random_TARGETIDs.append(Table.read(random_files[0])["TARGETID"]) # save TARGETIDs for later use
-            random_refs.append(Table({"TARGETID": np.concatenate(random_TARGETIDs), "TRACERID": np.repeat(np.arange(len(separate_tracers)), [len(ids) for ids in random_TARGETIDs])})) # reference table to keep TARGETIDs of the full combined randoms catalog to match randoms with separate tracer index (TRACERID)
-        del random_TARGETIDs # no longer needed, free memory
+                this_random_refs.append(Table.read(random_files[0]))
+                this_random_refs[-1].keep_columns(["TARGETID", "TARGETID_DATA"]) # keep only TARGETID (and TARGETID_DATA) for checking the match with the combined catalog
+            random_refs.append(vstack(this_random_refs))
+            random_refs[-1]["TRACERID"] = np.repeat(np.arange(len(separate_tracers)), [len(this_random_ref) for this_random_ref in this_random_refs]) # add TRACERID to keep track of which separate tracer each random object belongs to
+        del this_random_refs # no longer needed, free memory
         
         for z_range in z_ranges:
             z_min, z_max = z_range
