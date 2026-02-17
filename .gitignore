@@ -4,7 +4,7 @@ outdirs
 cov_txt
 slurm-*.out
 make_covs.*.*
-*.npy
+*.np[yz]
 *.txt
 *.tex
 *.tsv

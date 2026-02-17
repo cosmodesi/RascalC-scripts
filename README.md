@@ -23,7 +23,7 @@ These repositories are private and only accessible to [cosmodesi](https://github
 
 ## Usage remarks
 
-If anything is not clear or not working, please feel free to [open an issue](https://github.com/misharash/RascalC-scripts/issues) or contact Michael 'Misha' Rashkovetskyi (<mrashkovetskyi@cfa.harvard.edu>) personally.
+If anything is not clear or not working, please feel free to [open an issue](https://github.com/misharash/RascalC-scripts/issues) or contact Michael 'Misha' Rashkovetskyi (<rashkovetskyi.1@osu.edu>) personally.
 
 It is okay if you do not feel confident to actually run the code.
 Setting up the filenames in `run_cov.py` for your setup would be a big help already, since it takes surprisingly much time to figure out an alternative naming scheme.
