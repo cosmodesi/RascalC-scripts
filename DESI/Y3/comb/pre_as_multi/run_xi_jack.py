@@ -12,19 +12,33 @@ from pycorr import TwoPointCorrelationFunction, setup_logging, KMeansSubsampler
 from LSS.tabulated_cosmo import TabulatedDESI
 
 
-def get_rdd_positions(catalog: Table) -> tuple[np.typing.NDArray[np.float64], np.typing.NDArray[np.float64], np.typing.NDArray[np.float64]]: # utility function to format positions from a catalog
+def get_rdd_positions(catalog: Table | None) -> tuple[np.typing.NDArray[np.float64], np.typing.NDArray[np.float64], np.typing.NDArray[np.float64]] | None: # utility function to format positions from a catalog, handling the None case intended for the second tracer in auto-correlations
+    if catalog is None: return None
     return (catalog["RA"], catalog["DEC"], catalog["comov_dist"])
 
 
-def prepare_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, jack_sampler: KMeansSubsampler | None = None, FKP_weight: bool = True) -> Table:
+def get_weights(catalog: Table | None) -> np.typing.NDArray[np.float64] | None: # utility function to format weights from a catalog, handling the None case intended for the second tracer in auto-correlations
+    if catalog is None: return None
+    return catalog["WEIGHT"]
+
+
+def get_samples(catalog: Table | None) -> np.typing.NDArray[np.float64] | None: # utility function to format samples from a catalog, handling the None case intended for the second tracer in auto-correlations
+    if catalog is None: return None
+    return catalog["JACK"]
+
+
+def prepare_catalog(filename: str, ref_catalog: Table, z_min: float = -np.inf, z_max: float = np.inf, jack_sampler: KMeansSubsampler | None = None, FKP_weight: bool = True) -> Table:
     catalog: Table = Table.read(filename)
+    if not np.array_equal(catalog['TARGETID'], ref_catalog['TARGETID']): # check match with reference TARGETIDs to ensure correct matching of separate tracers with the combined tracer
+        raise ValueError(f"TARGETIDs in {filename} do not match the reference TARGETIDs, can't proceed")
     if FKP_weight: catalog["WEIGHT"] *= catalog["WEIGHT_FKP"] # apply FKP weight multiplicatively
-    catalog.keep_columns(["RA", "DEC", "Z", "WEIGHT", "TARGETID" + "_DATA" * bool(jack_sampler)]) # discard everything else; need TARGETID for data and TARGETID_DATA for randoms to separate the combined tracer into the original tracers
+    catalog.keep_columns(["RA", "DEC", "Z", "WEIGHT"]) # discard everything else, including TARGETID (which is no longer needed)
     filtering = np.logical_and(catalog["Z"] >= z_min, catalog["Z"] <= z_max) # logical index of redshifts within the range
     catalog = catalog[filtering] # filtered catalog
     for key in catalog.keys():
-        if catalog[key].dtype != float and not key.startswith("TARGETID"): # ensure all columns except TARGETID are float(64) for pycorr
+        if catalog[key].dtype != float: # ensure all columns are float(64) for pycorr
             catalog[key] = catalog[key].astype(float)
+    catalog["TRACERID"] = ref_catalog["TRACERID"][filtering] # add TRACERID to keep track of which separate tracer each object belongs to
     catalog["comov_dist"] = cosmology.comoving_radial_distance(catalog["Z"])
     if jack_sampler: catalog["JACK"] = jack_sampler.label(get_rdd_positions(catalog), position_type = 'rdd')
     return catalog
@@ -67,17 +81,29 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
     for reg in ("SGC", "NGC"):
         my_logger.info(f"Region: {reg}")
 
-        tracer_TARGETIDs = {}
+        tracer_TARGETIDs = []
         for separate_tracer in separate_tracers:
             common_setup = {"tracer": separate_tracer, "region": reg, "version": version, "grid_cosmo": None}
             galaxy_files = [f.filepath for f in fm.select(id = 'catalog_data_y3', **common_setup)]
             if (n := len(galaxy_files)) != 1:
                 my_logger.error(f"Found not 1 but {n} galaxy files, can't proceed")
                 sys.exit(1)
-            tracer_TARGETIDs[separate_tracer] = Table.read(galaxy_files[0])["TARGETID"] # save TARGETIDs for later use
-            _, counts = np.unique(tracer_TARGETIDs[separate_tracer], return_counts=True)
-            if len(_) != len(tracer_TARGETIDs[separate_tracer]):
-                my_logger.warning(f"{galaxy_files[0]} has " + ', '.join(f"{n_count} TARGETID(s) appearing {count} time(s)" for count, n_count in zip(*np.unique(counts, return_counts=True))))
+            tracer_TARGETIDs.append(Table.read(galaxy_files[0])["TARGETID"]) # save TARGETIDs for later use
+        data_ref = Table({"TARGETID": np.concatenate(tracer_TARGETIDs), "TRACERID": np.repeat(np.arange(len(separate_tracers)), [len(ids) for ids in tracer_TARGETIDs])}) # reference table to keep TARGETIDs of the full combined data catalog to match data with separate tracer index (TRACERID)
+        del tracer_TARGETIDs # no longer needed, free memory
+
+        random_refs = []
+        for i_random in range(n_randoms):
+            random_TARGETIDs = []
+            for separate_tracer in separate_tracers:
+                common_setup = {"tracer": separate_tracer, "region": reg, "version": version, "grid_cosmo": None}
+                random_files = [f.filepath for f in fm.select(id = 'catalog_randoms_y3', iran = i_random, **common_setup)]
+                if (n := len(random_files)) != 1:
+                    my_logger.error(f"Found not 1 but {n} random files for {separate_tracer} {i_random}, can't proceed")
+                    sys.exit(1)
+                random_TARGETIDs.append(Table.read(random_files[0])["TARGETID"]) # save TARGETIDs for later use
+            random_refs.append(Table({"TARGETID": np.concatenate(random_TARGETIDs), "TRACERID": np.repeat(np.arange(len(separate_tracers)), [len(ids) for ids in random_TARGETIDs])})) # reference table to keep TARGETIDs of the full combined randoms catalog to match randoms with separate tracer index (TRACERID)
+        del random_TARGETIDs # no longer needed, free memory
         
         for z_range in z_ranges:
             z_min, z_max = z_range
@@ -96,25 +122,20 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
             if (n := len(galaxy_files)) != 1:
                 my_logger.warning(f"Found not 1 but {n} galaxy files; skipping")
                 continue
-            galaxies = prepare_catalog(galaxy_files[0], z_min, z_max)
+            try: galaxies = prepare_catalog(galaxy_files[0], data_ref, z_min, z_max)
+            except Exception as e:
+                my_logger.warning(f"Failed to prepare galaxy catalog: {e}. Skipping")
+                continue
             jack_sampler = get_subsampler_xirunpc(get_rdd_positions(galaxies), n_jack)
             galaxies["JACK"] = jack_sampler.label(get_rdd_positions(galaxies), position_type = 'rdd')
-
-            galaxy_masks = [np.isin(galaxies["TARGETID"], tracer_TARGETIDs[separate_tracer]) for separate_tracer in separate_tracers]
-            if not np.array_equal(np.sum(galaxy_masks, axis=0), np.ones(len(galaxies))):
-                _, counts = np.unique(galaxies["TARGETID"], return_counts=True)
-                my_logger.warning(f"{galaxy_files[0]} has " + ', '.join(f"{n_count} TARGETID(s) appearing {count} time(s)" for count, n_count in zip(*np.unique(counts, return_counts=True))) + f" for {z_min}<z<{z_max}")
-                my_logger.warning("The combined tracer catalog contains objects that are not in exactly one of the separate tracers. Specifically, " + ", ".join(f"{n_count} object(s) appearing {count} time(s)" for count, n_count in zip(*np.unique(np.sum(galaxy_masks, axis=0), return_counts=True))) + ". Can't proceed")
-                continue
 
             random_files = [f.filepath for f in fm.select(id = 'catalog_randoms_y3', iran = range(n_randoms), **common_setup)]
             if (n := len(random_files)) != n_randoms:
                 my_logger.warning(f"Found not {n_randoms} but {n} random files; skipping")
                 continue
-            all_randoms = [prepare_catalog(random_file, z_min, z_max, jack_sampler) for random_file in random_files]
-            all_random_masks = [[np.isin(randoms["TARGETID_DATA"], tracer_TARGETIDs[separate_tracer]) for randoms in all_randoms] for separate_tracer in separate_tracers]
-            if not all(np.array_equal(np.sum([all_random_masks[t][i_random] for t in range(len(separate_tracers))], axis=0), np.ones(len(all_randoms[i_random]))) for i_random in range(n_randoms)):
-                my_logger.warning("Combined tracer random catalogs contain objects that are not in exactly one of the separate tracers, can't proceed")
+            try: all_randoms = [prepare_catalog(random_file, random_ref, z_min, z_max, jack_sampler) for random_file, random_ref in zip(random_files, random_refs)]
+            except Exception as e:
+                my_logger.warning(f"Failed to prepare random catalogs: {e}. Skipping")
                 continue
 
             for t1, t2, corr_label in zip(tracer1_corr, tracer2_corr, corr_labels):
@@ -125,10 +146,8 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
                     my_logger.info(f"Output file {output_file} exists, skipping")
                     continue
 
-                galaxy_mask1 = galaxy_masks[t1]
-                galaxy_mask2 = galaxy_masks[t2]
-                all_randoms_mask1 = all_random_masks[t1]
-                all_randoms_mask2 = all_random_masks[t2]
+                galaxies1 = galaxies[galaxies["TRACERID"] == t1]
+                galaxies2 = galaxies[galaxies["TRACERID"] == t2] if t1 != t2 else None # for auto-correlation, set the second tracer to None for proper handling in the TwoPointCorrelationFunction call. helper functions will propagate None into the positions, weights and samples
 
                 results = []
                 # compute
@@ -139,13 +158,13 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
                     for i_random in range(n_randoms if i_split_randoms else 1):
                         if i_split_randoms: my_logger.info(f"Split random {i_random+1} of {n_randoms}")
                         these_randoms = all_randoms[i_random] if i_split_randoms else vstack(all_randoms)
-                        these_randoms_mask1 = all_randoms_mask1[i_random] if i_split_randoms else np.concatenate(all_randoms_mask1)
-                        these_randoms_mask2 = all_randoms_mask2[i_random] if i_split_randoms else np.concatenate(all_randoms_mask2)
+                        these_randoms1 = these_randoms[these_randoms["TRACERID"] == t1]
+                        these_randoms2 = these_randoms[these_randoms["TRACERID"] == t2] if t1 != t2 else None # for auto-correlation, set the second tracer to None for proper handling in the TwoPointCorrelationFunction call. helper functions will propagate None into the positions, weights and samples
                         tmp = TwoPointCorrelationFunction(mode = 'smu', edges = edges,
-                                                          data_positions1 = get_rdd_positions(galaxies[galaxy_mask1]), data_weights1 = galaxies["WEIGHT"][galaxy_mask1], data_samples1 = galaxies["JACK"][galaxy_mask1],
-                                                          data_positions2 = get_rdd_positions(galaxies[galaxy_mask2]) if t1 != t2 else None, data_weights2 = galaxies["WEIGHT"][galaxy_mask2] if t1 != t2 else None, data_samples2 = galaxies["JACK"][galaxy_mask2] if t1 != t2 else None,
-                                                          randoms_positions1 = get_rdd_positions(these_randoms[these_randoms_mask1]), randoms_weights1 = these_randoms["WEIGHT"][these_randoms_mask1], randoms_samples1 = these_randoms["JACK"][these_randoms_mask1],
-                                                          randoms_positions2 = get_rdd_positions(these_randoms[these_randoms_mask2]) if t1 != t2 else None, randoms_weights2 = these_randoms["WEIGHT"][these_randoms_mask2] if t1 != t2 else None, randoms_samples2 = these_randoms["JACK"][these_randoms_mask2] if t1 != t2 else None,
+                                                          data_positions1 = get_rdd_positions(galaxies1), data_weights1 = get_weights(galaxies1), data_samples1 = get_samples(galaxies1),
+                                                          data_positions2 = get_rdd_positions(galaxies2), data_weights2 = get_weights(galaxies2), data_samples2 = get_samples(galaxies2),
+                                                          randoms_positions1 = get_rdd_positions(these_randoms1), randoms_weights1 = get_weights(these_randoms1), randoms_samples1 = get_samples(these_randoms1),
+                                                          randoms_positions2 = get_rdd_positions(these_randoms2), randoms_weights2 = get_weights(these_randoms2), randoms_samples2 = get_samples(these_randoms2),
                                                           position_type = 'rdd', engine = 'corrfunc', D1D2 = D1D2, gpu = True, nthreads = 4)
                         D1D2 = tmp.D1D2
                         result += tmp
