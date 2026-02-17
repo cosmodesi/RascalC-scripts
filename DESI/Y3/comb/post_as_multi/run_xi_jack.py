@@ -104,8 +104,9 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
 
             galaxy_masks = [np.isin(galaxies["TARGETID"], tracer_TARGETIDs[separate_tracer]) for separate_tracer in separate_tracers]
             if not np.array_equal(np.sum(galaxy_masks, axis=0), np.ones(len(galaxies))):
+                _, counts = np.unique(galaxies["TARGETID"], return_counts=True)
                 my_logger.warning(f"{galaxy_files[0]} has " + ', '.join(f"{n_count} TARGETID(s) appearing {count} time(s)" for count, n_count in zip(*np.unique(counts, return_counts=True))) + f" for {z_min}<z<{z_max}")
-                my_logger.warning("The combined tracer catalog contains TARGETIDs that are not in exactly one of the separate tracers, can't proceed")
+                my_logger.warning("The combined tracer catalog contains objects that are not in exactly one of the separate tracers. Specifically, " + ", ".join(f"{n_count} object(s) appearing {count} time(s)" for count, n_count in zip(*np.unique(np.sum(galaxy_masks, axis=0), return_counts=True))) + ". Can't proceed")
                 continue
 
             random_files = [f.filepath for f in fm.select(id = 'catalog_randoms_recon_y3', iran = range(n_randoms), **(common_setup | recon_setup))]
@@ -115,7 +116,7 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
             all_randoms = [prepare_catalog(random_file, z_min, z_max, jack_sampler) for random_file in random_files]
             all_random_masks = [[np.isin(randoms["TARGETID_DATA"], tracer_TARGETIDs[separate_tracer]) for randoms in all_randoms] for separate_tracer in separate_tracers]
             if not all(np.array_equal(np.sum([all_random_masks[t][i_random] for t in range(len(separate_tracers))], axis=0), np.ones(len(all_randoms[i_random]))) for i_random in range(n_randoms)):
-                my_logger.warning("Combined tracer random catalogs contain TARGETIDs that are not in exactly one of the separate tracers, can't proceed")
+                my_logger.warning("Combined tracer random catalogs contain objects that are not in exactly one of the separate tracers, can't proceed")
                 continue
 
             for t1, t2, corr_label in zip(tracer1_corr, tracer2_corr, corr_labels):
