@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --ntasks=1
 #SBATCH --constraint=gpu
-#SBATCH --time=12:00:00
+#SBATCH --time=8:00:00
 #SBATCH --gpus=4
 #SBATCH --qos=regular
 #SBATCH --account=desi_g
