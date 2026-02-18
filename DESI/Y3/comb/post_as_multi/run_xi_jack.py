@@ -124,7 +124,7 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
                 continue
 
             for t1, t2, corr_label in zip(tracer1_corr, tracer2_corr, corr_labels):
-                my_logger.info(f"Computing {corr_label.replace('_', ' x ')} {'auto' if t1 == t2 else 'cross'}-correlation")
+                my_logger.info(f"Computing {corr_label} {'auto' if t1 == t2 else 'cross'}-correlation")
 
                 output_file = f"{output_dir}/{os.path.basename(default_output_file)}".replace(target_tracer, corr_label) # switch to the output dir
                 if os.path.exists(output_file):
