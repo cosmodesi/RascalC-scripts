@@ -9,7 +9,7 @@ from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
 import argparse
 
-parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 pre-recon single-tracer")
+parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 pre-recon combined tracer as multi-tracer")
 parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
 parser.add_argument("-t", "--test", action = "store_true", help = "test the input files, abort before the main computation")
 args = parser.parse_args()
@@ -75,28 +75,28 @@ id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 # need 2 jobs in this array
 
-target_tracer = 'LRG+ELG_LOPnotqso' # run the combined tracer
 separate_tracers = ['LRG', 'ELG_LOPnotqso'] # tracers to split the combined tracer into
+combined_tracer = '+'.join(separate_tracers) # the combined tracer
 z_range = (0.8, 1.1) # for redshift cut and filenames
 z_min, z_max = z_range
-nrandoms = desi_y3_file_manager.list_nran[target_tracer]
+nrandoms = desi_y3_file_manager.list_nran[combined_tracer]
 
 if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
 
 # set the number of integration loops based on tracer, z range and region
 n_loops = {'LRG+ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 512,
-                                              'NGC': 512}}}[target_tracer][z_range][reg]
+                                              'NGC': 512}}}[combined_tracer][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
 common_setup = {"region": reg, "version": version, "grid_cosmo": None}
-xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(target_tracer, z_range)
+xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(combined_tracer, z_range)
 xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives
 
 # Output and temporary directories
 
-outdir_base = os.path.join(verspec, version, conf, "_".join([target_tracer, reg]) + f"_z{z_min}-{z_max}")
+outdir_base = os.path.join(verspec, version, conf, "_".join([combined_tracer, reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 preserve(outdir) # rename the directory if it exists to prevent overwriting
@@ -105,14 +105,14 @@ preserve(outdir) # rename the directory if it exists to prevent overwriting
 corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved pycorr counts
-pycorr_filenames = [["xi/smu/" + os.path.basename(f.filepath).replace(target_tracer, corlabel) for f in fm.select(id = 'correlation_y3', tracer = target_tracer, **(common_setup | xi_setup))] for corlabel in corr_labels]
+pycorr_filenames = [["xi/smu/" + os.path.basename(f.filepath).replace(combined_tracer, corlabel) for f in fm.select(id='correlation_y3', tracer=combined_tracer, **(common_setup | xi_setup))] for corlabel in corr_labels]
 print("pycorr filenames:", pycorr_filenames)
 
 # Filenames for randoms and galaxy catalogs
-random_filenames = [f.filepath for f in fm.select(id = 'catalog_randoms_y3', tracer = target_tracer, iran = range(nrandoms), **common_setup)]
+random_filenames = [f.filepath for f in fm.select(id='catalog_randoms_y3', tracer=combined_tracer, iran=range(nrandoms), **common_setup)]
 print("Random filenames:", random_filenames)
 if njack:
-    data_ref_filename = fm.select(id = 'catalog_data_y3', tracer = target_tracer, **common_setup)[0].filepath # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+    data_ref_filename = fm.select(id='catalog_data_y3', tracer=combined_tracer, **common_setup)[0].filepath # only for jackknife reference, could be used for determining the number of galaxies but not in this case
     print("Data filename:", data_ref_filename)
 
 # Load pycorr counts
@@ -163,14 +163,14 @@ del random_catalog, sel # free memory
 if args.test: sys.exit(0) # exit with an ok status in a test run
 
 # Run the main code, post-processing and extra convergence check
-results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
-                  nthread = nthread, N2 = N2, N3 = N3, N4 = N4, n_loops = n_loops, loops_per_sample = loops_per_sample,
-                  pycorr_allcounts_11 = pycorr_allcounts[0], pycorr_allcounts_12 = pycorr_allcounts[1], pycorr_allcounts_22 = pycorr_allcounts[2],
-                  xi_table_11 = input_xis[0], xi_table_12 = input_xis[1], xi_table_22 = input_xis[2],
-                  no_data_galaxies1 = ndata[0], no_data_galaxies2 = ndata[1],
-                  position_type = "rdd",
-                  randoms_positions1 = randoms_positions[0], randoms_weights1 = randoms_weights[0], randoms_samples1 = randoms_samples[0],
-                  randoms_positions2 = randoms_positions[1], randoms_weights2 = randoms_weights[1], randoms_samples2 = randoms_samples[1],
-                  normalize_wcounts = True,
-                  out_dir = outdir, tmp_dir = tmpdir,
-                  skip_s_bins = skip_nbin_post, skip_l = skip_l_post)
+results = run_cov(mode=mode, max_l=max_l, boxsize=periodic_boxsize,
+                  nthread=nthread, N2=N2, N3=N3, N4=N4, n_loops=n_loops, loops_per_sample=loops_per_sample,
+                  pycorr_allcounts_11=pycorr_allcounts[0], pycorr_allcounts_12=pycorr_allcounts[1], pycorr_allcounts_22=pycorr_allcounts[2],
+                  xi_table_11=input_xis[0], xi_table_12=input_xis[1], xi_table_22=input_xis[2],
+                  no_data_galaxies1=ndata[0], no_data_galaxies2=ndata[1],
+                  position_type="rdd",
+                  randoms_positions1=randoms_positions[0], randoms_weights1=randoms_weights[0], randoms_samples1=randoms_samples[0],
+                  randoms_positions2=randoms_positions[1], randoms_weights2=randoms_weights[1], randoms_samples2=randoms_samples[1],
+                  normalize_wcounts=True,
+                  out_dir=outdir, tmp_dir=tmpdir,
+                  skip_s_bins=skip_nbin_post, skip_l=skip_l_post)

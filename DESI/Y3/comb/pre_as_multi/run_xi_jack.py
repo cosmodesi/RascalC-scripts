@@ -66,12 +66,12 @@ all_edges = [(s_edges, np.linspace(-1, 1, n_mu_bins+1)) for s_edges in (np.arang
 
 n_jack = 60
 
-target_tracer = 'LRG+ELG_LOPnotqso' # run the combined tracer
 separate_tracers = ['LRG', 'ELG_LOPnotqso'] # tracers to split the combined tracer into
+combined_tracer = '+'.join(separate_tracers) # the combined tracer
 corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]]
 
 for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
-    if tracer != target_tracer: continue
+    if tracer != combined_tracer: continue
     n_randoms = desi_y3_file_manager.list_nran[tracer]
     my_logger.info(f"Tracer: {tracer}")
 
@@ -114,7 +114,7 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
             for t1, t2, corr_label in zip(tracer1_corr, tracer2_corr, corr_labels):
                 my_logger.info(f"Computing {corr_label} {'auto' if t1 == t2 else 'cross'}-correlation")
 
-                output_file = f"{output_dir}/{os.path.basename(default_output_file)}".replace(target_tracer, corr_label) # switch to the output dir
+                output_file = f"{output_dir}/{os.path.basename(default_output_file)}".replace(combined_tracer, corr_label) # switch to the output dir
                 if os.path.exists(output_file):
                     my_logger.info(f"Output file {output_file} exists, skipping")
                     continue
@@ -133,12 +133,12 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
                         these_randoms = all_randoms[i_random] if i_split_randoms else vstack(all_randoms)
                         these_randoms1 = these_randoms[these_randoms["TRACERID"] == t1]
                         these_randoms2 = None if t1 == t2 else these_randoms[these_randoms["TRACERID"] == t2] # for auto-correlation, set the second tracer to None for proper handling in the TwoPointCorrelationFunction call. helper functions will propagate None into the positions, weights and samples
-                        tmp = TwoPointCorrelationFunction(mode = 'smu', edges = edges,
-                                                          data_positions1 = get_rdd_positions(galaxies1), data_weights1 = get_weights(galaxies1), data_samples1 = get_samples(galaxies1),
-                                                          data_positions2 = get_rdd_positions(galaxies2), data_weights2 = get_weights(galaxies2), data_samples2 = get_samples(galaxies2),
-                                                          randoms_positions1 = get_rdd_positions(these_randoms1), randoms_weights1 = get_weights(these_randoms1), randoms_samples1 = get_samples(these_randoms1),
-                                                          randoms_positions2 = get_rdd_positions(these_randoms2), randoms_weights2 = get_weights(these_randoms2), randoms_samples2 = get_samples(these_randoms2),
-                                                          position_type = 'rdd', engine = 'corrfunc', D1D2 = D1D2, gpu = True, nthreads = 4)
+                        tmp = TwoPointCorrelationFunction(mode='smu', edges=edges,
+                                                          data_positions1=get_rdd_positions(galaxies1), data_weights1=get_weights(galaxies1), data_samples1=get_samples(galaxies1),
+                                                          data_positions2=get_rdd_positions(galaxies2), data_weights2=get_weights(galaxies2), data_samples2=get_samples(galaxies2),
+                                                          randoms_positions1=get_rdd_positions(these_randoms1), randoms_weights1=get_weights(these_randoms1), randoms_samples1=get_samples(these_randoms1),
+                                                          randoms_positions2=get_rdd_positions(these_randoms2), randoms_weights2=get_weights(these_randoms2), randoms_samples2=get_samples(these_randoms2),
+                                                          position_type='rdd', engine='corrfunc', D1D2=D1D2, gpu=True, nthreads=4)
                         D1D2 = tmp.D1D2
                         result += tmp
                     results.append(result)
