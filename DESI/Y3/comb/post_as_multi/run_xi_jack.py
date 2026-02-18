@@ -67,12 +67,12 @@ all_edges = [(s_edges, np.linspace(-1, 1, n_mu_bins+1)) for s_edges in (np.arang
 
 n_jack = 60
 
-target_tracer = 'LRG+ELG_LOPnotqso' # run the combined tracer
 separate_tracers = ['LRG', 'ELG_LOPnotqso'] # tracers to split the combined tracer into
+combined_tracer = '+'.join(separate_tracers) # the combined tracer
 corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]]
 
 for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
-    if tracer != target_tracer: continue
+    if tracer != combined_tracer: continue
     n_randoms = desi_y3_file_manager.list_nran[tracer]
     my_logger.info(f"Tracer: {tracer}")
 
@@ -88,13 +88,13 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
             xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tracer, z_range, recon=True)
             xi_setup.update({"zrange": z_range, "cut": None, "njack": n_jack})
 
-            default_output_files = [f.filepath for f in fm.select(id = 'correlation_recon_y3', **(common_setup | xi_setup))]
+            default_output_files = [f.filepath for f in fm.select(id='correlation_recon_y3', **(common_setup | xi_setup))]
             if (n := len(default_output_files)) != 1:
                 my_logger.warning(f"Found not 1 but {n} jackknife counts files; skipping")
                 continue
             default_output_file = default_output_files[0]
 
-            galaxy_files = [f.filepath for f in fm.select(id = 'catalog_data_recon_y3', **(common_setup | recon_setup))]
+            galaxy_files = [f.filepath for f in fm.select(id='catalog_data_recon_y3', **(common_setup | recon_setup))]
             if (n := len(galaxy_files)) != 1:
                 my_logger.warning(f"Found not 1 but {n} galaxy files; skipping")
                 continue
@@ -105,7 +105,7 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
             jack_sampler = get_subsampler_xirunpc(get_rdd_positions(galaxies), n_jack)
             galaxies["JACK"] = jack_sampler.label(get_rdd_positions(galaxies), position_type = 'rdd')
 
-            shifted_random_files = [f.filepath for f in fm.select(id = 'catalog_randoms_recon_y3', iran = range(n_randoms), **(common_setup | recon_setup))] # shifted (post-recon) randoms
+            shifted_random_files = [f.filepath for f in fm.select(id='catalog_randoms_recon_y3', iran=range(n_randoms), **(common_setup | recon_setup))] # shifted (post-recon) randoms
             if (n := len(shifted_random_files)) != n_randoms:
                 my_logger.warning(f"Found not {n_randoms} but {n} shifted random files; skipping")
                 continue
@@ -114,7 +114,7 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
                 my_logger.warning(f"Failed to prepare shifted random catalogs: {e}. Skipping")
                 continue
 
-            random_files = [f.filepath for f in fm.select(id = 'catalog_randoms_y3', iran = range(n_randoms), **common_setup)] # unshifted (pre-recon) randoms
+            random_files = [f.filepath for f in fm.select(id='catalog_randoms_y3', iran=range(n_randoms), **common_setup)] # unshifted (pre-recon) randoms
             if (n := len(random_files)) != n_randoms:
                 my_logger.warning(f"Found not {n_randoms} but {n} random files; skipping")
                 continue
@@ -126,7 +126,7 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
             for t1, t2, corr_label in zip(tracer1_corr, tracer2_corr, corr_labels):
                 my_logger.info(f"Computing {corr_label} {'auto' if t1 == t2 else 'cross'}-correlation")
 
-                output_file = f"{output_dir}/{os.path.basename(default_output_file)}".replace(target_tracer, corr_label) # switch to the output dir
+                output_file = f"{output_dir}/{os.path.basename(default_output_file)}".replace(combined_tracer, corr_label) # switch to the output dir
                 if os.path.exists(output_file):
                     my_logger.info(f"Output file {output_file} exists, skipping")
                     continue
@@ -149,13 +149,13 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
                         these_randoms1 = these_randoms[these_randoms["TRACERID"] == t1]
                         these_randoms2 = None if t1 == t2 else these_randoms[these_randoms["TRACERID"] == t2] # for auto-correlation, set the second tracer to None for proper handling in the TwoPointCorrelationFunction call. helper functions will propagate None into the positions, weights and samples
                         tmp = TwoPointCorrelationFunction(mode = 'smu', edges = edges,
-                                                          data_positions1 = get_rdd_positions(galaxies1), data_weights1 = get_weights(galaxies1), data_samples1 = get_samples(galaxies1),
-                                                          data_positions2 = get_rdd_positions(galaxies2), data_weights2 = get_weights(galaxies2), data_samples2 = get_samples(galaxies2),
-                                                          shifted_positions1 = get_rdd_positions(these_shifted_randoms1), shifted_weights1 = get_weights(these_shifted_randoms1), shifted_samples1 = get_samples(these_shifted_randoms1),
-                                                          shifted_positions2 = get_rdd_positions(these_shifted_randoms2), shifted_weights2 = get_weights(these_shifted_randoms2), shifted_samples2 = get_samples(these_shifted_randoms2),
-                                                          randoms_positions1 = get_rdd_positions(these_randoms1), randoms_weights1 = get_weights(these_randoms1), randoms_samples1 = get_samples(these_randoms1),
-                                                          randoms_positions2 = get_rdd_positions(these_randoms2), randoms_weights2 = get_weights(these_randoms2), randoms_samples2 = get_samples(these_randoms2),
-                                                          position_type = 'rdd', engine = 'corrfunc', D1D2 = D1D2, gpu = True, nthreads = 4)
+                                                          data_positions1=get_rdd_positions(galaxies1), data_weights1=get_weights(galaxies1), data_samples1=get_samples(galaxies1),
+                                                          data_positions2=get_rdd_positions(galaxies2), data_weights2=get_weights(galaxies2), data_samples2=get_samples(galaxies2),
+                                                          shifted_positions1=get_rdd_positions(these_shifted_randoms1), shifted_weights1=get_weights(these_shifted_randoms1), shifted_samples1=get_samples(these_shifted_randoms1),
+                                                          shifted_positions2=get_rdd_positions(these_shifted_randoms2), shifted_weights2=get_weights(these_shifted_randoms2), shifted_samples2=get_samples(these_shifted_randoms2),
+                                                          randoms_positions1=get_rdd_positions(these_randoms1), randoms_weights1=get_weights(these_randoms1), randoms_samples1=get_samples(these_randoms1),
+                                                          randoms_positions2 = get_rdd_positions(these_randoms2), randoms_weights2=get_weights(these_randoms2), randoms_samples2=get_samples(these_randoms2),
+                                                          position_type='rdd', engine='corrfunc', D1D2=D1D2, gpu=True, nthreads=4)
                         D1D2 = tmp.D1D2
                         result += tmp
                     results.append(result)
