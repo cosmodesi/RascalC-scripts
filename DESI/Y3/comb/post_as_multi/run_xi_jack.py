@@ -26,7 +26,7 @@ def get_samples(catalog: Table | None) -> np.typing.NDArray[np.float64] | None: 
     return catalog["JACK"]
 
 
-def prepare_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, jack_sampler: KMeansSubsampler | None = None, FKP_weight: bool = True) -> Table:
+def prepare_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, jack_sampler: KMeansSubsampler | None = None, FKP_weight: bool = True, pre_recon: bool = False) -> Table:
     catalog: Table = Table.read(filename)
     if FKP_weight: catalog["WEIGHT"] *= catalog["WEIGHT_FKP"] # apply FKP weight multiplicatively
     catalog.keep_columns(["RA", "DEC", "Z", "WEIGHT"]) # discard everything else, including TARGETID (which is no longer needed)
@@ -35,7 +35,8 @@ def prepare_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf
     for key in catalog.keys():
         if catalog[key].dtype != float: # ensure all columns are float(64) for pycorr
             catalog[key] = catalog[key].astype(float)
-    catalog["TRACERID"] = np.load(os.path.basename(filename).replace(".fits", ".npz"))["TRACERID"][filtering] # load and add TRACERID to keep track of which separate tracer each object belongs to
+    npz_filename = "../pre_as_multi/" * pre_recon + os.path.basename(filename).replace(".fits", ".npz") # load from pre-recon directory if set, otherwise from the current (post-recon) directory
+    catalog["TRACERID"] = np.load(npz_filename)["TRACERID"][filtering] # load and add TRACERID to keep track of which separate tracer each object belongs to
     catalog["comov_dist"] = cosmology.comoving_radial_distance(catalog["Z"])
     if jack_sampler: catalog["JACK"] = jack_sampler.label(get_rdd_positions(catalog), position_type = 'rdd')
     return catalog
@@ -81,7 +82,7 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
         for z_range in z_ranges:
             z_min, z_max = z_range
             my_logger.info(f"Redshift range: {z_min}-{z_max}")
-            common_setup = {"tracer": tracer, "region": reg, "version": version} # grid_cosmo will be provided in the recon setup or xi setup, so not included here
+            common_setup = {"tracer": tracer, "region": reg, "version": version, "grid_cosmo": None} # grid_cosmo provided for unshifted randoms
             recon_setup = desi_y3_file_manager.get_baseline_recon_setup(tracer, z_range)
             recon_setup.pop("zrange")
             xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tracer, z_range, recon=True)
@@ -104,11 +105,20 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
             jack_sampler = get_subsampler_xirunpc(get_rdd_positions(galaxies), n_jack)
             galaxies["JACK"] = jack_sampler.label(get_rdd_positions(galaxies), position_type = 'rdd')
 
-            random_files = [f.filepath for f in fm.select(id = 'catalog_randoms_recon_y3', iran = range(n_randoms), **(common_setup | recon_setup))]
+            shifted_random_files = [f.filepath for f in fm.select(id = 'catalog_randoms_recon_y3', iran = range(n_randoms), **(common_setup | recon_setup))] # shifted (post-recon) randoms
+            if (n := len(shifted_random_files)) != n_randoms:
+                my_logger.warning(f"Found not {n_randoms} but {n} shifted random files; skipping")
+                continue
+            try: all_shifted_randoms = [prepare_catalog(shifted_random_file, z_min, z_max, jack_sampler) for shifted_random_file in shifted_random_files]
+            except Exception as e:
+                my_logger.warning(f"Failed to prepare shifted random catalogs: {e}. Skipping")
+                continue
+
+            random_files = [f.filepath for f in fm.select(id = 'catalog_randoms_y3', iran = range(n_randoms), **common_setup)] # unshifted (pre-recon) randoms
             if (n := len(random_files)) != n_randoms:
                 my_logger.warning(f"Found not {n_randoms} but {n} random files; skipping")
                 continue
-            try: all_randoms = all_randoms = [prepare_catalog(random_file, z_min, z_max, jack_sampler) for random_file in random_files]
+            try: all_randoms = [prepare_catalog(random_file, z_min, z_max, jack_sampler, pre_recon=True) for random_file in random_files]
             except Exception as e:
                 my_logger.warning(f"Failed to prepare random catalogs: {e}. Skipping")
                 continue
@@ -132,12 +142,17 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
                     D1D2 = None
                     for i_random in range(n_randoms if i_split_randoms else 1):
                         if i_split_randoms: my_logger.info(f"Split random {i_random+1} of {n_randoms}")
+                        these_shifted_randoms = all_shifted_randoms[i_random] if i_split_randoms else vstack(all_shifted_randoms)
+                        these_shifted_randoms1 = these_shifted_randoms[these_shifted_randoms["TRACERID"] == t1]
+                        these_shifted_randoms2 = None if t1 == t2 else these_shifted_randoms[these_shifted_randoms["TRACERID"] == t2] # for auto-correlation, set the second tracer to None for proper handling in the TwoPointCorrelationFunction call. helper functions will propagate None into the positions, weights and samples
                         these_randoms = all_randoms[i_random] if i_split_randoms else vstack(all_randoms)
                         these_randoms1 = these_randoms[these_randoms["TRACERID"] == t1]
                         these_randoms2 = None if t1 == t2 else these_randoms[these_randoms["TRACERID"] == t2] # for auto-correlation, set the second tracer to None for proper handling in the TwoPointCorrelationFunction call. helper functions will propagate None into the positions, weights and samples
                         tmp = TwoPointCorrelationFunction(mode = 'smu', edges = edges,
                                                           data_positions1 = get_rdd_positions(galaxies1), data_weights1 = get_weights(galaxies1), data_samples1 = get_samples(galaxies1),
                                                           data_positions2 = get_rdd_positions(galaxies2), data_weights2 = get_weights(galaxies2), data_samples2 = get_samples(galaxies2),
+                                                          shifted_positions1 = get_rdd_positions(these_shifted_randoms1), shifted_weights1 = get_weights(these_shifted_randoms1), shifted_samples1 = get_samples(these_shifted_randoms1),
+                                                          shifted_positions2 = get_rdd_positions(these_shifted_randoms2), shifted_weights2 = get_weights(these_shifted_randoms2), shifted_samples2 = get_samples(these_shifted_randoms2),
                                                           randoms_positions1 = get_rdd_positions(these_randoms1), randoms_weights1 = get_weights(these_randoms1), randoms_samples1 = get_samples(these_randoms1),
                                                           randoms_positions2 = get_rdd_positions(these_randoms2), randoms_weights2 = get_weights(these_randoms2), randoms_samples2 = get_samples(these_randoms2),
                                                           position_type = 'rdd', engine = 'corrfunc', D1D2 = D1D2, gpu = True, nthreads = 4)
