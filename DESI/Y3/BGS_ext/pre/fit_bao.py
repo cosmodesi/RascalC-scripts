@@ -103,7 +103,7 @@ if __name__ == '__main__':
                     else:
                         theory.init.params['b1'].update(value=b1, ref=dict(dist='norm', loc=b1, scale=0.1))
                     
-                    observable = TracerCorrelationFunctionMultipolesObservable(data = TwoPointCorrelationFunction.load(xi_fn)[smin:smax:ds], covariance=covariance, slim={ell: [smin, smax, ds] for ell in ells}, theory=theory, wmatrix={'resolution': 1})
+                    observable = TracerCorrelationFunctionMultipolesObservable(data = TwoPointCorrelationFunction.load(xi_fn)[::ds], covariance=covariance, slim={ell: [smin, smax, ds] for ell in ells}, theory=theory, wmatrix={'resolution': 1})
                     likelihood = ObservablesGaussianLikelihood(observables=[observable])
                     for param in likelihood.all_params.select(basename=['alpha*', 'sn*']):
                         param.update(derived='.auto')
