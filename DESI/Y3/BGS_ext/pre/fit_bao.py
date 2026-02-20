@@ -123,6 +123,6 @@ if __name__ == '__main__':
                     likelihood(**profiler.profiles.bestfit.choice(input=True))
                     observable.plot()
                     plt.gcf()
-                    plt.title(f"{tracer} {region} z={zmin:.1f}-{zmax:.1f} {args.broadband}" + (args.cov.lstrip('_') + " cov") * bool(args.cov))
+                    plt.suptitle(f"{tracer} {region} z={zmin:.1f}-{zmax:.1f} {args.broadband}" + (args.cov.lstrip('_') + " cov") * bool(args.cov))
                     plt.savefig(f"{output_dir}/data_bestfit.png")
             
