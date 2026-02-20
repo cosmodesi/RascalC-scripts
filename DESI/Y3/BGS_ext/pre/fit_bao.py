@@ -7,6 +7,7 @@ from desilike.likelihoods import ObservablesGaussianLikelihood
 from desilike.profilers import MinuitProfiler
 from desilike import setup_logging
 from pycorr import TwoPointCorrelationFunction
+from cosmoprimo.fiducial import DESI
 import matplotlib.pyplot as plt
 import os
 import argparse
@@ -16,6 +17,11 @@ comm = MPI.COMM_WORLD
 
 EFFECTIVE_REDSHIFTS = {'BGS_ANY-21.35': {(0.1, 0.4): 0.295}, 'BGS_BRIGHT-21.35': {(0.1, 0.4): 0.295}} # outer dictionary is indexed by tracer names, the inner dictionary is indexed by redshift ranges. The effective redshift values are external at the moment
 # SMOOTHINGS = {'BGS_ANY-21.35': 15} # only post-recon
+
+b0 = 1.34
+sigmapar, sigmaper = 10., 6.5
+# if post: sigmapar, sigmaper = 8., 3.
+sigmas = {'sigmas': (2., 2.), 'sigmapar': (sigmapar, 2.), 'sigmaper': (sigmaper, 1.)}
 
 
 if __name__ == '__main__':
@@ -29,8 +35,8 @@ if __name__ == '__main__':
     parser.add_argument("--regions", type=str, nargs='*', default=['GCcomb', 'NGC', 'SGC'])
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--rerun", action='store_true')
-    parser.add_argument("--smin", type=float, default=48)
-    parser.add_argument("--smax", type=float, default=152)
+    parser.add_argument("--smin", type=float, default=60)
+    parser.add_argument("--smax", type=float, default=150)
     parser.add_argument("--ds", type=float, default=4)
     parser.add_argument("--max_l", type=int, default=2)
     parser.add_argument("--broadband", type=str, default='pcs2')
@@ -41,6 +47,7 @@ if __name__ == '__main__':
     
     ells = np.arange(0, args.max_l + 1, 2)
     smin, smax, ds = args.smin, args.smax, args.ds
+    fiducial = DESI()
     for conf in args.confs:
         cov_dir = f"cov_txt/{args.verspec}/{args.version}/{conf}"
         xi_dir = f"{args.verspec}/LSScats/{args.version}/{conf}/xi/smu"
@@ -74,6 +81,27 @@ if __name__ == '__main__':
                         
                     template = BAOPowerSpectrumTemplate(z = zeff, fiducial = 'DESI', apmode = 'qiso' + 'qap' * (args.max_l > 0))
                     theory = DampedBAOWigglesTracerCorrelationFunctionMultipoles(template=template, ells=list(ells), broadband=args.broadband) # pre-recon, for post-recon need mode="recsym" or "reciso"
+
+                    # update the parameters to match the fiducial settings for DESI DR2 BAO from desi-y3-kp
+                    for param in theory.init.params.select(basename=list(sigmas)):
+                        value = sigmas[param.basename]
+                        if value is None:
+                            kw = {'prior': {'limits': [0., 20.]}, 'fixed': False}
+                        elif isinstance(value, (tuple, list)):
+                            loc, scale = value
+                            kw = {'value': loc, 'prior': {'dist': 'norm', 'loc': loc, 'scale': scale, 'limits': [0., 20.]}, 'fixed': False}
+                        else:
+                            # print(param.basename, value)
+                            kw = {'value': value, 'prior': None, 'fixed': True}
+                        param.update(**kw)
+
+                    b1 = b0 / fiducial.growth_factor(zeff)
+
+                    if 'b1p' in theory.init.params:  # physical
+                        b1p = b1 * fiducial.sigma8_z(zeff)
+                        theory.init.params['b1p'].update(value=b1p, ref=dict(dist='norm', loc=b1p, scale=0.1))
+                    else:
+                        theory.init.params['b1'].update(value=b1, ref=dict(dist='norm', loc=b1, scale=0.1))
                     
                     observable = TracerCorrelationFunctionMultipolesObservable(data = TwoPointCorrelationFunction.load(xi_fn)[smin:smax:ds], covariance=covariance, slim={ell: [smin, smax, ds] for ell in ells}, theory=theory, wmatrix={'resolution': 1})
                     likelihood = ObservablesGaussianLikelihood(observables=[observable])
