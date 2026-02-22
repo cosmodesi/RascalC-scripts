@@ -146,7 +146,7 @@ for tlabels, z_range in zip(tracers, zs):
         results_name = post_process_auto(outdir, jackknife=False, two_tracers=True, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=blank_function, dry_run=True)["path"]
         reg_results.append(results_name)
 
-        cov_dir = f"cov_txt/{verspec}/{version}/{conf}/{recon_spec}/comb_as_multi"
+        cov_dir = f"cov_txt/{verspec}/{version}/{conf}/{recon_spec}/{combined_tracer}_as_multi"
         cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join([tracers_label_full, reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
         # RascalC results depend on full output (most straightforwardly)
@@ -164,7 +164,6 @@ for tlabels, z_range in zip(tracers, zs):
 
         # Make a combined tracer covariance by collapsing from multi-tracer
         # First, need pycorr names for this region for proper weighting
-        xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(combined_tracer, z_range, recon=True)
         xi_setup.update({"version": version, "tracer": combined_tracer, "region": reg, "zrange": z_range, "cut": None, "njack": njack}) # specify regions, version, z range and no cut; no need for jackknives
         tmp_pycorr_names = [f.filepath for f in fm.select(id = 'correlation_recon_y3', **xi_setup)] # get pycorr file paths for the combined tracer from file manager
         if len(tmp_pycorr_names) == 1:
