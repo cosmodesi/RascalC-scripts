@@ -111,7 +111,7 @@ preserve(outdir) # rename the directory if it exists to prevent overwriting
 corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved pycorr counts
-pycorr_filenames = [["xi/smu/" + os.path.basename(f.filepath).replace(combined_tracer, corlabel) for f in fm.select(id='correlation_y3', tracer=combined_tracer, **(common_setup | xi_setup))] for corlabel in corr_labels]
+pycorr_filenames = [["xi/smu/" + os.path.basename(f.filepath).replace(combined_tracer, corlabel) for f in fm.select(id='correlation_recon_y3', tracer=combined_tracer, **(common_setup | xi_setup))] for corlabel in corr_labels]
 print("pycorr filenames:", pycorr_filenames)
 
 # Filenames for randoms and galaxy catalogs
