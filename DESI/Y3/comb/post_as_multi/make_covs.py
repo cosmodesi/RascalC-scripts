@@ -208,7 +208,7 @@ for tlabels, z_range in zip(tracers, zs):
 
             # Export cross-only covariance to a filename with "_" instead of "&" between the tracers
             cov_name_cross = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # cross-only cov name
-            my_make(cov_name_cross, [cov_name_rescaled], lambda: convert_txt_cov_multi_to_cross(cov_name_rescaled, cov_name_cross))
+            my_make(cov_name_cross, [cov_name], lambda: convert_txt_cov_multi_to_cross(cov_name, cov_name_cross))
 
             # Make a combined tracer covariance by collapsing from multi-tracer
             cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join([combined_tracer, reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # combined cov name
