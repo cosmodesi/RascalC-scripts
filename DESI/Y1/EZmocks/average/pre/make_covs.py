@@ -12,7 +12,7 @@ from RascalC.pycorr_utils.sample_cov_multipoles import sample_cov_multipoles_fro
 from RascalC.post_process.legendre_mocks import post_process_legendre_mocks
 from RascalC.convergence_check_extra import convergence_check_extra
 from RascalC.cov_utils import export_cov_legendre
-from RascalC.comb.combine_covs_legendre import combine_covs_legendre
+from RascalC.combine_regions import combine_covs_legendre
 
 max_l = 4
 nbin = 50 # radial bins for output cov

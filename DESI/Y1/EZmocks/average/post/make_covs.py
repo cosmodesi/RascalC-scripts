@@ -10,7 +10,7 @@ from RascalC import post_process_auto
 from RascalC.utils import blank_function
 from RascalC.pycorr_utils.sample_cov_multipoles import sample_cov_multipoles_from_pycorr_files
 from RascalC.cov_utils import export_cov_legendre
-from RascalC.comb.combine_covs_legendre import combine_covs_legendre
+from RascalC.combine_regions import combine_covs_legendre
 
 max_l = 4
 nbin = 50 # radial bins for output cov

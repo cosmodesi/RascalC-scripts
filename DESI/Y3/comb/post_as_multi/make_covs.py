@@ -11,7 +11,7 @@ from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect
 from RascalC import post_process_auto
 from RascalC.utils import blank_function
 from RascalC.cov_utils import export_cov_legendre_multi, export_cov_legendre_cross, convert_txt_cov_multi_to_cross
-from RascalC.comb.combine_covs_legendre_multi import combine_covs_legendre_multi
+from RascalC.combine_regions import combine_covs_legendre_multi
 from RascalC.comb.convert_cov_legendre_multi_to_cat import convert_cov_legendre_multi_to_cat
 from RascalC.comb.combine_covs_legendre_multi_to_cat import combine_covs_legendre_multi_to_cat
 

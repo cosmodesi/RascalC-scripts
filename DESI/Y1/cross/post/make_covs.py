@@ -9,7 +9,7 @@ from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect
 from RascalC.post_process.legendre_multi import post_process_legendre_multi
 from RascalC.convergence_check_extra import convergence_check_extra
 from RascalC.cov_utils import export_cov_legendre_multi
-from RascalC.comb.combine_covs_legendre_multi import combine_covs_legendre_multi
+from RascalC.combine_regions import combine_covs_legendre_multi
 
 max_l = 4
 nbin = 50 # radial bins for output cov
