@@ -9,6 +9,13 @@ import desi_y3_files.file_manager as desi_y3_file_manager
 from pycorr import setup_logging
 
 
+def catalog_cut_z_range(catalog: Table, z_min: float, z_max: float) -> Table: # utility function to cut a catalog to a redshift range
+    filtering = np.logical_and(catalog["Z"] >= z_min, catalog["Z"] <= z_max) # logical index of redshifts within the range. Strict vs not strict inequality should not matter
+    catalog = catalog[filtering] # filtered catalog
+    catalog.remove_column("Z") # no longer needed, free memory
+    return catalog
+
+
 def process_catalog(filename: str, ref_catalog: Table, random: bool = True) -> None:
     catalog: Table = Table.read(filename)
     catalog.keep_columns(["TARGETID"] + ["TARGETID_DATA"] * random) # keep only TARGETID (and TARGETID_DATA for randoms) for checking the match with the combined catalog
@@ -37,10 +44,10 @@ fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 
 separate_tracers = ['BGS_BRIGHT-21.35', 'LRG', 'ELG_LOPnotqso', 'QSO'] # tracers to split the combined tracer into
 combined_tracer = 'FullCombined' # the combined tracer
-corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]]
 
 # hard-coded because the full combined tracer is not in desi_y3_file_manager
 n_randoms = 5
+zrange = (0.1, 2.1)
 comb_catalog_dir = f"/dvs_ro/cfs/cdirs/desi/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/full_fixed"
 
 my_logger.info(f"Tracer: {combined_tracer}")
@@ -60,10 +67,11 @@ for reg in ("SGC", "NGC"):
             sys.exit(1)
         my_logger.info(f"Reading data catalog for {separate_tracer} from {galaxy_files[0]}")
         data_refs.append(Table.read(galaxy_files[0]))
-        data_refs[-1].keep_columns(["TARGETID"]) # keep only TARGETID for checking the match with the combined catalog
+        data_refs[-1].keep_columns(["Z", "TARGETID"]) # keep only Z for filtering and TARGETID for checking the match with the combined catalog
     data_ref = vstack(data_refs)
     data_ref["TRACERID"] = np.repeat(np.arange(len(separate_tracers)), [len(data_ref) for data_ref in data_refs]) # add TRACERID to keep track of which separate tracer each object belongs to
     del data_refs # no longer needed, free memory
+    data_ref = catalog_cut_z_range(data_ref, *zrange) # cut to the recon z range, this should match the object selection for the recon catalog
 
     galaxy_file = f"{comb_catalog_dir}/{combined_tracer}_{reg}_clustering.dat.fits"
     my_logger.info(f"Reading and matching data catalog for {combined_tracer} from {galaxy_file}")
@@ -82,10 +90,11 @@ for reg in ("SGC", "NGC"):
                 sys.exit(1)
             my_logger.info(f"Reading random catalog for {separate_tracer} #{i_random} from {random_files[0]}")
             random_refs.append(Table.read(random_files[0]))
-            random_refs[-1].keep_columns(["TARGETID", "TARGETID_DATA"]) # keep only TARGETID (and TARGETID_DATA) for checking the match with the combined catalog
+            random_refs[-1].keep_columns(["Z", "TARGETID", "TARGETID_DATA"]) # keep only Z for filtering TARGETID (and TARGETID_DATA) for checking the match with the combined catalog
         random_ref = vstack(random_refs)
         random_ref["TRACERID"] = np.repeat(np.arange(len(separate_tracers)), [len(this_random_ref) for this_random_ref in random_refs]) # add TRACERID to keep track of which separate tracer each random object belongs to
         del random_refs
+        random_ref = catalog_cut_z_range(random_ref, *zrange) # cut to the recon z range, this should match the object selection for the recon catalog
 
         random_file = f"{comb_catalog_dir}/{combined_tracer}_{reg}_{i_random}_clustering.ran.fits"
         try: process_catalog(random_file, random_ref, random=True)
