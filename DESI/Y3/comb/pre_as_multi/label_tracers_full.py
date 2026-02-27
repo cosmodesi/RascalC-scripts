@@ -35,7 +35,7 @@ os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only mount works faster,
 
 fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 
-separate_tracers = ['LRG', 'ELG_LOPnotqso', 'QSO'] # tracers to split the combined tracer into
+separate_tracers = ['BGS_BRIGHT-21.35', 'LRG', 'ELG_LOPnotqso', 'QSO'] # tracers to split the combined tracer into
 combined_tracer = 'FullCombined' # the combined tracer
 corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]]
 
