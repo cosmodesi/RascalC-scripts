@@ -43,7 +43,6 @@ fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 
 separate_tracers = ['LRG', 'ELG_LOPnotqso'] # tracers to split the combined tracer into
 combined_tracer = '+'.join(separate_tracers) # the combined tracer
-corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]]
 
 n_randoms = desi_y3_file_manager.list_nran[combined_tracer]
 my_logger.info(f"Tracer: {combined_tracer}")

@@ -44,7 +44,6 @@ fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 
 separate_tracers = ['LRG', 'ELG_LOPnotqso', 'QSO'] # tracers to split the combined tracer into
 combined_tracer = 'FullCombined' # the combined tracer
-corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]]
 
 # hard-coded because the full combined tracer is not in desi_y3_file_manager
 n_randoms = 5
