@@ -22,7 +22,7 @@ def process_catalog(filename: str, ref_catalog: Table, random: bool = True) -> N
 
 
 setup_logging()
-my_logger = logging.getLogger('label_tracers')
+my_logger = logging.getLogger('label_tracers_full')
 
 # Settings for filenames
 verspec = 'loa-v1'
