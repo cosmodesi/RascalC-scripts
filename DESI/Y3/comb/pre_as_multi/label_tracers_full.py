@@ -71,7 +71,7 @@ for reg in ("SGC", "NGC"):
     data_ref = vstack(data_refs)
     data_ref["TRACERID"] = np.repeat(np.arange(len(separate_tracers)), [len(data_ref) for data_ref in data_refs]) # add TRACERID to keep track of which separate tracer each object belongs to
     del data_refs # no longer needed, free memory
-    data_ref = catalog_cut_z_range(data_ref, *zrange) # cut to the recon z range, this should match the object selection for the recon catalog
+    data_ref = catalog_cut_z_range(data_ref, *zrange) # cut to the z range, this should match the object selection for the combined catalog
 
     galaxy_file = f"{comb_catalog_dir}/{combined_tracer}_{reg}_clustering.dat.fits"
     my_logger.info(f"Reading and matching data catalog for {combined_tracer} from {galaxy_file}")
@@ -94,7 +94,7 @@ for reg in ("SGC", "NGC"):
         random_ref = vstack(random_refs)
         random_ref["TRACERID"] = np.repeat(np.arange(len(separate_tracers)), [len(this_random_ref) for this_random_ref in random_refs]) # add TRACERID to keep track of which separate tracer each random object belongs to
         del random_refs
-        random_ref = catalog_cut_z_range(random_ref, *zrange) # cut to the recon z range, this should match the object selection for the recon catalog
+        random_ref = catalog_cut_z_range(random_ref, *zrange) # cut to the z range, this should match the object selection for the combined catalog
 
         random_file = f"{comb_catalog_dir}/{combined_tracer}_{reg}_{i_random}_clustering.ran.fits"
         try: process_catalog(random_file, random_ref, random=True)
