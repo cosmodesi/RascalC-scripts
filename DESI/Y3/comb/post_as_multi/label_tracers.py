@@ -72,7 +72,6 @@ for reg in ("SGC", "NGC"):
     data_ref = catalog_cut_z_range(data_ref, *recon_setup["recon_zrange"]) # cut to the recon z range, this should match the object selection for the recon catalog
 
     galaxy_files = [f.filepath for f in fm.select(id='catalog_data_recon_y3', tracer=combined_tracer, **(common_setup | recon_setup))] # post-recon
-    my_logger.debug({'id': 'catalog_data_recon_y3', 'tracer': combined_tracer} | common_setup | recon_setup)
     if (n := len(galaxy_files)) != 1:
         my_logger.warning(f"Found not 1 but {n} galaxy files for {combined_tracer}; skipping")
         continue
