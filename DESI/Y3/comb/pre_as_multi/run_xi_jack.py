@@ -2,6 +2,7 @@
 
 import os
 import numpy as np
+import numpy.typing as npt
 import logging
 from astropy.table import Table, vstack
 import desi_y3_files.file_manager as desi_y3_file_manager
@@ -11,17 +12,17 @@ from pycorr import TwoPointCorrelationFunction, setup_logging, KMeansSubsampler
 from LSS.tabulated_cosmo import TabulatedDESI
 
 
-def get_rdd_positions(catalog: Table | None) -> tuple[np.typing.NDArray[np.float64], np.typing.NDArray[np.float64], np.typing.NDArray[np.float64]] | None: # utility function to format positions from a catalog, handling the None case intended for the second tracer in auto-correlations
+def get_rdd_positions(catalog: Table | None) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]] | None: # utility function to format positions from a catalog, handling the None case intended for the second tracer in auto-correlations
     if catalog is None: return None
     return (catalog["RA"], catalog["DEC"], catalog["comov_dist"])
 
 
-def get_weights(catalog: Table | None) -> np.typing.NDArray[np.float64] | None: # utility function to format weights from a catalog, handling the None case intended for the second tracer in auto-correlations
+def get_weights(catalog: Table | None) -> npt.NDArray[np.float64] | None: # utility function to format weights from a catalog, handling the None case intended for the second tracer in auto-correlations
     if catalog is None: return None
     return catalog["WEIGHT"]
 
 
-def get_samples(catalog: Table | None) -> np.typing.NDArray[np.float64] | None: # utility function to format samples from a catalog, handling the None case intended for the second tracer in auto-correlations
+def get_samples(catalog: Table | None) -> npt.NDArray[np.float64] | None: # utility function to format samples from a catalog, handling the None case intended for the second tracer in auto-correlations
     if catalog is None: return None
     return catalog["JACK"]
 

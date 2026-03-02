@@ -3,11 +3,12 @@
 # Currently wrapped into a function to be imported by the other scripts
 
 import numpy as np
+import numpy.typing as npt
 from astropy.table import Table
 from RascalC.pre_process.convert_to_xyz import comoving_distance_Mpch
 from RascalC.pre_process.create_jackknives_pycorr import get_subsampler_xirunpc
 
-def get_rdd_positions(catalog: Table) -> tuple[np.typing.NDArray[np.float64]]: # utility function to format positions from a catalog
+def get_rdd_positions(catalog: Table) -> tuple[npt.NDArray[np.float64]]: # utility function to format positions from a catalog
     return (catalog["RA"], catalog["DEC"], catalog["comov_dist"])
 
 z_min, z_max = 0.43, 0.7
