@@ -5,7 +5,7 @@
 #SBATCH --gpus=4
 #SBATCH --qos=regular
 #SBATCH --account=desi_g
-#SBATCH --job-name=LRG+ELG-separate-xi-jack-recon
+#SBATCH --job-name=combined-tracer-separate-xi-jack-recon
 
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
 
