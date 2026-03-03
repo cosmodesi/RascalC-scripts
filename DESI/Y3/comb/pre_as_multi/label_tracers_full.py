@@ -48,7 +48,7 @@ combined_tracer = 'FullCombined' # the combined tracer
 # hard-coded because the full combined tracer is not in desi_y3_file_manager
 n_randoms = 5
 zrange = (0.1, 2.1)
-comb_catalog_dir = f"/dvs_ro/cfs/cdirs/desi/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/full_fixed"
+comb_catalog_dir = f"/dvs_ro/cfs/cdirs/desi/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/full"
 
 my_logger.info(f"Tracer: {combined_tracer}")
 
