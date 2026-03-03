@@ -27,7 +27,7 @@ def get_samples(catalog: Table | None) -> npt.NDArray[np.float64] | None: # util
     return catalog["JACK"]
 
 
-def prepare_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, jack_sampler: KMeansSubsampler | None = None, FKP_weight: bool = True, pre_recon: bool = False) -> Table:
+def prepare_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, jack_sampler: KMeansSubsampler | None = None, FKP_weight: bool = True, pre_recon: bool = False, distinct_tracer_id: int = 1) -> Table:
     catalog: Table = Table.read(filename)
     if FKP_weight: catalog["WEIGHT"] *= catalog["WEIGHT_FKP"] # apply FKP weight multiplicatively
     catalog.keep_columns(["RA", "DEC", "Z", "WEIGHT"]) # discard everything else, including TARGETID (which is no longer needed)
@@ -37,7 +37,7 @@ def prepare_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf
         if catalog[key].dtype != float: # ensure all columns are float(64) for pycorr
             catalog[key] = catalog[key].astype(float)
     npz_filename = "../pre_as_multi/" * pre_recon + os.path.basename(filename).replace(".fits", ".npz") # load from pre-recon directory if set, otherwise from the current (post-recon) directory
-    catalog["TRACERID"] = np.load(npz_filename)["TRACERID"][filtering] # load and add TRACERID to keep track of which separate tracer each object belongs to
+    catalog["TRACERID"] = (np.load(npz_filename)["TRACERID"][filtering] == distinct_tracer_id) # load and add TRACERID to keep track of which separate tracer each object belongs to. Convert to binary classification for the distinct tracer vs the rest
     catalog["comov_dist"] = cosmology.comoving_radial_distance(catalog["Z"])
     if jack_sampler: catalog["JACK"] = jack_sampler.label(get_rdd_positions(catalog), position_type = 'rdd')
     return catalog
@@ -51,6 +51,7 @@ cosmology = TabulatedDESI()
 verspec = 'loa-v1'
 version = "v1.1"
 conf = "BAO/unblinded"
+conf_alt = "unblinded" # for files under Nick's directory
 
 # Set DESI CFS before creating the file manager
 os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only mount works faster, and we don't need to write
@@ -68,13 +69,14 @@ all_edges = [(s_edges, np.linspace(-1, 1, n_mu_bins+1)) for s_edges in (np.arang
 
 n_jack = 60
 
-separate_tracers = ['LRG', 'ELG_LOPnotqso'] # tracers to split the combined tracer into
-combined_tracer = '+'.join(separate_tracers) # the combined tracer
-corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]]
+all_separate_tracers = [['LRG', 'ELG_LOPnotqso'], ['LRG+ELG_LOPnotqso', 'QSO']] # tracers to split the combined tracers into
+distinct_tracer_ids = [1, 2] # TRACERID of the tracer to be treated differently from others (1 is trivial among 0, 1, but when we have 3, we need to make 2 of them for RascalC. 2 corresponds to QSO for the full combined tracer post-recon)
+combined_tracers = ['LRG+ELG_LOPnotqso', 'FullCombined'] # the combined tracers
+all_z_ranges = [(0.8, 1.1)] * 2
 
-for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
-    if tracer != combined_tracer: continue
-    n_randoms = desi_y3_file_manager.list_nran[tracer]
+for tracer, separate_tracers, combined_tracer, z_ranges, distinct_tracer_id in zip(all_separate_tracers, distinct_tracer_ids, combined_tracers, all_z_ranges, distinct_tracer_ids):
+    corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]]
+    n_randoms = 5 if tracer == 'FullCombined' else desi_y3_file_manager.list_nran[tracer]
     my_logger.info(f"Tracer: {tracer}")
 
     for reg in ("SGC", "NGC"):
@@ -83,51 +85,59 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
         for z_range in z_ranges:
             z_min, z_max = z_range
             my_logger.info(f"Redshift range: {z_min}-{z_max}")
-            common_setup = {"tracer": tracer, "region": reg, "version": version, "grid_cosmo": None} # grid_cosmo provided for unshifted randoms
-            recon_setup = desi_y3_file_manager.get_baseline_recon_setup(tracer, z_range)
-            recon_setup.pop("zrange")
-            xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tracer, z_range, recon=True)
-            xi_setup.update({"zrange": z_range, "cut": None, "njack": n_jack})
 
-            default_output_files = [f.filepath for f in fm.select(id='correlation_recon_y3', **(common_setup | xi_setup))]
-            if (n := len(default_output_files)) != 1:
-                my_logger.warning(f"Found not 1 but {n} jackknife counts files; skipping")
+            # skip catalog preparation if all output files exist
+            output_files = [f"{output_dir}/allcounts_{corr_label}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{n_randoms}_njack{n_jack}_split{split_above}.npy" for corr_label in corr_labels]
+            if all(os.path.exists(output_file) for output_file in output_files):
+                my_logger.info(f"All output files {output_files} exist, skipping")
                 continue
-            default_output_file = default_output_files[0]
 
-            galaxy_files = [f.filepath for f in fm.select(id='catalog_data_recon_y3', **(common_setup | recon_setup))]
-            if (n := len(galaxy_files)) != 1:
-                my_logger.warning(f"Found not 1 but {n} galaxy files; skipping")
-                continue
-            try: galaxies = prepare_catalog(galaxy_files[0], z_min, z_max)
+            if tracer == 'FullCombined': # generate filenames procedurally
+                data_dir = f"/dvs_ro/cfs/cdirs/desi/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/full"
+                recon_dir = "recon_sm15_IFFT_recsym_z0.8-1.1"
+                galaxy_files = [f"{data_dir}/{recon_dir}/{tracer}_{reg}_clustering.dat.fits"] # post-recon data
+            else: # get filenames from the file manager
+                common_setup = {"tracer": tracer, "region": reg, "version": version, "grid_cosmo": None} # grid_cosmo provided for unshifted randoms
+                recon_setup = desi_y3_file_manager.get_baseline_recon_setup(tracer, z_range)
+                recon_setup.pop("zrange") # having zrange causes error in catalog selection
+                galaxy_files = [f.filepath for f in fm.select(id='catalog_data_recon_y3', **(common_setup | recon_setup))] # post-recon data
+                if (n := len(galaxy_files)) != 1:
+                    my_logger.warning(f"Found not 1 but {n} galaxy files; skipping")
+                    continue
+            try: galaxies = prepare_catalog(galaxy_files[0], z_min, z_max, distinct_tracer_id=distinct_tracer_id)
             except Exception as e:
                 my_logger.warning(f"Failed to prepare galaxy catalog: {e}. Skipping")
                 continue
             jack_sampler = get_subsampler_xirunpc(get_rdd_positions(galaxies), n_jack)
             galaxies["JACK"] = jack_sampler.label(get_rdd_positions(galaxies), position_type = 'rdd')
 
-            shifted_random_files = [f.filepath for f in fm.select(id='catalog_randoms_recon_y3', iran=range(n_randoms), **(common_setup | recon_setup))] # shifted (post-recon) randoms
-            if (n := len(shifted_random_files)) != n_randoms:
-                my_logger.warning(f"Found not {n_randoms} but {n} shifted random files; skipping")
-                continue
-            try: all_shifted_randoms = [prepare_catalog(shifted_random_file, z_min, z_max, jack_sampler) for shifted_random_file in shifted_random_files]
+            if tracer == 'FullCombined': # generate filenames procedurally
+                shifted_random_files = [f"{data_dir}/{recon_dir}/{tracer}_{reg}_{iran}_clustering.ran.fits" for iran in range(n_randoms)] # shifted (post-recon) randoms
+            else: # get filenames from the file manager
+                shifted_random_files = [f.filepath for f in fm.select(id='catalog_randoms_recon_y3', iran=range(n_randoms), **(common_setup | recon_setup))] # shifted (post-recon) randoms
+                if (n := len(shifted_random_files)) != n_randoms:
+                    my_logger.warning(f"Found not {n_randoms} but {n} shifted random files; skipping")
+                    continue
+            try: all_shifted_randoms = [prepare_catalog(shifted_random_file, z_min, z_max, jack_sampler, distinct_tracer_id=distinct_tracer_id) for shifted_random_file in shifted_random_files]
             except Exception as e:
                 my_logger.warning(f"Failed to prepare shifted random catalogs: {e}. Skipping")
                 continue
 
-            random_files = [f.filepath for f in fm.select(id='catalog_randoms_y3', iran=range(n_randoms), **common_setup)] # unshifted (pre-recon) randoms
-            if (n := len(random_files)) != n_randoms:
-                my_logger.warning(f"Found not {n_randoms} but {n} random files; skipping")
-                continue
-            try: all_randoms = [prepare_catalog(random_file, z_min, z_max, jack_sampler, pre_recon=True) for random_file in random_files]
+            if tracer == 'FullCombined': # generate filenames procedurally
+                random_files = [f"{data_dir}/{tracer}_{reg}_{iran}_clustering.ran.fits" for iran in range(n_randoms)] # unshifted (pre-recon) randoms
+            else: # get filenames from the file manager
+                random_files = [f.filepath for f in fm.select(id='catalog_randoms_y3', iran=range(n_randoms), **common_setup)] # unshifted (pre-recon) randoms
+                if (n := len(random_files)) != n_randoms:
+                    my_logger.warning(f"Found not {n_randoms} but {n} random files; skipping")
+                    continue
+            try: all_randoms = [prepare_catalog(random_file, z_min, z_max, jack_sampler, pre_recon=True, distinct_tracer_id=distinct_tracer_id) for random_file in random_files]
             except Exception as e:
                 my_logger.warning(f"Failed to prepare random catalogs: {e}. Skipping")
                 continue
 
-            for t1, t2, corr_label in zip(tracer1_corr, tracer2_corr, corr_labels):
+            for t1, t2, corr_label, output_file in zip(tracer1_corr, tracer2_corr, corr_labels, output_files):
                 my_logger.info(f"Computing {corr_label} {'auto' if t1 == t2 else 'cross'}-correlation")
 
-                output_file = f"{output_dir}/{os.path.basename(default_output_file)}".replace(combined_tracer, corr_label) # switch to the output dir
                 if os.path.exists(output_file):
                     my_logger.info(f"Output file {output_file} exists, skipping")
                     continue
@@ -149,13 +159,13 @@ for tracer, z_ranges in desi_y3_file_manager.list_zrange.items():
                         these_randoms = all_randoms[i_random] if i_split_randoms else vstack(all_randoms)
                         these_randoms1 = these_randoms[these_randoms["TRACERID"] == t1]
                         these_randoms2 = None if t1 == t2 else these_randoms[these_randoms["TRACERID"] == t2] # for auto-correlation, set the second tracer to None for proper handling in the TwoPointCorrelationFunction call. helper functions will propagate None into the positions, weights and samples
-                        tmp = TwoPointCorrelationFunction(mode = 'smu', edges = edges,
+                        tmp = TwoPointCorrelationFunction(mode='smu', edges=edges,
                                                           data_positions1=get_rdd_positions(galaxies1), data_weights1=get_weights(galaxies1), data_samples1=get_samples(galaxies1),
                                                           data_positions2=get_rdd_positions(galaxies2), data_weights2=get_weights(galaxies2), data_samples2=get_samples(galaxies2),
                                                           shifted_positions1=get_rdd_positions(these_shifted_randoms1), shifted_weights1=get_weights(these_shifted_randoms1), shifted_samples1=get_samples(these_shifted_randoms1),
                                                           shifted_positions2=get_rdd_positions(these_shifted_randoms2), shifted_weights2=get_weights(these_shifted_randoms2), shifted_samples2=get_samples(these_shifted_randoms2),
                                                           randoms_positions1=get_rdd_positions(these_randoms1), randoms_weights1=get_weights(these_randoms1), randoms_samples1=get_samples(these_randoms1),
-                                                          randoms_positions2 = get_rdd_positions(these_randoms2), randoms_weights2=get_weights(these_randoms2), randoms_samples2=get_samples(these_randoms2),
+                                                          randoms_positions2=get_rdd_positions(these_randoms2), randoms_weights2=get_weights(these_randoms2), randoms_samples2=get_samples(these_randoms2),
                                                           position_type='rdd', engine='corrfunc', D1D2=D1D2, gpu=True, nthreads=4)
                         D1D2 = tmp.D1D2
                         result += tmp
