@@ -72,9 +72,9 @@ n_jack = 60
 all_separate_tracers = [['LRG', 'ELG_LOPnotqso'], ['LRG+ELG_LOPnotqso', 'QSO']] # tracers to split the combined tracers into
 distinct_tracer_ids = [1, 2] # TRACERID of the tracer to be treated differently from others (1 is trivial among 0, 1, but when we have 3, we need to make 2 of them for RascalC. 2 corresponds to QSO for the full combined tracer)
 combined_tracers = ['LRG+ELG_LOPnotqso', 'FullCombined'] # the combined tracers
-all_z_ranges = [(0.8, 1.1)] * 2
+all_z_ranges = [((0.8, 1.1),)] * 2
 
-for tracer, separate_tracers, combined_tracer, z_ranges, distinct_tracer_id in zip(all_separate_tracers, distinct_tracer_ids, combined_tracers, all_z_ranges, distinct_tracer_ids):
+for tracer, separate_tracers, z_ranges, distinct_tracer_id in zip(combined_tracers, all_separate_tracers, all_z_ranges, distinct_tracer_ids):
     corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]]
     n_randoms = 5 if tracer == 'FullCombined' else desi_y3_file_manager.list_nran[tracer]
     my_logger.info(f"Tracer: {tracer}")
