@@ -68,10 +68,10 @@ for reg in ("SGC", "NGC"):
         my_logger.info(f"Reading data catalog for {separate_tracer} from {galaxy_files[0]}")
         data_refs.append(Table.read(galaxy_files[0]))
         data_refs[-1].keep_columns(["Z", "TARGETID"]) # keep only Z for filtering and TARGETID for checking the match with the combined catalog
+        data_refs[-1] = catalog_cut_z_range(data_refs[-1], *zrange) # cut to the z range, this should match the object selection for the combined catalog
     data_ref = vstack(data_refs)
     data_ref["TRACERID"] = np.repeat(np.arange(len(separate_tracers)), [len(data_ref) for data_ref in data_refs]) # add TRACERID to keep track of which separate tracer each object belongs to
     del data_refs # no longer needed, free memory
-    data_ref = catalog_cut_z_range(data_ref, *zrange) # cut to the z range, this should match the object selection for the combined catalog
 
     galaxy_file = f"{comb_catalog_dir}/{combined_tracer}_{reg}_clustering.dat.fits"
     my_logger.info(f"Reading and matching data catalog for {combined_tracer} from {galaxy_file}")
@@ -91,10 +91,10 @@ for reg in ("SGC", "NGC"):
             my_logger.info(f"Reading random catalog for {separate_tracer} #{i_random} from {random_files[0]}")
             random_refs.append(Table.read(random_files[0]))
             random_refs[-1].keep_columns(["Z", "TARGETID", "TARGETID_DATA"]) # keep only Z for filtering TARGETID (and TARGETID_DATA) for checking the match with the combined catalog
+            random_refs[-1] = catalog_cut_z_range(random_refs[-1], *zrange) # cut to the z range, this should match the object selection for the combined catalog
         random_ref = vstack(random_refs)
         random_ref["TRACERID"] = np.repeat(np.arange(len(separate_tracers)), [len(this_random_ref) for this_random_ref in random_refs]) # add TRACERID to keep track of which separate tracer each random object belongs to
         del random_refs
-        random_ref = catalog_cut_z_range(random_ref, *zrange) # cut to the z range, this should match the object selection for the combined catalog
 
         random_file = f"{comb_catalog_dir}/{combined_tracer}_{reg}_{i_random}_clustering.ran.fits"
         try: process_catalog(random_file, random_ref, random=True)
