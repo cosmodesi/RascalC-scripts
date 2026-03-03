@@ -70,7 +70,7 @@ all_edges = [(s_edges, np.linspace(-1, 1, n_mu_bins+1)) for s_edges in (np.arang
 n_jack = 60
 
 all_separate_tracers = [['LRG', 'ELG_LOPnotqso'], ['LRG+ELG_LOPnotqso', 'QSO']] # tracers to split the combined tracers into
-distinct_tracer_ids = [1, 2] # TRACERID of the tracer to be treated differently from others (1 is trivial among 0, 1, but when we have 3, we need to make 2 of them for RascalC. 2 corresponds to QSO for the full combined tracer post-recon)
+distinct_tracer_ids = [1, 2] # TRACERID of the tracer to be treated differently from others (1 is trivial among 0, 1, but when we have 3, we need to make 2 of them for RascalC. 2 corresponds to QSO for the full combined tracer)
 combined_tracers = ['LRG+ELG_LOPnotqso', 'FullCombined'] # the combined tracers
 all_z_ranges = [(0.8, 1.1)] * 2
 
