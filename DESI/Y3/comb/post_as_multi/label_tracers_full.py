@@ -97,7 +97,7 @@ for reg in ("SGC", "NGC"):
         del random_refs
 
         random_file = f"{comb_catalog_dir}/{combined_tracer}_{reg}_{i_random}_clustering.ran.fits"
-        try: process_catalog(random_file, random_ref, random=False) # set/keep random=False because apparently the post-recon random catalogs do not have TARGETID_DATA, so it can not be checked. Checking TARGETID is probably enough to convince ourselves that the match is not a coincidence
+        try: process_catalog(random_file, random_ref, random=True)
         except Exception as e:
             my_logger.warning(f"Failed to process random catalog for {combined_tracer} #{i_random}: {e}. Skipping")
             continue
