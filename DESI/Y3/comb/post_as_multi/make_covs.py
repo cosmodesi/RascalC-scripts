@@ -35,20 +35,16 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 verspec = 'loa-v1'
 version = "v1.1"
 conf = "BAO/unblinded"
-
-# Set DESI CFS before creating the file manager
-os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
-
-fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
+conf_alt = "unblinded" # for files under Nick's directory
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracers = [['LRG', 'ELG_LOPnotqso']]
-zs = [(0.8, 1.1)]
+tracers = [['LRG', 'ELG_LOPnotqso'], ['LRG+ELG_LOPnotqso', 'QSO']]
+combined_tracers = ['LRG+ELG_LOPnotqso', 'FullCombined']
+zs = [(0.8, 1.1)] * 2
 
 # for custom cross-counts
-nrandoms = 5
 split_above = 20
 
 hash_dict_file = "make_covs.hash_dict.pkl"
@@ -116,17 +112,18 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
     return h.hexdigest()
 
 # Make steps for making covs
-for tlabels, z_range in zip(tracers, zs):
+for tlabels, z_range, combined_tracer in zip(tracers, zs, combined_tracers):
     corlabels = [tlabels[0], "_".join(tlabels), tlabels[1]]
     tracers_label_full = "&".join(tlabels)
-    combined_tracer = '+'.join(tlabels) # the combined tracer
     z_min, z_max = z_range
     reg_results = []
-    # get options automatically
-    xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(combined_tracer, z_range, recon = True)
-    recon_spec = 'recon_sm{smoothing_radius:.0f}_{algorithm}_{mode}'.format_map(xi_setup) # recon specifier string
-    recon_spec += '' if (zr := xi_setup['recon_zrange']) is None else '_z{zrange[0]:.1f}-{zrange[1]:.1f}'.format(zrange = zr)
-    recon_spec += '' if (w := xi_setup['recon_weighting']) == 'default' else '_{}'.format(w)
+    nrandoms = 5 if combined_tracer == 'FullCombined' else desi_y3_file_manager.list_nran[combined_tracer]
+    if combined_tracer == 'FullCombined': recon_spec = 'recon_sm15_IFFT_recsym_z0.8-1.1'
+    else: # get options automatically
+        xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(combined_tracer, z_range, recon = True)
+        recon_spec = 'recon_sm{smoothing_radius:.0f}_{algorithm}_{mode}'.format_map(xi_setup) # recon specifier string
+        recon_spec += '' if (zr := xi_setup['recon_zrange']) is None else '_z{zrange[0]:.1f}-{zrange[1]:.1f}'.format(zrange = zr)
+        recon_spec += '' if (w := xi_setup['recon_weighting']) == 'default' else '_{}'.format(w)
     if jackknife: reg_results_jack = []
     reg_pycorr_names = []
     for reg in regs:
@@ -163,15 +160,11 @@ for tlabels, z_range in zip(tracers, zs):
         my_make(cov_name, [results_name], lambda: export_cov_legendre_cross(results_name, max_l, cov_name))
 
         # Make a combined tracer covariance by collapsing from multi-tracer
-        # First, need pycorr names for this region for proper weighting
-        xi_setup.update({"version": version, "tracer": combined_tracer, "region": reg, "zrange": z_range, "cut": None, "njack": njack}) # specify regions, version, z range and no cut; no need for jackknives
-        tmp_pycorr_names = [f.filepath for f in fm.select(id = 'correlation_recon_y3', **xi_setup)] # get pycorr file paths for the combined tracer from file manager
-        if len(tmp_pycorr_names) == 1:
-            this_reg_pycorr_names = ["xi/smu/" + os.path.basename(tmp_pycorr_names[0]).replace(combined_tracer, corlabel) for corlabel in corlabels] # generate filenames generated under this directory for the separate tracer auto- and cross-correlations
-            reg_pycorr_names.append(this_reg_pycorr_names)
-            # now can make the covariance
-            cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join([combined_tracer, reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
-            my_make(cov_name, [results_name], lambda: convert_cov_legendre_multi_to_cat(results_name, this_reg_pycorr_names, cov_name, max_l, r_step=r_step, skip_r_bins=skip_r_bins, print_function = print_and_log))
+        this_reg_pycorr_names = [["xi/smu/" + f"allcounts_{corlabel}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{nrandoms}_njack{njack}_split{split_above}.npy"] for corlabel in corlabels] # generate filenames generated under this directory for the separate tracer auto- and cross-correlations
+        reg_pycorr_names.append(this_reg_pycorr_names)
+        # now can make the covariance
+        cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join([combined_tracer, reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
+        my_make(cov_name, [results_name], lambda: convert_cov_legendre_multi_to_cat(results_name, this_reg_pycorr_names, cov_name, max_l, r_step=r_step, skip_r_bins=skip_r_bins, print_function = print_and_log))
 
         # Jackknife post-processing
         if jackknife:
@@ -193,9 +186,8 @@ for tlabels, z_range in zip(tracers, zs):
             my_make(cov_name_rescaled, [results_name_jack], lambda: export_cov_legendre_cross(results_name_jack, max_l, cov_name_rescaled))
 
             # Make a combined tracer covariance by collapsing from multi-tracer
-            if len(tmp_pycorr_names) == 1:
-                cov_name_rescaled = f"{cov_dir}/xi" + xilabel + "_" + "_".join([combined_tracer, reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt"
-                my_make(cov_name_rescaled, [results_name_jack], lambda: convert_cov_legendre_multi_to_cat(results_name_jack, this_reg_pycorr_names, cov_name_rescaled, max_l, r_step=r_step, skip_r_bins=skip_r_bins, print_function = print_and_log))
+            cov_name_rescaled = f"{cov_dir}/xi" + xilabel + "_" + "_".join([combined_tracer, reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt"
+            my_make(cov_name_rescaled, [results_name_jack], lambda: convert_cov_legendre_multi_to_cat(results_name_jack, this_reg_pycorr_names, cov_name_rescaled, max_l, r_step=r_step, skip_r_bins=skip_r_bins, print_function = print_and_log))
 
     if len(reg_pycorr_names) == len(regs): # if we have pycorr files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions
