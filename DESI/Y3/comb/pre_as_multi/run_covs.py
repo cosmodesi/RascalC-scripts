@@ -9,7 +9,7 @@ from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
 import argparse
 
-parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 pre-recon combined tracer as multi-tracer")
+parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 pre-recon combined tracers as multi-tracer")
 parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
 parser.add_argument("-t", "--test", action = "store_true", help = "test the input files, abort before the main computation")
 args = parser.parse_args()
@@ -24,13 +24,13 @@ def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory 
             return
     raise RuntimeError(f"Could not back up {filename}, aborting.")
 
-def read_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, FKP_weight: bool = True):
+def read_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, FKP_weight: bool = True, distinct_tracer_id: int = 1) -> Table:
     catalog = Table.read(filename)
     if FKP_weight: catalog["WEIGHT"] *= catalog["WEIGHT_FKP"] # apply FKP weight multiplicatively
     catalog.keep_columns(["RA", "DEC", "Z", "WEIGHT"]) # discard everything else
     filtering = np.logical_and(catalog["Z"] >= z_min, catalog["Z"] <= z_max) # logical index of redshifts within the range
     catalog = catalog[filtering] # filtered catalog
-    catalog["TRACERID"] = np.load(os.path.basename(filename).replace(".fits", ".npz"))["TRACERID"][filtering] # load and add TRACERID to keep track of which separate tracer each object belongs to
+    catalog["TRACERID"] = (np.load(os.path.basename(filename).replace(".fits", ".npz"))["TRACERID"][filtering] == distinct_tracer_id) # load and add TRACERID to keep track of which separate tracer each object belongs to. Convert to binary classification for the distinct tracer vs the rest
     return catalog
 
 # Mode settings
@@ -65,6 +65,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 verspec = 'loa-v1'
 version = "v1.1"
 conf = "BAO/unblinded"
+conf_alt = "unblinded" # for files under Nick's directory
 
 # Set DESI CFS before creating the file manager
 os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
@@ -75,24 +76,35 @@ id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 # need 2 jobs in this array
 
-separate_tracers = ['LRG', 'ELG_LOPnotqso'] # tracers to split the combined tracer into
-combined_tracer = '+'.join(separate_tracers) # the combined tracer
-z_range = (0.8, 1.1) # for redshift cut and filenames
-z_min, z_max = z_range
-nrandoms = desi_y3_file_manager.list_nran[combined_tracer]
+id //= 2 # extracted all needed info from parity, move on
+all_separate_tracers = [['LRG', 'ELG_LOPnotqso'], ['LRG+ELG_LOPnotqso', 'QSO']] # tracers to split the combined tracers into
+distinct_tracer_ids = [1, 2] # TRACERID of the tracer to be treated differently from others (1 is trivial among 0, 1, but when we have 3, we need to make 2 of them for RascalC. 2 corresponds to QSO for the full combined tracer)
+combined_tracers = ['LRG+ELG_LOPnotqso', 'FullCombined'] # the combined tracers
+zs = [(0.8, 1.1)] * 2
+# need 2 * 2 = 4 jobs in this array
 
-if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
+separate_tracers = all_separate_tracers[id]
+distinct_tracer_id = distinct_tracer_ids[id]
+combined_tracer = combined_tracers[id]
+z_range = zs[id] # for redshift cut and filenames
+z_min, z_max = z_range
+nrandoms = 5 if combined_tracer == 'FullCombined' else desi_y3_file_manager.list_nran[combined_tracer]
 
 # set the number of integration loops based on tracer, z range and region
 n_loops = {'LRG+ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 512,
-                                              'NGC': 512}}}[combined_tracer][z_range][reg]
+                                              'NGC': 512}},
+           'FullCombined': {(0.8, 1.1): {'SGC': 256,
+                                         'NGC': 256}}}[combined_tracer][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
-common_setup = {"region": reg, "version": version, "grid_cosmo": None}
-xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(combined_tracer, z_range)
-xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives
+if combined_tracer == 'FullCombined':
+    catalog_dir = f"/dvs_ro/cfs/cdirs/desi/users/sandersn/DA2/{verspec}/{version}/{conf_alt}/full/" # directory for catalogs
+else:
+    common_setup = {"region": reg, "version": version, "grid_cosmo": None}
+    xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(combined_tracer, z_range)
+    xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_range, no cut and jackknives
 
 # Output and temporary directories
 
@@ -105,14 +117,23 @@ preserve(outdir) # rename the directory if it exists to prevent overwriting
 corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved pycorr counts
-pycorr_filenames = [["xi/smu/" + os.path.basename(f.filepath).replace(combined_tracer, corlabel) for f in fm.select(id='correlation_y3', tracer=combined_tracer, **(common_setup | xi_setup))] for corlabel in corr_labels]
+pycorr_filenames = [["xi/smu/" + f"allcounts_{corlabel}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{nrandoms}_njack{njack}_split20.npy"] for corlabel in corr_labels]
 print("pycorr filenames:", pycorr_filenames)
 
+if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms. Can't reset this earlier because it will invalidate the pycorr filenames
+
 # Filenames for randoms and galaxy catalogs
-random_filenames = [f.filepath for f in fm.select(id='catalog_randoms_y3', tracer=combined_tracer, iran=range(nrandoms), **common_setup)]
+if combined_tracer == 'FullCombined': # for the full combined tracer, we don't have the files in desi_y3_file_manager, so we hard-code the directory and filenames
+    random_filenames = [f"{catalog_dir}/{combined_tracer}_{reg}_{iran}_clustering.ran.fits" for iran in range(nrandoms)]
+else:
+    random_filenames = [f.filepath for f in fm.select(id='catalog_randoms_y3', tracer=combined_tracer, iran=range(nrandoms), **common_setup)]
 print("Random filenames:", random_filenames)
 if njack:
-    data_ref_filename = fm.select(id='catalog_data_y3', tracer=combined_tracer, **common_setup)[0].filepath # only for jackknife reference, could be used for determining the number of galaxies but not in this case
+    if combined_tracer == 'FullCombined':
+        data_ref_filename = f"{catalog_dir}/{combined_tracer}_{reg}_clustering.dat.fits"
+    else:
+        data_ref_filename = fm.select(id='catalog_data_y3', tracer=combined_tracer, **common_setup)[0].filepath
+    # only for jackknife reference, could be used for determining the number of galaxies but not in this case
     print("Data filename:", data_ref_filename)
 
 # Load pycorr counts
@@ -143,21 +164,20 @@ randoms_positions = [None] * ntracers_max
 randoms_weights = [None] * ntracers_max
 randoms_samples = [None] * ntracers_max
 # read randoms with redshift cut
-random_catalog = vstack([read_catalog(random_filename, z_min = z_min, z_max = z_max) for random_filename in random_filenames])
+random_catalog = vstack([read_catalog(random_filename, z_min=z_min, z_max=z_max, distinct_tracer_id=distinct_tracer_id) for random_filename in random_filenames])
 # create jackknives
 if njack:
-    data_catalog = read_catalog(data_ref_filename, z_min = z_min, z_max = z_max)
-    subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', nsamples = njack, nside = 512, random_state = 42)
+    data_catalog = read_catalog(data_ref_filename, z_min=z_min, z_max=z_max, distinct_tracer_id=distinct_tracer_id)
+    subsampler = KMeansSubsampler('angular', positions=[data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type='rdd', nsamples=njack, nside=512, random_state=42)
     del data_catalog
-    random_catalog["JACK"] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
+    random_catalog["JACK"] = subsampler.label(positions=[random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type='rdd')
     del subsampler
 for t in range(len(separate_tracers)):
     sel = random_catalog["TRACERID"] == t
     randoms_weights[t] = random_catalog["WEIGHT"][sel]
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"][sel], random_catalog["DEC"][sel], cosmology.comoving_radial_distance(random_catalog["Z"][sel])]
-    if njack:
-        randoms_samples[t] = random_catalog["JACK"][sel]
+    if njack: randoms_samples[t] = random_catalog["JACK"][sel]
 del random_catalog, sel # free memory
 
 if args.test: sys.exit(0) # exit with an ok status in a test run
