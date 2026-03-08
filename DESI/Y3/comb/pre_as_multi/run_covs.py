@@ -111,7 +111,6 @@ else:
 outdir_base = os.path.join(verspec, version, conf, "_".join([combined_tracer, reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
-preserve(outdir) # rename the directory if it exists to prevent overwriting
 
 # Form correlation function labels
 corr_labels = [separate_tracers[0], "_".join(separate_tracers), separate_tracers[1]] # cross-correlation comes between the auto-correlatons
@@ -181,6 +180,7 @@ for t in range(len(separate_tracers)):
 del random_catalog, sel # free memory
 
 if args.test: sys.exit(0) # exit with an ok status in a test run
+preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode=mode, max_l=max_l, boxsize=periodic_boxsize,
