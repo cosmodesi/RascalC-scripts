@@ -154,7 +154,7 @@ for tlabels, z_range, combined_tracer in zip(tracers, zs, combined_tracers):
         my_make(cov_name, [results_name], lambda: export_cov_legendre_cross(results_name, max_l, cov_name))
 
         # Make a combined tracer covariance by collapsing from multi-tracer
-        this_reg_pycorr_names = [["xi/smu/" + f"allcounts_{corlabel}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{nrandoms}_njack{njack}_split{split_above}.npy"] for corlabel in corlabels] # generate filenames generated under this directory for the separate tracer auto- and cross-correlations
+        this_reg_pycorr_names = ["xi/smu/" + f"allcounts_{corlabel}_{reg}_z{z_min}-{z_max}_default_FKP_lin_nran{nrandoms}_njack{njack}_split{split_above}.npy" for corlabel in corlabels] # generate filenames generated under this directory for the separate tracer auto- and cross-correlations
         reg_pycorr_names.append(this_reg_pycorr_names)
         # now can make the covariance
         cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join([combined_tracer, reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
