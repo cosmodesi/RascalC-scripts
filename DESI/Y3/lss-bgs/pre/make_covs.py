@@ -15,9 +15,11 @@ from RascalC.cov_utils import export_cov_legendre
 from RascalC.comb.combine_covs_legendre import combine_covs_legendre
 import argparse
 
-parser = argparse.ArgumentParser(description = "RascalC covariance making script for DESI Y3 pre-recon LSS-BGS", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--compmd", help = "completeness mode, nonKP or PIP", default='nonKP')
-parser.add_argument("--version", help = "LSS catalog version label", default='v2')
+parser = argparse.ArgumentParser(description="RascalC covariance making script for DESI Y3 pre-recon LSS-BGS", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("--compmd", help="completeness mode, nonKP or PIP", default='nonKP')
+parser.add_argument("--version", help="LSS catalog version label", default='v2')
+parser.add_argument("-f", "--force", help="force remaking of files that do not seem to need an update", action='store_true')
+parser.add_argument("-v", "--verbose", help="report more details during dependency checks", action='store_true')
 args = parser.parse_args()
 
 max_l = 4
@@ -75,7 +77,7 @@ print_log = lambda l: os.system(f"echo \"{l}\" >> {logfile}")
 print_and_log(datetime.now())
 print_and_log(f"Executing {__file__}")
 
-def my_make(goal: str, deps: list[str], recipe: Callable, force: bool = False, verbose: bool = False) -> None:
+def my_make(goal: str, deps: list[str], recipe: Callable, force: bool = args.force, verbose: bool = args.verbose) -> None:
     need_make, current_dep_hashes = hash_check(goal, deps, force=force, verbose=verbose)
     if need_make:
         print_and_log(f"Making {goal} from {deps}")
@@ -92,7 +94,7 @@ def my_make(goal: str, deps: list[str], recipe: Callable, force: bool = False, v
         hash_dict[goal] = current_dep_hashes # update the dependency hashes only if the make was successfully performed
         print_and_log()
 
-def hash_check(goal: str, srcs: list[str], force: bool = False, verbose: bool = False) -> tuple[bool, dict]:
+def hash_check(goal: str, srcs: list[str], force: bool = args.force, verbose: bool = args.verbose) -> tuple[bool, dict]:
     # First output indicates whether we need to/should execute the recipe to make goal from srcs
     # Also returns the src hashes in the dictionary current_src_hashes
     current_src_hashes = {}
