@@ -32,7 +32,7 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
 verspec = 'loa-v1'
-version = "v2.1"
+version = "v2"
 conf = "BAO/unblinded"
 
 # Set DESI CFS before creating the file manager
@@ -40,12 +40,13 @@ os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
 
 from desi_y3_files import get_data_file_manager_bgs_work 
 
-fm = get_data_file_manager_bgs_work(conf, verspec, compmd='PIP')
+fm = get_data_file_manager_bgs_work(conf, verspec, compmd='nonKP')
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracers = ['BGS_ANY-21.35']
+tracers = ['BGS_BRIGHT+FAINT-21.35'] 
+# tracer, zrange = 'BGS_ANY-21.35', (0.1, 0.4)
 zs = [(0.1, 0.4)]
 
 hash_dict_file = "make_covs.hash_dict.pkl"
