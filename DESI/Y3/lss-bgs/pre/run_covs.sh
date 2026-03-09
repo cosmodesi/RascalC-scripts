@@ -5,11 +5,9 @@
 #SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128 # 128 hyperthreads = 64 physical cores
-#SBATCH --job-name=RascalC-Y3-v2.1-BAO-unblinded-BGS_ANY-21.35
-##SBATCH --array=0-23 # full job array
-##SBATCH --array=0-11,14,15,22,23 # only -21.35 z0.1-0.4 for BGS, and all other tracers
-##SBATCH --array=1 # relaunch BGS_ANY-21.35 z0.1-0.4 NGC
-#SBATCH --array=0-1 # relaunch BGS_ANY-21.35 z0.1-0.4 SGC
+#SBATCH --job-name=RascalC-LSS-BGS-nonKP-v2-recon
+##SBATCH --array=0-9 # full job array
+#SBATCH --array=2-9 # BRIGHT+FAINT-21.35 0.1-0.4, 0-0.3, 0.3-0.5, and BRIGHT+FAINT-20.7 0-0.3
 
 # load cosmodesi environment
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main

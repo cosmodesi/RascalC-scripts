@@ -1,4 +1,4 @@
-### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2024).
+### Python script for running RascalC in DESI setup (Michael Rashkovetskyi and Uendert Andrade, 2024-2026).
 import sys, os
 import numpy as np
 from astropy.table import Table, vstack
@@ -9,9 +9,11 @@ from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
 import argparse
 
-parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 pre-recon single-tracer")
+parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 pre-recon LSS-BGS", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
 parser.add_argument("-t", "--test", action = "store_true", help = "test the input files, abort before the main computation")
+parser.add_argument("--compmd", help = "completeness mode, nonKP or PIP", default='nonKP')
+parser.add_argument("--version", help = "LSS catalog version label", default='v2')
 args = parser.parse_args()
 
 def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory exists, rename it with a numeric suffix
@@ -69,19 +71,19 @@ os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
 
 from desi_y3_files import get_data_file_manager_bgs_work 
 
-fm = get_data_file_manager_bgs_work(conf, verspec, compmd='nonKP')
+fm = get_data_file_manager_bgs_work(conf, verspec, compmd=args.compmd)
+comb_label = 'BRIGHT+FAINT' if args.compmd == 'nonKP' else 'ANY'
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
-# reg = "NGC"
-
 
 id //= 2 # extracted all needed info from parity, move on
-# tracers = ['BGS_ANY-21.35'] 
-tracers = ['BGS_BRIGHT+FAINT-21.35'] 
-# tracer, zrange = 'BGS_ANY-21.35', (0.1, 0.4)
-zs = [(0.1, 0.4)]
-# need 2 * 12 = 24 jobs in this array
+tracer_zranges = {'BGS_BRIGHT-21.35': [(0.1, 0.4)], f'BGS_{comb_label}-21.35': [(0.1, 0.4), (0, 0.3), (0.3, 0.5)], f'BGS_{comb_label}-20.7': [(0, 0.3)]}
+# need 2 * 5 = 10 jobs in this array
+tracers, zs = [], []
+for tracer, zranges in tracer_zranges.items(): # dictionaries preserve order in Python 3.7+, otherwise the IDs might be not what you think
+    tracers.extend([tracer] * len(zranges))
+    zs.extend(zranges)
 
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
@@ -94,31 +96,28 @@ if tlabels[0].startswith("BGS"): nrandoms = 1 # override 1 random catalog for an
 if tlabels[0] == 'BGS_BRIGHT-20.2': N3 *= 2; N4 *= 4
 
 # set the number of integration loops based on tracer, z range and region
-n_loops = {'LRG': {(0.4, 0.6): {'SGC': 1536,
-                                'NGC': 1536},
-                   (0.6, 0.8): {'SGC': 1536,
-                                'NGC': 1024},
-                   (0.8, 1.1): {'SGC': 1024,
-                                'NGC': 768}},
-           'ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 768,
-                                          'NGC': 512},
-                             (1.1, 1.6): {'SGC': 512,
-                                          'NGC': 384}},
-           'LRG+ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 768,
-                                              'NGC': 512}},
-           'BGS_BRIGHT-21.5': {(0.1, 0.4): {'SGC': 2048,
+n_loops = {'BGS_BRIGHT-21.5': {(0.1, 0.4): {'SGC': 2048,
                                             'NGC': 1024}},
            'BGS_ANY-21.35': {(0.1, 0.4): {'SGC': 3072,
+                                          'NGC': 1024},
+                             (0.25, 0.4): {'SGC': 4096,
+                                           'NGC': 1536}},
+           'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 3072,
                                              'NGC': 1024},
                                 (0.25, 0.4): {'SGC': 4096,
                                               'NGC': 1536}},
-            'BGS_BRIGHT+FAINT-21.35':{(0.1, 0.4): {'SGC': 3072,'NGC': 1024}},                                              
+           'BGS_BRIGHT+FAINT-21.35': {(0.1, 0.4): {'SGC': 3072,
+                                                   'NGC': 1024},
+                                      (0, 0.3): {'SGC': 3072,
+                                                'NGC': 1536},
+                                      (0.3, 0.5): {'SGC': 4096,
+                                                   'NGC': 1536}},
+           'BGS_BRIGHT+FAINT-20.7': {(0, 0.3): {'SGC': 3072,
+                                                'NGC': 1536}},
            'BGS_BRIGHT-20.2': {(0.1, 0.25): {'SGC': 4096,
                                              'NGC': 2048},
                                (0.1, 0.4): {'SGC': 1024,
-                                            'NGC': 512}},
-           'QSO': {(0.8, 2.1): {'SGC': 256,
-                                'NGC': 256}}}[tlabels[0]][z_range][reg]
+                                            'NGC': 512}}}[tlabels[0]][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
