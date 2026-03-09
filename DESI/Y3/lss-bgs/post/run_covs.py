@@ -61,7 +61,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
 verspec = 'loa-v1'
-version = "v2.1"
+version = "v2"
 conf = "BAO/unblinded"
 
 # Set DESI CFS before creating the file manager
@@ -69,13 +69,13 @@ os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
 
 from desi_y3_files import get_data_file_manager_bgs_work 
 
-fm = get_data_file_manager_bgs_work(conf, verspec, compmd='PIP')
+fm = get_data_file_manager_bgs_work(conf, verspec, compmd='nonKP')
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
-tracers = ['BGS_ANY-21.35']
+tracers = ['BGS_BRIGHT+FAINT-21.35'] 
 zs = [(0.1, 0.4)]
 # need 2 * 12 = 24 jobs in this array
 
@@ -110,6 +110,7 @@ n_loops = {'LRG': {(0.4, 0.6): {'SGC': 2048,
                                              'NGC': 1536},
                                 (0.25, 0.4): {'SGC': 3072,
                                               'NGC': 1536}},
+            'BGS_BRIGHT+FAINT-21.35':{(0.1, 0.4): {'SGC': 3072,'NGC': 1024}},                                                
            'BGS_BRIGHT-20.2': {(0.1, 0.25): {'SGC': 2048,
                                              'NGC': 1024},
                                (0.1, 0.4): {'SGC': 2048,
