@@ -134,7 +134,7 @@ for tracer, z_ranges in tracer_zranges.items():
         recon_spec += '' if (w := xi_setup['recon_weighting']) == 'default' else '_{}'.format(w)
         if jackknife: reg_results_jack = []
         for reg in regs:
-            outdir = os.path.join("outdirs", verspec, version, conf, recon_spec, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
+            outdir = os.path.join("outdirs", verspec, version, args.compmd, conf, recon_spec, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
             if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
                 outdirs_w_suffixes = [outdir + "_" + str(i) for i in range(11)] # append suffixes
                 outdirs_w_suffixes = [dirname for dirname in outdirs_w_suffixes if os.path.isdir(dirname)] # filter only existing dirs
@@ -150,7 +150,7 @@ for tracer, z_ranges in tracer_zranges.items():
             results_name = os.path.join(outdir, 'Rescaled_Covariance_Matrices_Legendre_n%d_l%d.npz' % (nbin, max_l))
             reg_results.append(results_name)
 
-            cov_dir = f"cov_txt/{verspec}/{version}/{conf}/{recon_spec}"
+            cov_dir = f"cov_txt/{verspec}/{version}/{args.compmd}/{conf}/{recon_spec}"
             cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
             def make_gaussian_cov():

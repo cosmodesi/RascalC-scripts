@@ -63,7 +63,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
 verspec = 'loa-v1'
-version = "v2"
+version: str = args.version
 conf = "BAO/unblinded"
 
 # Set DESI CFS before creating the file manager
@@ -128,7 +128,7 @@ xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_ra
 
 # Output and temporary directories
 
-outdir_base = os.path.join(verspec, version, conf, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir_base = os.path.join(verspec, version, args.compmd, conf, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 
