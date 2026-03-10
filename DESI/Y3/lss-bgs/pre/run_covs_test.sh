@@ -4,7 +4,7 @@
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
 
 # for i in {0..9}; do # full list of job IDs
-for i in {2..9}; do
+for i in {0,1}; do
   echo "ID $i"
   python -u run_covs.py -t "$i"
 done
