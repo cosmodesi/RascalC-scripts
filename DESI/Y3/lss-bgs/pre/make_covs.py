@@ -75,7 +75,7 @@ def print_and_log(s: object = "") -> None:
 print_log = lambda l: os.system(f"echo \"{l}\" >> {logfile}")
 
 print_and_log(datetime.now())
-print_and_log(f"Executing {__file__}")
+print_and_log(f"Executing {__file__} with options {args}")
 
 def my_make(goal: str, deps: list[str], recipe: Callable, force: bool = args.force, verbose: bool = args.verbose) -> None:
     need_make, current_dep_hashes = hash_check(goal, deps, force=force, verbose=verbose)
