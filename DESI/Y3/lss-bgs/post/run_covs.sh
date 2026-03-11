@@ -6,8 +6,8 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128 # 128 hyperthreads = 64 physical cores
 #SBATCH --job-name=RascalC-LSS-BGS-nonKP-v2-recon
-##SBATCH --array=0-11 # full job array
-#SBATCH --array=2-3 # BRIGHT-21.35 0-0.3
+##SBATCH --array=0-13 # full job array
+#SBATCH --array=12-13 # BRIGHT+FAINT-20.7 0.3-0.5
 
 # load cosmodesi environment
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
