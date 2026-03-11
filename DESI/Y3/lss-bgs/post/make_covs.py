@@ -127,7 +127,11 @@ for tracer, z_ranges in tracer_zranges.items():
         z_min, z_max = z_range
         reg_results = []
         # get options automatically
-        xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True)
+        try:
+            xi_setup = desi_y3_file_manager.get_baseline_2pt_setup(tlabels[0], z_range, recon = True) # some tracer names may not be included in the file manager, so we need to catch the exception and skip those cases
+        except Exception as e:
+            if args.verbose: print_and_log(f"Couldn't get_baseline_2pt_setup for {tlabels[0]}: {e}")
+            continue
         xi_setup.update({"version": version, "tracer": tracer, "region": regs, "zrange": z_range, "cut": None, "njack": 0}) # specify regions, version, z range and no cut; no need for jackknives
         recon_spec = 'recon_sm{smoothing_radius:.0f}_{algorithm}_{mode}'.format_map(xi_setup) # recon specifier string
         recon_spec += '' if (zr := xi_setup['recon_zrange']) is None else '_z{zrange[0]:.1f}-{zrange[1]:.1f}'.format(zrange = zr)
