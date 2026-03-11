@@ -78,8 +78,8 @@ id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
-tracer_zranges = {'BGS_BRIGHT-21.35': [(0.1, 0.4)], f'BGS_{comb_label}-21.35': [(0.1, 0.4), (0, 0.3), (0.3, 0.5)], f'BGS_{comb_label}-20.7': [(0, 0.3)]}
-# need 2 * 5 = 10 jobs in this array
+tracer_zranges = {'BGS_BRIGHT-21.35': [(0.1, 0.4), (0, 0.3)], f'BGS_{comb_label}-21.35': [(0.1, 0.4), (0, 0.3), (0.3, 0.5)], f'BGS_{comb_label}-20.7': [(0, 0.3)]}
+# need 2 * 6 = 12 jobs in this array
 tracers, zs = [], []
 for tracer, zranges in tracer_zranges.items(): # dictionaries preserve order in Python 3.7+, otherwise the IDs might be not what you think
     tracers.extend([tracer] * len(zranges))
@@ -106,6 +106,8 @@ n_loops = {'BGS_BRIGHT-21.5': {(0.1, 0.4): {'SGC': 3072,
                                            'NGC': 1536}},
            'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 3072,
                                              'NGC': 1536},
+                                (0, 0.3): {'SGC': 3072,
+                                           'NGC': 1536},
                                 (0.25, 0.4): {'SGC': 3072,
                                               'NGC': 1536}},
            'BGS_BRIGHT+FAINT-21.35': {(0.1, 0.4): {'SGC': 3072,

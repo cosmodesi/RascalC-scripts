@@ -54,7 +54,7 @@ comb_label = 'BRIGHT+FAINT' if args.compmd == 'nonKP' else 'ANY'
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracer_zranges = {'BGS_BRIGHT-21.35': [(0.1, 0.4)], f'BGS_{comb_label}-21.35': [(0.1, 0.4), (0, 0.3), (0.3, 0.5)], f'BGS_{comb_label}-20.7': [(0, 0.3)]}
+tracer_zranges = {'BGS_BRIGHT-21.35': [(0.1, 0.4), (0, 0.3)], f'BGS_{comb_label}-21.35': [(0.1, 0.4), (0, 0.3), (0.3, 0.5)], f'BGS_{comb_label}-20.7': [(0, 0.3)]}
 
 hash_dict_file = "make_covs.hash_dict.pkl"
 if os.path.isfile(hash_dict_file):
