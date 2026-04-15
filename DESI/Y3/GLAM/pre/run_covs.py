@@ -1,15 +1,17 @@
-### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2025).
+### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2025-2026).
 import sys, os
 import numpy as np
 from astropy.table import vstack
-from pycorr import TwoPointCorrelationFunction, KMeansSubsampler
+import lsstypes
+from clustering_statistics.tools import get_stats_fn, get_catalog_fn
+from pycorr import KMeansSubsampler
 from LSS.common_tools import read_hdf5_blosc
 from LSS.tabulated_cosmo import TabulatedDESI
-from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
+from RascalC.lsstypes_utils.utils import reshape_lsstypes
 from RascalC import run_cov
 import argparse
 
-parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 HOLI mocks pre-recon single-tracer")
+parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 GLAM mocks pre-recon single-tracer")
 parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
 parser.add_argument("-t", "--test", action = "store_true", help = "test the input files, abort before the main computation")
 args = parser.parse_args()
@@ -41,14 +43,16 @@ njack = 60 # if 0 jackknife is turned off
 periodic_boxsize = None # aperiodic if None (or 0)
 
 # Covariance matrix binning
-nbin = 50 # number of radial bins for output cov
-mbin = None # number of angular (mu) bins to use for projections, None means to keep the original number from pycorr files
+# nbin = 50 # number of radial bins for output cov
+r_step = 4 # step in radial bins for output cov
+mbin = None # number of angular (mu) bins to use for projections, None means to keep the original number from counts files
 skip_nbin_pre = 0 # number of first radial bins to exclude before running the C++ code
 skip_nbin_post = 5 # number of first radial bins to exclude at post-processing, in addition to the above
 skip_l_post = 0 # number of higher (even) multipoles to exclude at post-processing
 
 # Input correlation function binning
-nbin_cf = 100 # number of radial bins for input 2PCF
+# nbin_cf = 100 # number of radial bins for input 2PCF
+r_step_cf = 2 # step in radial bins for input 2PCF
 mbin_cf = 10 # number of angular (mu) bins for input 2PCF
 
 # Settings related to time and convergence
@@ -60,6 +64,7 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
+version = 'glam-uchuu-v2-altmtl'
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
@@ -107,7 +112,9 @@ assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}
 
 # Output and temporary directories
 
-outdir_base = "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}" # may want to add versioning later
+mock_id = 150
+
+outdir_base = os.path.join(version, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 
@@ -116,40 +123,26 @@ assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
 corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
-catalog_dir = "/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/Glam-Uchuu_Y3/altmtl11/loa-v1/mock11/LSScats"
-
-# Filenames for saved pycorr counts
-pycorr_filenames = [[f"{catalog_dir}/xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran4_split20.npy"] for corlabel in corlabels]
+# Filenames for saved counts
+allcounts_filenames = [[get_stats_fn(version=version, imock=mock_id, tracer=corlabel, region=reg, zrange=z_range, stats_dir='/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_statistics', project='full_shape/base', kind='particle2_correlation', jackknife=dict(nsplits=njack))] for corlabel in corlabels]
 # will probably need to adjust the number of randoms when run beyond LRG
-print("pycorr filenames:", pycorr_filenames)
+print("allcounts filenames:", allcounts_filenames)
 
 # Filenames for randoms and galaxy catalogs
-random_filenames = [[f"{catalog_dir}/{tlabel}_{reg}_{i}_clustering.ran.h5" for i in range(nrandoms)] for tlabel in tlabels]
+random_filenames = [get_catalog_fn(version=version, imock=mock_id, tracer=tlabel, region=reg, kind='randoms', nran=nrandoms) for tlabel in tlabels]
 print("Random filenames:", random_filenames)
-if njack:
-    data_ref_filenames = [f"{catalog_dir}/{tlabel}_{reg}_clustering.dat.h5" for tlabel in tlabels] # only for jackknife reference, could be used for determining the number of galaxies but not in this case
-    print("Data filenames:", data_ref_filenames)
+data_ref_filenames = [get_catalog_fn(version=version, imock=mock_id, tracer=tlabel, region=reg, kind='data') for tlabel in tlabels] # for jackknife reference and the number of galaxies
+print("Data filenames:", data_ref_filenames)
 
-# Load pycorr counts
-pycorr_allcounts = [0] * len(pycorr_filenames)
-input_xis = [0] * len(pycorr_filenames)
-ndata = [None] * 2
-for c, pycorr_filenames_group in enumerate(pycorr_filenames):
-    cumulative_ndata = 0
-    for pycorr_filename in pycorr_filenames_group:
-        these_counts = fix_bad_bins_pycorr(TwoPointCorrelationFunction.load(pycorr_filename)) # load and attempt to fix faulty bins using symmetry
-        cumulative_ndata += these_counts.D1D2.size1 # accumulate number of data
-        # reshape for covariance
-        if mbin: assert these_counts.shape[1] % (2 * mbin) == 0, "Angular rebinning is not possible"
-        pycorr_allcounts[c] += these_counts[::these_counts.shape[0] // nbin][skip_nbin_pre:, ::these_counts.shape[1] // 2 // mbin if mbin else 1].wrap()
-        # reshape for input correlation function
-        if mbin_cf: assert these_counts.shape[1] % (2 * mbin_cf) == 0, "Angular rebinning is not possible"
-        input_xis[c] += these_counts[::these_counts.shape[0] // nbin_cf, ::these_counts.shape[1] // 2 // mbin_cf if mbin_cf else 1].wrap()
-    if c % 2 == 0: ndata[c // 2] = cumulative_ndata / len(pycorr_filenames_group) # set the average number of data based on auto-correlatons
-# add None's for missing counts
+# Load counts and correlations
 ncorr_max = 3 # maximum number of correlations
-pycorr_allcounts += [None] * (ncorr_max - len(pycorr_filenames))
-input_xis += [None] * (ncorr_max - len(pycorr_filenames))
+allcounts = [None] * ncorr_max
+input_xis = [None] * ncorr_max
+for c, allcounts_filename in enumerate(allcounts_filenames):
+    these_counts = lsstypes.read(allcounts_filename)
+    allcounts[c] = reshape_lsstypes(these_counts, r_step=r_step, n_mu=mbin, skip_r_bins=skip_nbin_pre) # reshape for covariance
+    input_xis[c] = reshape_lsstypes(these_counts, r_step=r_step_cf, n_mu=mbin_cf) # reshape for input correlation function
+del these_counts # free up memory
 
 # Load randoms and galaxy catalogs
 cosmology = TabulatedDESI() # for conversion from RA,DEC,Z to Cartesian
@@ -157,17 +150,20 @@ ntracers_max = 2 # maximum number of tracers
 randoms_positions = [None] * ntracers_max
 randoms_weights = [None] * ntracers_max
 randoms_samples = [None] * ntracers_max
+ndata = [None] * 2
 for t in range(len(tlabels)):
     # read randoms with redshift cut
-    random_catalog = vstack([read_catalog(random_filename, z_min = z_min, z_max = z_max) for random_filename in random_filenames[t]])
+    random_catalog = vstack([read_catalog(random_filename, z_min=z_min, z_max=z_max) for random_filename in random_filenames[t]])
     randoms_weights[t] = random_catalog["WEIGHT"]
+    data_catalog = read_catalog(data_ref_filenames[t], z_min=z_min, z_max=z_max)
+    ndata[t] = np.sum(data_catalog["WEIGHT"])**2 / np.sum(data_catalog["WEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
     # create jackknives
     if njack:
-        data_catalog = read_catalog(data_ref_filenames[t], z_min = z_min, z_max = z_max)
         subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
         randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
+del random_catalog, data_catalog # free up memory
 
 if args.test: sys.exit(0) # exit with an ok status in a test run
 preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
@@ -175,7 +171,7 @@ preserve(outdir) # rename the directory if it exists to prevent overwriting, but
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
                   nthread = nthread, N2 = N2, N3 = N3, N4 = N4, n_loops = n_loops, loops_per_sample = loops_per_sample,
-                  pycorr_allcounts_11 = pycorr_allcounts[0], pycorr_allcounts_12 = pycorr_allcounts[1], pycorr_allcounts_22 = pycorr_allcounts[2],
+                  allcounts_11 = allcounts[0], allcounts_12 = allcounts[1], allcounts_22 = allcounts[2],
                   xi_table_11 = input_xis[0], xi_table_12 = input_xis[1], xi_table_22 = input_xis[2],
                   no_data_galaxies1 = ndata[0], no_data_galaxies2 = ndata[1],
                   position_type = "rdd",
