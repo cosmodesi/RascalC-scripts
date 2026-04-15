@@ -2,7 +2,6 @@
 import sys, os
 import numpy as np
 from astropy.table import vstack
-import desi_y3_files.file_manager as desi_y3_file_manager
 from pycorr import TwoPointCorrelationFunction, KMeansSubsampler
 from LSS.common_tools import read_hdf5_blosc
 from LSS.tabulated_cosmo import TabulatedDESI
@@ -73,11 +72,9 @@ zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 1.1), (0
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
-nrandoms = desi_y3_file_manager.list_nran[tlabels[0]]
+nrandoms = {'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'BGS_BRIGHT-21.35': 1, 'QSO': 4}[tlabels[0]]
 
-if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
-if tlabels[0].startswith("BGS"): nrandoms = 1 # override 1 random catalog for any BGS
-if tlabels[0] == 'BGS_BRIGHT-20.2': N3 *= 2; N4 *= 4
+if tlabels[0] == 'BGS_BRIGHT-20.2': N3 *= 2; N4 *= 4 # due to convergence issues
 
 # set the number of integration loops based on tracer, z range and region
 n_loops = {'LRG': {(0.4, 0.6): {'SGC': 1536,
