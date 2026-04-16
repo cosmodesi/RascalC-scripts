@@ -1,15 +1,16 @@
 ### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2025-2026).
 import sys, os
 import numpy as np
-from astropy.table import vstack
 import lsstypes
-from clustering_statistics.tools import get_stats_fn, get_catalog_fn
+from clustering_statistics.tools import get_stats_fn, get_catalog_fn, read_clustering_catalog, propose_fiducial
+from desipipe import setup_logging
 from pycorr import KMeansSubsampler
-from LSS.common_tools import read_hdf5_blosc
 from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.lsstypes_utils.utils import reshape_lsstypes
 from RascalC import run_cov
 import argparse
+
+setup_logging()
 
 parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 HOLI mocks pre-recon single-tracer")
 parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
@@ -26,19 +27,12 @@ def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory 
             return
     raise RuntimeError(f"Could not back up {filename}, aborting.")
 
-def read_catalog(filename: str, z_min: float = -np.inf, z_max: float = np.inf, FKP_weight: bool = True):
-    catalog = read_hdf5_blosc(filename)
-    if FKP_weight: catalog["WEIGHT"] *= catalog["WEIGHT_FKP"] # apply FKP weight multiplicatively
-    catalog.keep_columns(["RA", "DEC", "Z", "WEIGHT"]) # discard everything else
-    filtering = np.logical_and(catalog["Z"] >= z_min, catalog["Z"] <= z_max) # logical index of redshifts within the range
-    return catalog[filtering] # filtered catalog
-
 # Mode settings
 
 mode = "legendre_projected"
 max_l = 4 # maximum (even) multipole index
 
-njack = 60 # if 0 jackknife is turned off
+njack = 60 # set None to turn off jackknife
 
 periodic_boxsize = None # aperiodic if None (or 0)
 
@@ -127,12 +121,6 @@ if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-corre
 allcounts_filenames = [get_stats_fn(version=version, imock=mock_id, tracer=corlabel, region=reg, zrange=z_range, stats_dir='.', project='full_shape/base', kind='particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=njack)) for corlabel in corlabels]
 print("allcounts filenames:", allcounts_filenames)
 
-# Filenames for randoms and galaxy catalogs
-random_filenames = [get_catalog_fn(version=version, imock=mock_id, tracer=tlabel, region=reg, kind='randoms', nran=nrandoms) for tlabel in tlabels]
-print("Random filenames:", random_filenames)
-data_ref_filenames = [get_catalog_fn(version=version, imock=mock_id, tracer=tlabel, region=reg, kind='data') for tlabel in tlabels] # for jackknife reference and the number of galaxies
-print("Data filenames:", data_ref_filenames)
-
 # Load counts and correlations
 ncorr_max = 3 # maximum number of correlations
 allcounts = [None] * ncorr_max
@@ -149,15 +137,15 @@ ntracers_max = 2 # maximum number of tracers
 randoms_positions = [None] * ntracers_max
 randoms_weights = [None] * ntracers_max
 randoms_samples = [None] * ntracers_max
-ndata = [None] * 2
-for t in range(len(tlabels)):
-    # read randoms with redshift cut
-    random_catalog = vstack([read_catalog(random_filename, z_min=z_min, z_max=z_max) for random_filename in random_filenames[t]])
-    randoms_weights[t] = random_catalog["WEIGHT"]
-    data_catalog = read_catalog(data_ref_filenames[t], z_min=z_min, z_max=z_max)
-    ndata[t] = np.sum(data_catalog["WEIGHT"])**2 / np.sum(data_catalog["WEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
-    # create jackknives
-    if njack:
+ndata = [None] * ntracers_max
+for t, tlabel in enumerate(tlabels):
+    catalog_options = dict(version=version, imock=mock_id, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, keep_columns=["RA", "DEC", "Z", "INDWEIGHT"], weight="default-FKP")
+    catalog_options = propose_fiducial(kind='catalog', tracer=tlabel, zrange=z_range, analysis='full_shape') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
+    random_catalog = read_clustering_catalog(kind='randoms', expand={'parent_randoms_fn': get_catalog_fn(kind='parent_randoms', version='data-dr2-v2', tracer=tlabel, nran=nrandoms)}, **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
+    randoms_weights[t] = random_catalog["INDWEIGHT"]
+    data_catalog = read_clustering_catalog(kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
+    ndata[t] = np.sum(data_catalog["INDWEIGHT"])**2 / np.sum(data_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
+    if njack: # create jackknives
         subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
         randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
     # compute comoving distance
