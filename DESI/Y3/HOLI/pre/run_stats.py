@@ -95,10 +95,10 @@ if __name__ == '__main__':
     # imocks2run = 150 + np.arange(1)
     imocks2run = np.arange(1)
     # stats_dir  = Path(os.getenv('SCRATCH')) / 'cai-dr2-benchmarks'
-    if version == 'holi-v3-altmtl':
-        # do not perform measurements on dubious mocks
-        bad_imocks = np.loadtxt('../helper_scripts/dubious_holi-v3-altmtl.txt',dtype=int)
-        imocks2run = imocks2run[~np.isin(imocks2run,bad_imocks)]
+    # if version == 'holi-v3-altmtl':
+    #     # do not perform measurements on dubious mocks
+    #     bad_imocks = np.loadtxt('../helper_scripts/dubious_holi-v3-altmtl.txt',dtype=int)
+    #     imocks2run = imocks2run[~np.isin(imocks2run,bad_imocks)]
     # stats_dir  = tools.base_stats_dir
     stats_dir = Path(".")
 
