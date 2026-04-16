@@ -5,6 +5,7 @@ cov_txt
 slurm-*.out
 make_covs.*.*
 *.np[yz]
+*.h5
 *.txt
 *.tex
 *.tsv
