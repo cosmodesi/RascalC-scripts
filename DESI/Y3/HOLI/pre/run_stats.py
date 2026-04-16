@@ -18,7 +18,7 @@ from clustering_statistics import tools
 
 setup_logging()
 
-def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None, imocks=[150], stats_dir=Path(os.getenv('SCRATCH')) / 'measurements', stats=['mesh2_spectrum'], weight='default-FKP', analysis='full_shape', regions=['NGC','SGC'], ibatch=None, postprocess=None, zranges=None, do_jackknife=False, **kwargs):
+def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None, imocks=[0], stats_dir=Path(os.getenv('SCRATCH')) / 'measurements', stats=['mesh2_spectrum'], weight='default-FKP', analysis='full_shape', regions=['NGC','SGC'], ibatch=None, postprocess=None, zranges=None, do_jackknife=False, **kwargs):
     # Everything inside this function will be executed on the compute nodes;
     # This function must be self-contained; and cannot rely on imports from the outer scope.
     import os
@@ -92,15 +92,15 @@ if __name__ == '__main__':
     version  = 'holi-v3-altmtl'
     check_for_existing_measurements = False
     
-    # 
-    imocks2run = 150 + np.arange(1)
-    # imocks2run = np.arange(1)
-    stats_dir  = Path(os.getenv('SCRATCH')) / 'cai-dr2-benchmarks' 
+    # imocks2run = 150 + np.arange(1)
+    imocks2run = np.arange(1)
+    # stats_dir  = Path(os.getenv('SCRATCH')) / 'cai-dr2-benchmarks'
     if version == 'holi-v3-altmtl':
         # do not perform measurements on dubious mocks
         bad_imocks = np.loadtxt('../helper_scripts/dubious_holi-v3-altmtl.txt',dtype=int)
         imocks2run = imocks2run[~np.isin(imocks2run,bad_imocks)]
-    stats_dir  = tools.base_stats_dir
+    # stats_dir  = tools.base_stats_dir
+    stats_dir = Path(".")
 
     # run fiducial full_shape
     stats = ['particle2_correlation']
