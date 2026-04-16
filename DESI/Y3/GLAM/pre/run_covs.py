@@ -124,7 +124,7 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved counts
-allcounts_filenames = [get_stats_fn(version=version, imock=mock_id, tracer=corlabel, region=reg, zrange=z_range, stats_dir='/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_statistics', project='full_shape/base', kind='particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=njack)) for corlabel in corlabels]
+allcounts_filenames = [get_stats_fn(version=version, imock=mock_id, tracer=corlabel, region=reg, zrange=z_range, stats_dir='.', project='full_shape/base', kind='particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=njack)) for corlabel in corlabels]
 print("allcounts filenames:", allcounts_filenames)
 
 # Filenames for randoms and galaxy catalogs
