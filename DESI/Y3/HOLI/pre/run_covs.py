@@ -1,5 +1,5 @@
 ### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2025-2026).
-import sys, os
+import os
 import numpy as np
 import lsstypes
 from clustering_statistics.tools import get_stats_fn, get_catalog_fn, read_clustering_catalog, propose_fiducial
@@ -102,6 +102,7 @@ n_loops = {'LRG': {(0.4, 0.6): {'SGC': 3072,
                                             'NGC': 512}},
            'QSO': {(0.8, 2.1): {'SGC': 256,
                                 'NGC': 256}}}[tlabels[0]][z_range][reg]
+if args.test: n_loops = 0 # override for test runs
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
@@ -113,6 +114,7 @@ mock_id = 0
 outdir_base = os.path.join(version, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
+if args.test: outdir = tmpdir # write outputs to tmpdir for test runs to avoid cluttering the main output directory with incomplete results
 
 # Form correlation function labels
 assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
@@ -154,8 +156,7 @@ for t, tlabel in enumerate(tlabels):
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
 del random_catalog, data_catalog # free up memory
 
-if args.test: sys.exit(0) # exit with an ok status in a test run
-preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
+if not args.test: preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
