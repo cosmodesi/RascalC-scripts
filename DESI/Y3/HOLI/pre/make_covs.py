@@ -43,11 +43,11 @@ reg_comb = "GCcomb"
 tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['LRG+ELG_LOPnotqso', 'BGS_BRIGHT-21.5'] + ['BGS_BRIGHT-21.35'] * 2 + ['BGS_BRIGHT-20.2'] * 2 + ['QSO']
 zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 1.1), (0.1, 0.4), (0.1, 0.4), (0.25, 0.4), (0.1, 0.25), (0.1, 0.4), (0.8, 2.1)]
 
-hash_dict_file = "make_covs.hash_dict.pkl"
+hash_dict_file = "make_covs.hash_dict.asdf"
 if os.path.isfile(hash_dict_file):
     # Load hash dictionary from file
-    with open(hash_dict_file, "rb") as f:
-        hash_dict = pickle.load(f)
+    with asdf.open(hash_dict_file) as af:
+        hash_dict = af['goal_deps_hashes']
 else:
     # Initialize hash dictionary as empty
     hash_dict = {}
@@ -210,7 +210,7 @@ for tracer, z_range in zip(tracers, zs):
 
 # Save the updated hash dictionary
 af = asdf.AsdfFile(dict(goal_deps_hashes=hash_dict))
-af.write_to(hash_dict_file.replace(".pkl", ".asdf"))
+af.write_to(hash_dict_file)
 
 print_and_log(datetime.now())
 print_and_log("Finished execution.")
