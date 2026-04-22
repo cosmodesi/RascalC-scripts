@@ -116,12 +116,7 @@ for tracer, z_range in zip(tracers, zs):
     for reg in regs:
         if make_mock_cov:
             # set the mock covariance matrix filename
-            mock_cov_name_old = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
             mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
-            if os.path.isfile(mock_cov_name_old) and not os.path.isfile(mock_cov_name): # if old name exists and new name doesn't, rename old to new and update hash dict accordingly
-                os.rename(mock_cov_name_old, mock_cov_name)
-                if mock_cov_name_old in hash_dict:
-                    hash_dict[mock_cov_name] = hash_dict.pop(mock_cov_name_old) # update the key in the hash dict if it exists, keeping the same hashes since the file is the same
             # Make the mock sample covariance matrix
             xi_filenames = get_stats_fn(version=version, imock='*', tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') # no jackknife, all mocks
             xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
@@ -174,12 +169,7 @@ for tracer, z_range in zip(tracers, zs):
     
     if make_mock_cov:
         # set the mock covariance matrix filename
-        mock_cov_name_old = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
         mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
-        if os.path.isfile(mock_cov_name_old) and not os.path.isfile(mock_cov_name): # if old name exists and new name doesn't, rename old to new and update hash dict accordingly
-            os.rename(mock_cov_name_old, mock_cov_name)
-            if mock_cov_name_old in hash_dict:
-                hash_dict[mock_cov_name] = hash_dict.pop(mock_cov_name_old) # update the key in the hash dict if it exists, keeping the same hashes since the file is the same
         # Make the mock sample covariance matrix
         xi_filenames = get_stats_fn(version=version, imock='*', tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') # no jackknife, all mocks
         xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
