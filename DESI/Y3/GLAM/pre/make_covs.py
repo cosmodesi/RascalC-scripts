@@ -118,9 +118,10 @@ for tracer, z_range in zip(tracers, zs):
             mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
             # Make the mock sample covariance matrix
             xi_filenames = get_stats_fn(version=version, imock='*', tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') # no jackknife, all mocks
-            xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
-            print_and_log(f"Using {len(xi_filenames)} samples for mock covariance for {tracer} {reg} z{z_min}-{z_max}")
-            my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
+            if len(xi_filenames) > 0: # only if some samples were found
+                xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
+                print_and_log(f"Using {len(xi_filenames)} samples for mock covariance for {tracer} {reg} z{z_min}-{z_max}")
+                my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
         
         outdir = os.path.join('outdirs', version, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
         if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
@@ -170,9 +171,10 @@ for tracer, z_range in zip(tracers, zs):
         mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
         # Make the mock sample covariance matrix
         xi_filenames = get_stats_fn(version=version, imock='*', tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') # no jackknife, all mocks
-        xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
-        print_and_log(f"Using {len(xi_filenames)} samples for mock covariance for {tracer} {reg_comb} z{z_min}-{z_max}")
-        my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
+        if len(xi_filenames) > 0: # only if some samples were found
+            xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
+            print_and_log(f"Using {len(xi_filenames)} samples for mock covariance for {tracer} {reg_comb} z{z_min}-{z_max}")
+            my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
     # obtain the counts names
     reg_counts_names = [get_stats_fn(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') for reg in regs] # no jackknife
