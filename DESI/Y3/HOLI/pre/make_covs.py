@@ -168,7 +168,7 @@ for tracer, z_range in zip(tracers, zs):
     
     if make_mock_cov:
         # set the mock covariance matrix filename
-        mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_{z_min}_{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
+        mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
         # Make the mock sample covariance matrix
         xi_filenames = get_stats_fn(version=version, imock='*', tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') # no jackknife, all mocks
         xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
