@@ -67,11 +67,11 @@ id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
-tracers = ['FullCombined']
-zs = [(1.0, 1.2)]
-ns_randoms = [5]
-recon_zranges = [(0.7, 1.3)]
-# need 2 jobs in this array
+tracers = ['FullCombined'] * 2
+zs = [(1.0, 1.2), (1.2, 1.4)]
+ns_randoms = [5] * 2
+recon_zranges = [(0.7, 1.3), (1.1, 1.7)]
+# need 4 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
@@ -82,6 +82,8 @@ xi_setup = {'smoothing_radius': 15, 'algorithm': 'IFFT', 'mode': 'recsym', 'reco
 
 # set the number of integration loops based on tracer, z range and region
 n_loops = {'FullCombined': {(1.0, 1.2): {'SGC': 1024,
+                                         'NGC': 768},
+                            (1.2, 1.4): {'SGC': 1024,
                                          'NGC': 768}}}[tlabels[0]][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
@@ -102,7 +104,7 @@ assert len(tlabels) in (1, 2), "Only 1 and 2 tracers are supported"
 corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
-data_dir = f"/dvs_ro/cfs/cdirs/desi/users/sandersn/DA2/{verspec}/{version}/{conf}/full_fixed/{recon_spec}/"
+data_dir = f"/dvs_ro/cfs/cdirs/desi/users/sandersn/DA2/{verspec}/{version}/{conf}/full/{recon_spec}/"
 
 # Filenames for saved pycorr counts
 pycorr_filenames = [[data_dir + f"xi/smu/allcounts_{corlabel}_{reg}_{z_min}_{z_max}_default_FKP_lin_njack{njack}_nran{nrandoms}_split20.npy"] for corlabel in corlabels]
@@ -144,13 +146,13 @@ randoms_weights = [None] * ntracers_max
 randoms_samples = [None] * ntracers_max
 for t in range(len(tlabels)):
     # read randoms with redshift cut
-    random_catalog = vstack([read_catalog(random_filename, z_min = z_min, z_max = z_max) for random_filename in random_filenames[t]])
+    random_catalog = vstack([read_catalog(random_filename, z_min=z_min, z_max=z_max) for random_filename in random_filenames[t]])
     randoms_weights[t] = random_catalog["WEIGHT"]
     # create jackknives
     if njack:
-        data_catalog = read_catalog(data_ref_filenames[t], z_min = z_min, z_max = z_max)
-        subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', nsamples = njack, nside = 512, random_state = 42)
-        randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
+        data_catalog = read_catalog(data_ref_filenames[t], z_min=z_min, z_max=z_max)
+        subsampler = KMeansSubsampler('angular', positions=[data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type='rdd', nsamples=njack, nside=512, random_state=42)
+        randoms_samples[t] = subsampler.label(positions=[random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type='rdd')
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
 
@@ -158,14 +160,14 @@ if args.test: sys.exit(0) # exit with an ok status in a test run
 preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
 # Run the main code, post-processing and extra convergence check
-results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
-                  nthread = nthread, N2 = N2, N3 = N3, N4 = N4, n_loops = n_loops, loops_per_sample = loops_per_sample,
-                  pycorr_allcounts_11 = pycorr_allcounts[0], pycorr_allcounts_12 = pycorr_allcounts[1], pycorr_allcounts_22 = pycorr_allcounts[2],
-                  xi_table_11 = input_xis[0], xi_table_12 = input_xis[1], xi_table_22 = input_xis[2],
-                  no_data_galaxies1 = ndata[0], no_data_galaxies2 = ndata[1],
-                  position_type = "rdd",
-                  randoms_positions1 = randoms_positions[0], randoms_weights1 = randoms_weights[0], randoms_samples1 = randoms_samples[0],
-                  randoms_positions2 = randoms_positions[1], randoms_weights2 = randoms_weights[1], randoms_samples2 = randoms_samples[1],
-                  normalize_wcounts = True,
-                  out_dir = outdir, tmp_dir = tmpdir,
-                  skip_s_bins = skip_nbin_post, skip_l = skip_l_post)
+results = run_cov(mode=mode, max_l=max_l, boxsize=periodic_boxsize,
+                  nthread=nthread, N2=N2, N3=N3, N4=N4, n_loops=n_loops, loops_per_sample=loops_per_sample,
+                  allcounts_11=pycorr_allcounts[0], allcounts_12=pycorr_allcounts[1], allcounts_22=pycorr_allcounts[2],
+                  xi_table_11=input_xis[0], xi_table_12=input_xis[1], xi_table_22=input_xis[2],
+                  no_data_galaxies1=ndata[0], no_data_galaxies2=ndata[1],
+                  position_type="rdd",
+                  randoms_positions1=randoms_positions[0], randoms_weights1=randoms_weights[0], randoms_samples1=randoms_samples[0],
+                  randoms_positions2=randoms_positions[1], randoms_weights2=randoms_weights[1], randoms_samples2=randoms_samples[1],
+                  normalize_wcounts=True,
+                  out_dir=outdir, tmp_dir=tmpdir,
+                  skip_s_bins=skip_nbin_post, skip_l=skip_l_post)

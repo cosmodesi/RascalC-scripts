@@ -36,10 +36,10 @@ conf_alt = "BAO/unblinded"
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracers = ['FullCombined']
-zs = [(1.0, 1.2)]
-ns_randoms = [5]
-recon_zranges = [(0.7, 1.3)]
+tracers = ['FullCombined'] * 2
+zs = [(1.0, 1.2), (1.2, 1.4)]
+ns_randoms = [5] * 2
+recon_zranges = [(0.7, 1.3), (1.1, 1.7)]
 
 hash_dict_file = "make_covs.hash_dict.pkl"
 if os.path.isfile(hash_dict_file):
