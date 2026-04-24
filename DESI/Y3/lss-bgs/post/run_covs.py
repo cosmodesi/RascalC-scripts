@@ -205,7 +205,7 @@ preserve(outdir) # rename the directory if it exists to prevent overwriting, but
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
                   nthread = nthread, N2 = N2, N3 = N3, N4 = N4, n_loops = n_loops, loops_per_sample = loops_per_sample,
-                  pycorr_allcounts_11 = pycorr_allcounts[0], pycorr_allcounts_12 = pycorr_allcounts[1], pycorr_allcounts_22 = pycorr_allcounts[2],
+                  allcounts_11 = pycorr_allcounts[0], allcounts_12 = pycorr_allcounts[1], allcounts_22 = pycorr_allcounts[2],
                   xi_table_11 = input_xis[0], xi_table_12 = input_xis[1], xi_table_22 = input_xis[2],
                   no_data_galaxies1 = ndata[0], no_data_galaxies2 = ndata[1],
                   position_type = "rdd",
