@@ -1,4 +1,4 @@
-### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2024).
+### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2024-2026).
 import os
 import numpy as np
 from astropy.table import Table, vstack
