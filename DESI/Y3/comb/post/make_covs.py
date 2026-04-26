@@ -3,7 +3,6 @@
 import os
 from datetime import datetime
 import asdf
-import pickle
 import hashlib
 from typing import Callable
 import traceback
@@ -42,11 +41,11 @@ zs = [(1.0, 1.2), (1.2, 1.4)]
 ns_randoms = [5] * 2
 recon_zranges = [(0.7, 1.3), (1.1, 1.7)]
 
-hash_dict_file = "make_covs.hash_dict.pkl"
+hash_dict_file = "make_covs.hash_dict.asdf"
 if os.path.isfile(hash_dict_file):
     # Load hash dictionary from file
-    with open(hash_dict_file, "rb") as f:
-        hash_dict = pickle.load(f)
+    with asdf.open(hash_dict_file) as af:
+        hash_dict = af["goal_deps_hashes"]
 else:
     # Initialize hash dictionary as empty
     hash_dict = {}
@@ -184,7 +183,7 @@ for tracer, z_range, nrandoms, recon_zrange in zip(tracers, zs, ns_randoms, reco
 
 # Save the updated hash dictionary
 af = asdf.AsdfFile(dict(goal_deps_hashes=hash_dict))
-af.write_to(hash_dict_file.replace(".pkl", ".asdf"))
+af.write_to(hash_dict_file)
 
 print_and_log(datetime.now())
 print_and_log("Finished execution.")
