@@ -2,6 +2,7 @@
 
 import os
 from datetime import datetime
+import asdf
 import pickle
 import hashlib
 from typing import Callable
@@ -182,8 +183,8 @@ for tracer, z_range, nrandoms, recon_zrange in zip(tracers, zs, ns_randoms, reco
             # Recipe: run combine covs
 
 # Save the updated hash dictionary
-with open(hash_dict_file, "wb") as f:
-    pickle.dump(hash_dict, f)
+af = asdf.AsdfFile(dict(goal_deps_hashes=hash_dict))
+af.write_to(hash_dict_file.replace(".pkl", ".asdf"))
 
 print_and_log(datetime.now())
 print_and_log("Finished execution.")
