@@ -146,6 +146,7 @@ for t, tlabel in enumerate(tlabels):
     randoms_weights[t] = random_catalog["INDWEIGHT"]
     data_catalog = read_clustering_catalog(kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
     ndata[t] = np.sum(data_catalog["INDWEIGHT"])**2 / np.sum(data_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
+    print(f"ndata: naive={len(data_catalog)}, effective={ndata[t]}")
     if njack: # create jackknives
         subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
         randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
