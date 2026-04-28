@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import lsstypes
-from clustering_statistics.tools import get_stats_fn, get_catalog_fn, read_clustering_catalog, propose_fiducial
+from clustering_statistics.tools import get_stats_fn, read_clustering_catalog, propose_fiducial
 from desipipe import setup_logging
 from pycorr import KMeansSubsampler
 from LSS.tabulated_cosmo import TabulatedDESI
