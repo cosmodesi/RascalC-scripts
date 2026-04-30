@@ -101,7 +101,8 @@ if __name__ == '__main__':
     project  = f'{analysis}/base'
     weight   = 'default-FKP'
     regions  = ['NGC','SGC']
-    tracers  = ['LRG', 'ELG_LOPnotqso', 'QSO']
+    # tracers  = ['LRG', 'ELG_LOPnotqso', 'QSO']
+    tracers  = ['BGS_BRIGHT-21.35']
 
     # onthefly = 'reshuffle'
     # onthefly = 'complete'
