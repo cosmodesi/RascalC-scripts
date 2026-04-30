@@ -18,7 +18,7 @@ from clustering_statistics import tools
 
 setup_logging()
 
-def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None, imocks=[0], stats_dir=Path(os.getenv('SCRATCH')) / 'measurements', stats=['mesh2_spectrum'], weight='default-FKP', analysis='full_shape', regions=['NGC','SGC'], ibatch=None, postprocess=None, zranges=None, do_jackknife=False, **kwargs):
+def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None, imocks=[0], stats_dir=Path(os.getenv('SCRATCH')) / 'measurements', stats=['mesh2_spectrum'], weight='default-FKP', analysis='full_shape', regions=['NGC','SGC'], ibatch=None, postprocess=None, zranges=None, do_jackknife=False, cat_dir=None, **kwargs):
     # Everything inside this function will be executed on the compute nodes;
     # This function must be self-contained; and cannot rely on imports from the outer scope.
     import os
@@ -56,7 +56,9 @@ def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None,
                 if onthefly == 'complete':
                     options['catalog'][itracer]['complete'] = {}
                 elif onthefly == 'reshuffle':
-                    options['catalog'][itracer]['reshuffle'] = {'merged_data_fn': tools.get_catalog_fn(kind='data', **(options['catalog'][itracer] | dict(region='ALL')))}                
+                    options['catalog'][itracer]['reshuffle'] = {'merged_data_fn': tools.get_catalog_fn(kind='data', **(options['catalog'][itracer] | dict(region='ALL')))}
+                if cat_dir is not None:
+                    options['catalog'][itracer]['cat_dir'] = cat_dir
             
             get_stats_fn = functools.partial(tools.get_stats_fn, stats_dir=stats_dir, project=project, extra=onthefly if onthefly else '')
             compute_stats_from_options(stats, analysis=analysis, get_stats_fn=get_stats_fn, cache=cache, **options)
@@ -141,6 +143,8 @@ if __name__ == '__main__':
             imocks = imocks2run
             
         run_stats_kws = dict(tracer=tracer, stats_dir=stats_dir, project=project, version=version, stats=stats, analysis=analysis, onthefly=onthefly, zranges=zranges, regions=regions, weight=weight, do_jackknife=do_jackknife, postprocess=postprocess)
+        if tracer.startswith('BGS'):
+            run_stats_kws['cat_dir'] = '/dvs_ro/cfs/cdirs/desi/mocks/cai/LSS/DA2/mocks/holi_bgs/altmtl0/loa-v1/mock0/LSScats/' # explicit cat_dir because it can't be filled automatically yet
         batch_imocks = np.array_split(imocks, max(len(imocks) // max_mocks_per_batch, 1)) if len(imocks) else []
         for _imocks in batch_imocks:
             run_stats(imocks=_imocks, **run_stats_kws)
