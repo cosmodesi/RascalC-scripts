@@ -73,7 +73,7 @@ zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 1.1), (0
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
-nrandoms = {'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'BGS_BRIGHT-21.35': 1, 'QSO': 4}[tlabels[0]]
+nrandoms = {'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'BGS_BRIGHT-21.35': 2, 'QSO': 4}[tlabels[0]]
 
 if tlabels[0] == 'BGS_BRIGHT-20.2': N3 *= 2; N4 *= 4 # due to convergence issues
 
@@ -92,10 +92,10 @@ n_loops = {'LRG': {(0.4, 0.6): {'SGC': 1536,
                                               'NGC': 512}},
            'BGS_BRIGHT-21.5': {(0.1, 0.4): {'SGC': 2048,
                                             'NGC': 1024}},
-           'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 3072,
-                                             'NGC': 1024},
-                                (0.25, 0.4): {'SGC': 4096,
-                                              'NGC': 1536}},
+           'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 1536,
+                                             'NGC': 512},
+                                (0.25, 0.4): {'SGC': 2048,
+                                              'NGC': 768}},
            'BGS_BRIGHT-20.2': {(0.1, 0.25): {'SGC': 4096,
                                              'NGC': 2048},
                                (0.1, 0.4): {'SGC': 1024,
