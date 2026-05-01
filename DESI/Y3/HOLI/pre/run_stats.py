@@ -88,8 +88,8 @@ def postprocess_stats(tracer='LRG', analysis='full_shape', project='', version='
 if __name__ == '__main__':
 
     stats, postprocess = [], []
-    # version  = 'holi-v3-altmtl'
-    version  = 'holi-bgs-altmtl'
+    # version  = 'glam-uchuu-v2-altmtl'
+    version  = 'holi-v3-altmtl'
     check_for_existing_measurements = False
     
     # imocks2run = 150 + np.arange(1)
