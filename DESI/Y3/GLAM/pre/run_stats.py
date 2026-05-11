@@ -88,8 +88,8 @@ def postprocess_stats(tracer='LRG', analysis='full_shape', project='', version='
 if __name__ == '__main__':
 
     stats, postprocess = [], []
-    version  = 'glam-uchuu-v2-altmtl'
-    # version  = 'holi-v3-altmtl'
+    version_dark = 'glam-uchuu-v2-altmtl'
+    version_bright = 'glam-uchuu-bgs-altmtl'
     check_for_existing_measurements = False
     
     imocks2run = 150 + np.arange(1)
@@ -110,7 +110,8 @@ if __name__ == '__main__':
     project  = f'{analysis}/base'
     weight   = 'default-FKP'
     regions  = ['NGC','SGC']
-    tracers  = ['LRG', 'ELG_LOPnotqso', 'QSO']
+    # tracers  = ['LRG', 'ELG_LOPnotqso', 'QSO']
+    tracers  = ['BGS_BRIGHT-21.35']
     max_mocks_per_batch = 1
 
     # onthefly = 'reshuffle'
@@ -118,6 +119,7 @@ if __name__ == '__main__':
     onthefly = None
     
     for tracer in tracers:
+        version = version_bright if tracer.startswith('BGS') else version_dark
         if 'png' in analysis:
             # do not compute measurements for overlapping redshifts
             zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)[:1]
