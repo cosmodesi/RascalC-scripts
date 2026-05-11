@@ -20,7 +20,7 @@ rmax = 180 # maximum output cov radius in Mpc/h
 
 jackknife = 1
 njack = 60 if jackknife else None
-make_mock_cov = 1
+make_mock_cov = 0
 
 skip_r_bins = 5
 skip_l = 0
@@ -31,7 +31,8 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
-version = 'glam-uchuu-v2-altmtl'
+version_dark = 'glam-uchuu-v2-altmtl'
+version_bright = 'glam-uchuu-bgs-altmtl'
 mock_id = 150
 
 stats_dir = '/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_statistics'
@@ -108,6 +109,7 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
 
 # Make steps for making covs
 for tracer, z_range in zip(tracers, zs):
+    version = version_bright if tracer.startswith('BGS') else version_dark
     tlabels = [tracer]
     z_min, z_max = z_range
     reg_results = []
@@ -118,8 +120,8 @@ for tracer, z_range in zip(tracers, zs):
             mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
             # Make the mock sample covariance matrix
             xi_filenames = get_stats_fn(version=version, imock='*', tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') # no jackknife, all mocks
+            xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
             if len(xi_filenames) > 0: # only if some samples were found
-                xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
                 print_and_log(f"Using {len(xi_filenames)} samples for mock covariance for {tracer} {reg} z{z_min}-{z_max}")
                 my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
         
@@ -171,8 +173,8 @@ for tracer, z_range in zip(tracers, zs):
         mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
         # Make the mock sample covariance matrix
         xi_filenames = get_stats_fn(version=version, imock='*', tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') # no jackknife, all mocks
+        xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
         if len(xi_filenames) > 0: # only if some samples were found
-            xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
             print_and_log(f"Using {len(xi_filenames)} samples for mock covariance for {tracer} {reg_comb} z{z_min}-{z_max}")
             my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
