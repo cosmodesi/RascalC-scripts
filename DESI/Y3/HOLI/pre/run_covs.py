@@ -60,7 +60,8 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
-version = 'holi-v3-altmtl'
+version_dark = 'holi-v3-altmtl'
+version_bright = 'holi-bgs-altmtl'
 mock_id = 0
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
@@ -108,6 +109,7 @@ if args.test: n_loops = 0 # override for test runs
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
+version = version_bright if tlabels[0].startswith('BGS') else version_dark
 # Output and temporary directories
 outdir_base = os.path.join(version, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory

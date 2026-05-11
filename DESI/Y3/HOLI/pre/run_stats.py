@@ -88,8 +88,8 @@ def postprocess_stats(tracer='LRG', analysis='full_shape', project='', version='
 if __name__ == '__main__':
 
     stats, postprocess = [], []
-    # version  = 'glam-uchuu-v2-altmtl'
-    version  = 'holi-v3-altmtl'
+    version_dark = 'holi-v3-altmtl'
+    version_bright = 'holi-bgs-altmtl'
     check_for_existing_measurements = False
     
     # imocks2run = 150 + np.arange(1)
@@ -119,6 +119,7 @@ if __name__ == '__main__':
     onthefly = None
     
     for tracer in tracers:
+        version = version_bright if tracer.startswith('BGS') else version_dark
         if 'png' in analysis:
             # do not compute measurements for overlapping redshifts
             zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)[:1]

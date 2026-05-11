@@ -31,7 +31,8 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
-version = 'holi-v3-altmtl'
+version_dark = 'holi-v3-altmtl'
+version_bright = 'holi-bgs-altmtl'
 mock_id = 0
 
 stats_dir = '.'
@@ -108,6 +109,7 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
 
 # Make steps for making covs
 for tracer, z_range in zip(tracers, zs):
+    version = version_bright if tracer.startswith('BGS') else version_dark
     tlabels = [tracer]
     z_min, z_max = z_range
     reg_results = []
