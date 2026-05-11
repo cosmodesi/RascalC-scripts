@@ -12,6 +12,5 @@
 
 # load cosmodesi environment
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
-module unload desi-clustering # use custom desi-clustering
 
 python -u run_covs.py $SLURM_ARRAY_TASK_ID
