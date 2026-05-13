@@ -175,6 +175,7 @@ for tracer, z_range in zip(tracers, zs):
         # set the mock covariance matrix filename
         mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
         # Make the mock sample covariance matrix
+        stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP')
         if not tracer.startswith('BGS'): # dark-time mocks have dubious realizations that should be excluded
             imocks = np.loadtxt(f"{version}_dark-time_imocks_for_covariance.txt", dtype=int) # list of mocks to use for covariance
             xi_filenames = [get_stats_fn(imock=imock, **stats_kws) for imock in imocks] # no jackknife, all mocks
