@@ -121,11 +121,8 @@ for tracer, z_range in zip(tracers, zs):
             mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
             # Make the mock sample covariance matrix
             stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP')
-            if not tracer.startswith('BGS'): # dark-time mocks have dubious realizations that should be excluded
-                imocks = np.loadtxt(f"{version}_dark-time_imocks_for_covariance.txt", dtype=int) # list of mocks to use for covariance
-                xi_filenames = [get_stats_fn(imock=imock, **stats_kws) for imock in imocks] # no jackknife, all mocks
-            else: # can use all bright-time mocks
-                xi_filenames = get_stats_fn(imock='*', **stats_kws) # no jackknife, all mocks
+            imocks = np.loadtxt(f"{version_dark}_dark-time_imocks_for_covariance.txt", dtype=int) # list of mocks to use for covariance
+            xi_filenames = [get_stats_fn(imock=imock, **stats_kws) for imock in imocks] # no jackknife, all mocks from the list
             my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
         
         outdir = os.path.join('outdirs', version, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
@@ -175,11 +172,8 @@ for tracer, z_range in zip(tracers, zs):
         # set the mock covariance matrix filename
         mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
         # Make the mock sample covariance matrix
-        if not tracer.startswith('BGS'): # dark-time mocks have dubious realizations that should be excluded
-            imocks = np.loadtxt(f"{version}_dark-time_imocks_for_covariance.txt", dtype=int) # list of mocks to use for covariance
-            xi_filenames = [get_stats_fn(imock=imock, **stats_kws) for imock in imocks] # no jackknife, all mocks
-        else: # bright-time mocks can use all realizations
-            xi_filenames = get_stats_fn(imock='*', **stats_kws) # no jackknife, all mocks
+        imocks = np.loadtxt(f"{version_dark}_dark-time_imocks_for_covariance.txt", dtype=int) # list of mocks to use for covariance
+        xi_filenames = [get_stats_fn(imock=imock, **stats_kws) for imock in imocks] # no jackknife, all mocks from the list
         my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
     # obtain the counts names
