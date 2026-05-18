@@ -1,6 +1,7 @@
 # This script generates all covs
 
 import os
+import sys
 from datetime import datetime
 import pickle
 import hashlib
@@ -15,9 +16,14 @@ from RascalC.cov_utils import export_cov_legendre
 from RascalC.comb.combine_covs_legendre import combine_covs_legendre
 import argparse
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from bgs_cases import CAMPAIGN_CHOICES, get_campaign_config, iter_tracer_zranges, print_case_summary
+
 parser = argparse.ArgumentParser(description="RascalC covariance making script for DESI Y3 post-recon LSS-BGS", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--compmd", help="completeness mode, nonKP or PIP", default='nonKP')
-parser.add_argument("--version", help="LSS catalog version label", default='v2')
+parser.add_argument("--campaign", choices=CAMPAIGN_CHOICES, default="legacy", help="case list to process")
+parser.add_argument("--list-cases", action="store_true", help="print configured cases and exit")
+parser.add_argument("--compmd", help="completeness mode, nonKP or PIP; inferred for named campaigns", default=None)
+parser.add_argument("--version", help="LSS catalog version label; inferred for named campaigns", default=None)
 parser.add_argument("-f", "--force", help="force remaking of files that do not seem to need an update", action='store_true')
 parser.add_argument("-v", "--verbose", help="report more details during dependency checks", action='store_true')
 args = parser.parse_args()
@@ -40,21 +46,25 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
 verspec = 'loa-v1'
-version: str = args.version
 conf = "BAO/unblinded"
+campaign_config = get_campaign_config(args.campaign, compmd=args.compmd, version=args.version)
+version = campaign_config["version"]
+compmd = campaign_config["compmd"]
+
+if args.list_cases:
+    print_case_summary(args.campaign, compmd=args.compmd, version=args.version)
+    sys.exit(0)
 
 # Set DESI CFS before creating the file manager
 os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
 
 from desi_y3_files import get_data_file_manager_bgs_work 
 
-fm = get_data_file_manager_bgs_work(conf, verspec, compmd=args.compmd)
-comb_label = 'BRIGHT+FAINT' if args.compmd == 'nonKP' else 'ANY'
+fm = get_data_file_manager_bgs_work(conf, verspec, compmd=compmd)
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
-
-tracer_zranges = {'BGS_BRIGHT-21.35': [(0.1, 0.4), (0, 0.3)], f'BGS_{comb_label}-21.35': [(0.1, 0.4), (0, 0.3), (0.3, 0.5)], f'BGS_{comb_label}-20.7': [(0, 0.3), (0.3, 0.5)]}
+tracer_zranges = dict(iter_tracer_zranges(args.campaign, compmd=args.compmd, version=args.version))
 
 hash_dict_file = "make_covs.hash_dict.pkl"
 if os.path.isfile(hash_dict_file):
@@ -138,7 +148,7 @@ for tracer, z_ranges in tracer_zranges.items():
         recon_spec += '' if (w := xi_setup['recon_weighting']) == 'default' else '_{}'.format(w)
         if jackknife: reg_results_jack = []
         for reg in regs:
-            outdir = os.path.join("outdirs", verspec, version, args.compmd, conf, recon_spec, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
+            outdir = os.path.join("outdirs", verspec, version, compmd, conf, recon_spec, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
             if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
                 outdirs_w_suffixes = [outdir + "_" + str(i) for i in range(11)] # append suffixes
                 outdirs_w_suffixes = [dirname for dirname in outdirs_w_suffixes if os.path.isdir(dirname)] # filter only existing dirs
@@ -154,7 +164,7 @@ for tracer, z_ranges in tracer_zranges.items():
             results_name = os.path.join(outdir, 'Rescaled_Covariance_Matrices_Legendre_n%d_l%d.npz' % (nbin, max_l))
             reg_results.append(results_name)
 
-            cov_dir = f"cov_txt/{verspec}/{version}/{args.compmd}/{conf}/{recon_spec}"
+            cov_dir = f"cov_txt/{verspec}/{version}/{compmd}/{conf}/{recon_spec}"
             cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
             def make_gaussian_cov():
