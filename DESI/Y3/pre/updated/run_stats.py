@@ -62,16 +62,16 @@ def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None,
 
     # postprocess
     if postprocess:
-        postprocess_options = dict(catalog=dict(version=version, tracer=tracer, zrange=zranges, weight=weight), 
-                                   combine_regions={'stats': stats}, mesh2_spectrum=mesh2_spectrum, window_mesh2_spectrum=window_mesh2_spectrum)
+        postprocess_options = dict(catalog=dict(version=version, tracer=tracer, zrange=zranges, weight=weight),
+                                   combine_regions={'stats': stats}, mesh2_spectrum=mesh2_spectrum, window_mesh2_spectrum=window_mesh2_spectrum, particle2_correlation={'jackknife': {'nsplits': 60}} if do_jackknife else {})
         postprocess_stats_from_options(postprocess, analysis=analysis, get_stats_fn=get_stats_fn, **postprocess_options)
 
 
-def postprocess_stats(tracer='LRG', analysis='full_shape', project='', version='holi-v3-altmtl', onthefly=None, stats_dir=Path(os.getenv('SCRATCH')) / 'measurements', stats=['mesh2_spectrum'], weight='default-FKP', postprocess=['combine_regions'], zranges=None, **kwargs):
+def postprocess_stats(tracer='LRG', analysis='full_shape', project='', version='holi-v3-altmtl', onthefly=None, stats_dir=Path(os.getenv('SCRATCH')) / 'measurements', stats=['mesh2_spectrum'], weight='default-FKP', postprocess=['combine_regions'], zranges=None, do_jackknife=False, **kwargs):
     from clustering_statistics import postprocess_stats_from_options
     if zranges is None:
         zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)
-    options = dict(catalog=dict(version=version, tracer=tracer, zrange=zranges, weight=weight), combine_regions={'stats': stats}, mesh2_spectrum={'cut': True, 'auw': True}, window_mesh2_spectrum={'cut': True})
+    options = dict(catalog=dict(version=version, tracer=tracer, zrange=zranges, weight=weight), combine_regions={'stats': stats}, mesh2_spectrum={'cut': True, 'auw': True}, window_mesh2_spectrum={'cut': True}, particle2_correlation={'jackknife': {'nsplits': 60}} if do_jackknife else {})
     stats_dir_kws = dict(stats_dir=stats_dir, project=project)
     if onthefly == 'complete':
         get_stats_fn = functools.partial(tools.get_stats_fn, extra='complete', **stats_dir_kws)
@@ -100,9 +100,8 @@ if __name__ == '__main__':
     analysis = 'protected'
     project  = f'{analysis}/base'
     weight   = 'default-FKP'
-    regions  = ['NGC','SGC']
-    # tracers  = ['LRG', 'ELG_LOPnotqso', 'QSO']
-    tracers  = ['BGS_BRIGHT-21.35']
+    regions  = ['NGC', 'SGC']
+    tracers  = ['BGS_BRIGHT-21.35', 'LRG', 'ELG_LOPnotqso', 'QSO']
 
     # onthefly = 'reshuffle'
     # onthefly = 'complete'
@@ -117,3 +116,5 @@ if __name__ == '__main__':
             
         run_stats_kws = dict(tracer=tracer, stats_dir=stats_dir, project=project, version=version, stats=stats, analysis=analysis, onthefly=onthefly, zranges=zranges, regions=regions, weight=weight, do_jackknife=do_jackknife, postprocess=postprocess)
         run_stats(**run_stats_kws)
+        # if postprocess:
+        #     postprocess_stats(**run_stats_kws)

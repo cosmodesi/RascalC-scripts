@@ -60,7 +60,8 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
-version = 'holi-v3-altmtl'
+version_dark = 'holi-v3-altmtl'
+version_bright = 'holi-bgs-altmtl'
 mock_id = 0
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
@@ -74,12 +75,12 @@ zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 1.1), (0
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
-nrandoms = {'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'BGS_BRIGHT-21.35': 1, 'QSO': 4}[tlabels[0]]
+nrandoms = {'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'BGS_BRIGHT-21.35': 2, 'QSO': 4}[tlabels[0]]
 
 if tlabels[0] == 'BGS_BRIGHT-20.2': N3 *= 2; N4 *= 4 # due to convergence issues
 
 # set the number of integration loops based on tracer, z range and region
-n_loops = {'LRG': {(0.4, 0.6): {'SGC': 3072,
+n_loops = {'LRG': {(0.4, 0.6): {'SGC': 1536,
                                 'NGC': 1536},
                    (0.6, 0.8): {'SGC': 1536,
                                 'NGC': 1024},
@@ -93,10 +94,10 @@ n_loops = {'LRG': {(0.4, 0.6): {'SGC': 3072,
                                               'NGC': 512}},
            'BGS_BRIGHT-21.5': {(0.1, 0.4): {'SGC': 2048,
                                             'NGC': 1024}},
-           'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 3072,
-                                             'NGC': 1024},
-                                (0.25, 0.4): {'SGC': 4096,
-                                              'NGC': 1536}},
+           'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 1536,
+                                             'NGC': 512},
+                                (0.25, 0.4): {'SGC': 2048,
+                                              'NGC': 768}},
            'BGS_BRIGHT-20.2': {(0.1, 0.25): {'SGC': 4096,
                                              'NGC': 2048},
                                (0.1, 0.4): {'SGC': 1024,
@@ -108,6 +109,7 @@ if args.test: n_loops = 0 # override for test runs
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
+version = version_bright if tlabels[0].startswith('BGS') else version_dark
 # Output and temporary directories
 outdir_base = os.path.join(version, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory

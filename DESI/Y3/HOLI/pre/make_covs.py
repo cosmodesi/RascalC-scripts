@@ -13,6 +13,7 @@ from RascalC.utils import blank_function
 from RascalC.cov_utils import export_cov_legendre
 from RascalC.combine_regions import combine_covs_legendre
 from RascalC.lsstypes_utils.sample_cov_multipoles import sample_cov_multipoles_from_lsstypes_files
+import numpy as np
 
 max_l = 4
 nbin = 45 # radial bins for output cov
@@ -31,7 +32,8 @@ rmin_real = r_step * skip_r_bins
 xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
-version = 'holi-v3-altmtl'
+version_dark = 'holi-v3-altmtl'
+version_bright = 'holi-bgs-altmtl'
 mock_id = 0
 
 stats_dir = '/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_statistics'
@@ -39,8 +41,8 @@ stats_dir = '/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_stat
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['LRG+ELG_LOPnotqso', 'BGS_BRIGHT-21.5'] + ['BGS_BRIGHT-21.35'] * 2 + ['BGS_BRIGHT-20.2'] * 2 + ['QSO']
-zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 1.1), (0.1, 0.4), (0.1, 0.4), (0.25, 0.4), (0.1, 0.25), (0.1, 0.4), (0.8, 2.1)]
+tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['BGS_BRIGHT-21.35', 'QSO']
+zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.1, 0.4), (0.8, 2.1)]
 
 hash_dict_file = "make_covs.hash_dict.asdf"
 if os.path.isfile(hash_dict_file):
@@ -108,6 +110,7 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
 
 # Make steps for making covs
 for tracer, z_range in zip(tracers, zs):
+    version = version_bright if tracer.startswith('BGS') else version_dark
     tlabels = [tracer]
     z_min, z_max = z_range
     reg_results = []
@@ -117,11 +120,13 @@ for tracer, z_range in zip(tracers, zs):
             # set the mock covariance matrix filename
             mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
             # Make the mock sample covariance matrix
-            xi_filenames = get_stats_fn(version=version, imock='*', tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') # no jackknife, all mocks
-            xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
-            if len(xi_filenames) > 0: # only if some samples were found
-                print_and_log(f"Using {len(xi_filenames)} samples for mock covariance for {tracer} {reg} z{z_min}-{z_max}")
-                my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
+            stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP')
+            if not tracer.startswith('BGS'): # dark-time mocks have dubious realizations that should be excluded
+                imocks = np.loadtxt(f"{version}_dark-time_imocks_for_covariance.txt", dtype=int) # list of mocks to use for covariance
+                xi_filenames = [get_stats_fn(imock=imock, **stats_kws) for imock in imocks] # no jackknife, all mocks
+            else: # can use all bright-time mocks
+                xi_filenames = get_stats_fn(imock='*', **stats_kws) # no jackknife, all mocks
+            my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
         
         outdir = os.path.join('outdirs', version, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
         if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
@@ -170,11 +175,13 @@ for tracer, z_range in zip(tracers, zs):
         # set the mock covariance matrix filename
         mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
         # Make the mock sample covariance matrix
-        xi_filenames = get_stats_fn(version=version, imock='*', tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') # no jackknife, all mocks
-        xi_filenames = [fn for fn in xi_filenames if 'dubious' not in str(fn) and os.path.isfile(fn)] # filter only existing and not dubious files just in case
-        if len(xi_filenames) > 0: # only if some samples were found
-            print_and_log(f"Using {len(xi_filenames)} samples for mock covariance for {tracer} {reg_comb} z{z_min}-{z_max}")
-            my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
+        stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP')
+        if not tracer.startswith('BGS'): # dark-time mocks have dubious realizations that should be excluded
+            imocks = np.loadtxt(f"{version}_dark-time_imocks_for_covariance.txt", dtype=int) # list of mocks to use for covariance
+            xi_filenames = [get_stats_fn(imock=imock, **stats_kws) for imock in imocks] # no jackknife, all mocks
+        else: # bright-time mocks can use all realizations
+            xi_filenames = get_stats_fn(imock='*', **stats_kws) # no jackknife, all mocks
+        my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
     # obtain the counts names
     reg_counts_names = [get_stats_fn(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') for reg in regs] # no jackknife
