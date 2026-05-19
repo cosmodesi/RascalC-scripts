@@ -12,14 +12,7 @@ if [ -n "${DEFAULT_N_LOOPS:-}" ]; then args+=(--default-n-loops "$DEFAULT_N_LOOP
 
 python -u run_covs.py --list-cases "${args[@]}"
 
-ncase=$(python - <<'INNER_PY'
-import os
-import sys
-sys.path.insert(0, os.path.dirname(os.getcwd()))
-from bgs_cases import array_length
-print(array_length(os.environ.get('CAMPAIGN', 'nonkp_bright_faint_priority'), compmd=os.environ.get('COMPMD') or None, version=os.environ.get('VERSION') or None))
-INNER_PY
-)
+ncase=$(python -u run_covs.py --ntasks "${args[@]}")
 
 for ((i=0; i<ncase; i++)); do
   echo "ID $i"

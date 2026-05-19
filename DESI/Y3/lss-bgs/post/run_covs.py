@@ -8,13 +8,14 @@ from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
 import argparse
-from bgs_cases import CAMPAIGN_CHOICES, case_from_array_id, get_campaign_config, get_n_loops, print_case_summary
+from bgs_cases import CAMPAIGN_CHOICES, case_from_array_id, get_campaign_config, get_n_loops, print_case_summary, array_length
 
 parser = argparse.ArgumentParser(description="Main RascalC computation script for DESI Y3 post-recon LSS-BGS", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("id", type=int, nargs="?", help="number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
 parser.add_argument("-t", "--test", action="store_true", help = "test the input files, abort before the main computation")
 parser.add_argument("--campaign", choices=CAMPAIGN_CHOICES, default="legacy", help="case list to run")
 parser.add_argument("--list-cases", action="store_true", help="print array-id mapping and exit")
+parser.add_argument("--ntasks", action="store_true", help="print number of tasks in the array and exit")
 parser.add_argument("--default-n-loops", type=int, default=None, help="fallback n_loops for cases without tuned values")
 parser.add_argument("--compmd", help="completeness mode, nonKP or PIP; inferred for named campaigns", default=None)
 parser.add_argument("--version", help="LSS catalog version label; inferred for named campaigns", default=None)
@@ -72,6 +73,9 @@ campaign_config = get_campaign_config(args.campaign, compmd=args.compmd, version
 version = campaign_config["version"]
 compmd = campaign_config["compmd"]
 
+if args.ntasks:
+    print(array_length(campaign=args.campaign, compmd=args.compmd, version=args.version))
+    sys.exit(0)
 if args.list_cases:
     print_case_summary(args.campaign, compmd=args.compmd, version=args.version, phase="post", default_n_loops=args.default_n_loops)
     sys.exit(0)
