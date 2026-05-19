@@ -93,7 +93,7 @@ reg = case["region"]
 tlabels = [case["tracer"]]
 z_range = case["zrange"]
 z_min, z_max = z_range
-nrandoms = 1
+nrandoms = 2
 
 # if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
 # if tlabels[0].startswith("BGS"): nrandoms = 1 # override 1 random catalog for any BGS
