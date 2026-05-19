@@ -8,8 +8,6 @@ from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
 import argparse
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from bgs_cases import CAMPAIGN_CHOICES, case_from_array_id, get_campaign_config, get_n_loops, print_case_summary
 
 parser = argparse.ArgumentParser(description="Main RascalC computation script for DESI Y3 post-recon LSS-BGS", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
