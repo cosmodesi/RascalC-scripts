@@ -9,6 +9,7 @@
 # Edit this array to match CAMPAIGN; inspect with: CAMPAIGN=<name> python run_covs.py --list-cases
 #SBATCH --array=0-17 # nonkp_bright_faint_priority
 ##SBATCH --array=0-13 # nonkp_bright_compare or legacy
+##SBATCH --array=0-5 # nonkp_meeting_20260521_bright_faint or nonkp_meeting_20260521_bright20p7
 ##SBATCH --array=0-29 # pip_priority
 ##SBATCH --array=0-19 # pip_20p7
 
