@@ -5,7 +5,7 @@
 #SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128 # 128 hyperthreads = 64 physical cores
-#SBATCH --job-name=RascalC-LSS-BGS-recon
+#SBATCH --job-name=RascalC-LSS-BGS-recon_nonkp_bright_faint_priority
 # Choose/edit job array to match the campaign; double-check with `python run_covs.py --list-cases --campaign <name>`
 ##SBATCH --array=0-17 # nonkp_bright_faint_priority
 #SBATCH --array=2 # nonkp_bright_faint_priority re-run
