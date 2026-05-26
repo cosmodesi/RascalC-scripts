@@ -16,6 +16,22 @@ CURRENT_CAMPAIGNS = {
             "BGS_BRIGHT+FAINT-20.7": [(0.0, 0.3), (0.3, 0.5)],
         },
     },
+    "nonkp_meeting_20260521_bright_faint": {
+        "compmd": "nonKP",
+        "version": "v2",
+        "tracer_zranges": {
+            "BGS_BRIGHT+FAINT-21.2": [(0.1, 0.3)],
+            "BGS_BRIGHT+FAINT-21.35": [(0.1, 0.3)],
+            "BGS_BRIGHT+FAINT-20.7": [(0.1, 0.3)],
+        },
+    },
+    "nonkp_meeting_20260521_bright20p7": {
+        "compmd": "nonKP",
+        "version": "v2",
+        "tracer_zranges": {
+            "BGS_BRIGHT-20.7": [(0.1, 0.3), (0.1, 0.4), (0.0, 0.5)],
+        },
+    },
     "nonkp_bright_compare": {
         "compmd": "nonKP",
         "version": "v2",
