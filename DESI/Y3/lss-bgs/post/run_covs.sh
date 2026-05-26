@@ -8,7 +8,7 @@
 #SBATCH --job-name=RascalC-LSS-BGS-recon_nonkp_bright_faint_priority
 # Choose/edit job array to match the campaign; double-check with `python run_covs.py --list-cases --campaign <name>`
 ##SBATCH --array=0-17 # nonkp_bright_faint_priority
-#SBATCH --array=2 # nonkp_bright_faint_priority re-run
+#SBATCH --array=14 # nonkp_bright_faint_priority re-run
 ##SBATCH --array=0-13 # nonkp_bright_compare or legacy
 ##SBATCH --array=0-29 # pip_priority
 ##SBATCH --array=0-19 # pip_20p7
