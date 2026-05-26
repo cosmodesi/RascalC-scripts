@@ -3,7 +3,6 @@
 import os
 import sys
 from datetime import datetime
-import pickle
 import asdf
 import hashlib
 from typing import Callable
@@ -67,11 +66,11 @@ regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 tracer_zranges = dict(iter_tracer_zranges(args.campaign, compmd=args.compmd, version=args.version))
 
-hash_dict_file = "make_covs.hash_dict.pkl"
+hash_dict_file = "make_covs.hash_dict.asdf"
 if os.path.isfile(hash_dict_file):
     # Load hash dictionary from file
-    with open(hash_dict_file, "rb") as f:
-        hash_dict = pickle.load(f)
+    with asdf.open(hash_dict_file) as af:
+        hash_dict = af["goal_deps_hashes"]
 else:
     # Initialize hash dictionary as empty
     hash_dict = {}
@@ -217,7 +216,7 @@ for tracer, z_ranges in tracer_zranges.items():
 
 # Save the updated hash dictionary
 af = asdf.AsdfFile(dict(goal_deps_hashes=hash_dict))
-af.write_to(hash_dict_file.replace(".pkl", ".asdf"))
+af.write_to(hash_dict_file)
 
 print_and_log(datetime.now())
 print_and_log("Finished execution.")
