@@ -88,7 +88,6 @@ if __name__ == '__main__':
 
     stats, postprocess = [], []
     version  = 'data-dr2-v2'
-    check_for_existing_measurements = False
     
     # stats_dir  = tools.base_stats_dir
     stats_dir = Path(".")
