@@ -1,5 +1,6 @@
 ### Python script for running RascalC in DESI setup (Michael Rashkovetskyi and Uendert Andrade, 2024-2026).
 import sys, os
+from datetime import datetime
 import numpy as np
 from astropy.table import Table, vstack
 import desi_y3_files.file_manager as desi_y3_file_manager
@@ -82,12 +83,14 @@ if args.list_cases:
 if args.id is None:
     parser.error("id is required unless --list-cases is used")
 
+# definitely shouldn't print anything extra before the ntasks case - run_covs_test.sh depends on it just printing the number
+print(datetime.now())
+print(f"Executing {__file__} with options {args}")
+
 # Set DESI CFS before creating the file manager
 os.environ["DESICFS"] = "/dvs_ro/cfs/cdirs/desi" # read-only path
 
-from desi_y3_files import get_data_file_manager_bgs_work 
-
-fm = get_data_file_manager_bgs_work(conf, verspec, compmd=compmd)
+fm = desi_y3_file_manager.get_data_file_manager_bgs_work(conf, verspec, compmd=compmd)
 case = case_from_array_id(args.id, campaign=args.campaign, compmd=args.compmd, version=args.version)
 reg = case["region"]
 tlabels = [case["tracer"]]
