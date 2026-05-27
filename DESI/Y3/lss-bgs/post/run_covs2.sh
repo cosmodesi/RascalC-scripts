@@ -9,7 +9,7 @@
 # Choose/edit job array to match the campaign; double-check with `python run_covs.py --list-cases --campaign <name>`
 ##SBATCH --array=0-17 # nonkp_bright_faint_priority
 ##SBATCH --array=0-13 # nonkp_bright_compare or legacy
-#SBATCH --array=2,7-9 # nonkp_bright_compare re-run
+#SBATCH --array=2 # nonkp_bright_compare re-run
 ##SBATCH --array=0-5 # nonkp_meeting_20260521_bright_faint or nonkp_meeting_20260521_bright20p7
 ##SBATCH --array=0-29 # pip_priority
 ##SBATCH --array=0-19 # pip_20p7
