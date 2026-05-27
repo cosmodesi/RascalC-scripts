@@ -1,7 +1,6 @@
 # This script generates all covs
 
 import os
-import sys
 from datetime import datetime
 import asdf
 import hashlib
