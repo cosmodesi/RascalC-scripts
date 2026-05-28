@@ -14,8 +14,8 @@ from RascalC.cov_utils import export_cov_legendre
 from RascalC.combine_regions import combine_covs_legendre
 
 max_l = 4
-nbin = 45 # radial bins for output cov
-rmax = 180 # maximum output cov radius in Mpc/h
+nbin = 20 # radial bins for output cov
+rmax = 80 # maximum output cov radius in Mpc/h
 
 jackknife = 1
 njack = 60 if jackknife else None
