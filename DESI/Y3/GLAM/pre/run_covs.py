@@ -143,7 +143,7 @@ randoms_weights = [None] * ntracers_max
 randoms_samples = [None] * ntracers_max
 ndata = [None] * ntracers_max
 for t, tlabel in enumerate(tlabels):
-    catalog_options = dict(version=version, imock=mock_id, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, keep_columns=["RA", "DEC", "Z", "INDWEIGHT"], weight="default-FKP")
+    catalog_options = dict(version=version, imock=mock_id, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, weight="default-FKP")
     catalog_options = propose_fiducial(kind='catalog', tracer=tlabel, zrange=z_range, analysis='full_shape') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
     random_catalog = read_clustering_catalog(kind='randoms', expand={'parent_randoms_fn': get_catalog_fn(kind='parent_randoms', version='data-dr2-v2', tracer=tlabel, nran=nrandoms)}, **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
     randoms_weights[t] = random_catalog["INDWEIGHT"]

@@ -140,7 +140,7 @@ randoms_weights = [None] * ntracers_max
 randoms_samples = [None] * ntracers_max
 ndata = [None] * ntracers_max
 for t, tlabel in enumerate(tlabels):
-    catalog_options = dict(version=version, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, keep_columns=["RA", "DEC", "Z", "INDWEIGHT"], weight='default-FKP-bitwise-iip')
+    catalog_options = dict(version=version, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, weight='default-FKP-bitwise-iip')
     catalog_options = propose_fiducial(kind='catalog', tracer=tlabel, zrange=z_range, analysis='protected') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
     catalog_options['binned_weight'] = read_catalog(kind='full_data', **catalog_options).attrs # needed to apply NTILE-missing_power weight correction, which is similar to f_tile (FRAC_TLOBS_TILES) for nonKP for PIP here (PIP automatically selected given IIP in weights)
     random_catalog = read_clustering_catalog(kind='randoms', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
