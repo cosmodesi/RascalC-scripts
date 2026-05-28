@@ -120,7 +120,7 @@ xi_setup.update({"zrange": z_range, "cut": None, "njack": njack}) # specify z_ra
 
 # Output and temporary directories
 
-outdir_base = os.path.join(verspec, version, compmd, conf, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir_base = os.path.join(verspec, version, compmd, conf, "_".join(tlabels + [reg]) + f"_z{z_min:g}-{z_max:g}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 

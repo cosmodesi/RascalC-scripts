@@ -139,7 +139,7 @@ for campaign in args.campaign:
             recon_spec += '' if (w := xi_setup['recon_weighting']) == 'default' else '_{}'.format(w)
             if jackknife: reg_results_jack = []
             for reg in regs:
-                outdir = os.path.join("outdirs", verspec, version, compmd, conf, recon_spec, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
+                outdir = os.path.join("outdirs", verspec, version, compmd, conf, recon_spec, "_".join(tlabels + [reg]) + f"_z{z_min:g}-{z_max:g}") # output file directory
                 if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
                     outdirs_w_suffixes = [outdir + "_" + str(i) for i in range(11)] # append suffixes
                     outdirs_w_suffixes = [dirname for dirname in outdirs_w_suffixes if os.path.isdir(dirname)] # filter only existing dirs
@@ -156,7 +156,7 @@ for campaign in args.campaign:
                 reg_results.append(results_name)
 
                 cov_dir = f"cov_txt/{verspec}/{version}/{compmd}/{conf}/{recon_spec}"
-                cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
+                cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min:g}-{z_max:g}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
                 def make_gaussian_cov():
                     results = post_process_legendre(outdir, nbin, max_l, outdir, skip_r_bins = skip_r_bins, skip_l = skip_l, print_function = print_and_log)
@@ -198,15 +198,15 @@ for campaign in args.campaign:
                 if len(reg_results) == len(regs): # if we have RascalC results for all regions
                     # Combined Gaussian cov
 
-                    cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # combined cov name
+                    cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min:g}-{z_max:g}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # combined cov name
 
                     # Comb cov depends on the region RascalC results
                     my_make(cov_name, reg_results, lambda: combine_covs_legendre(*reg_results, *reg_pycorr_names, cov_name, max_l, r_step = r_step, skip_r_bins = skip_r_bins, print_function = print_and_log))
-                    # Recipe: run combine covs
+                    # Recipe: run combine covs§
 
                 if jackknife and len(reg_results_jack) == len(regs): # if jackknife and we have RascalC jack results for all regions
                     # Combined rescaled cov
-                    cov_name_jack = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # combined cov name
+                    cov_name_jack = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min:g}-{z_max:g}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # combined cov name
 
                     # Comb cov depends on the region RascalC results
                     my_make(cov_name_jack, reg_results_jack, lambda: combine_covs_legendre(*reg_results_jack, *reg_pycorr_names, cov_name_jack, max_l, r_step = r_step, skip_r_bins = skip_r_bins, print_function = print_and_log))
