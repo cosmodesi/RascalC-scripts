@@ -186,7 +186,7 @@ for campaign in args.campaign:
                     # Recipe: run post-processing
                     # Also perform convergence check (optional but nice)
 
-                    cov_name_jack = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt"
+                    cov_name_jack = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min:g}-{z_max:g}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt"
                     # Individual cov file depends on RascalC results
                     my_make(cov_name_jack, [results_name_jack], lambda: export_cov_legendre(results_name_jack, max_l, cov_name_jack))
                     # Recipe: run convert cov
