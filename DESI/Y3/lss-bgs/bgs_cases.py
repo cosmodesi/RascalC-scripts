@@ -76,70 +76,32 @@ LEGACY_TRACER_ZRANGES = {
 CAMPAIGN_CHOICES = ("legacy",) + tuple(CURRENT_CAMPAIGNS)
 
 N_LOOPS = {
-    # "BGS_BRIGHT-21.5": {(0.1, 0.4): {"SGC": 1536, "NGC": 768}},
-    "BGS_ANY-21.35": {
-        (0.1, 0.4): {"SGC": 1536, "NGC": 768},
-        (0.0, 0.5): {"SGC": 1536, "NGC": 768},
-        (0.0, 0.3): {"SGC": 1536, "NGC": 768},
-        (0.1, 0.3): {"SGC": 1536, "NGC": 768},
-        # (0.25, 0.4): {"SGC": 2048, "NGC": 768},
-        (0.3, 0.5): {"SGC": 2048, "NGC": 768},
-    },
-    "BGS_BRIGHT-21.35": {
-        (0.1, 0.4): {"SGC": 1536, "NGC": 768},
+    # "-21.5": {(0.1, 0.4): {"SGC": 1536, "NGC": 768}},
+    "-21.35": {
         (0.0, 0.5): {"SGC": 1536, "NGC": 1152},
+        (0.1, 0.4): {"SGC": 1536, "NGC": 768},
         (0.0, 0.3): {"SGC": 4608, "NGC": 768},
         (0.1, 0.3): {"SGC": 1536, "NGC": 768},
         (0.25, 0.4): {"SGC": 2048, "NGC": 768},
-    },
-    "BGS_BRIGHT+FAINT-21.35": {
-        (0.0, 0.5): {"SGC": 1536, "NGC": 512},
-        (0.1, 0.4): {"SGC": 1536, "NGC": 512},
-        (0.0, 0.3): {"SGC": 1536, "NGC": 768},
-        (0.1, 0.3): {"SGC": 1536, "NGC": 768},
         (0.3, 0.5): {"SGC": 2048, "NGC": 768},
     },
-    "BGS_ANY-21.2": {
-        (0.0, 0.5): {"SGC": 1536, "NGC": 512},
-        (0.1, 0.4): {"SGC": 1536, "NGC": 512},
-        # (0.0, 0.3): {"SGC": 1536, "NGC": 768},
-        (0.3, 0.5): {"SGC": 2048, "NGC": 768},
-    },
-    "BGS_BRIGHT-21.2": {
+    "-21.2": {
+        (0.0, 0.5): {"SGC": 2048, "NGC": 768},
         (0.1, 0.4): {"SGC": 1536, "NGC": 768},
-        (0.0, 0.5): {"SGC": 1536, "NGC": 768},
         (0.0, 0.3): {"SGC": 1536, "NGC": 768},
         (0.1, 0.3): {"SGC": 2304, "NGC": 1152},
         # (0.25, 0.4): {"SGC": 2048, "NGC": 768},
-    },
-    "BGS_BRIGHT+FAINT-21.2": {
-        (0.0, 0.5): {"SGC": 2048, "NGC": 512},
-        (0.1, 0.4): {"SGC": 1536, "NGC": 512},
-        # (0.0, 0.3): {"SGC": 1536, "NGC": 768},
-        (0.1, 0.3): {"SGC": 2048, "NGC": 768},
         (0.3, 0.5): {"SGC": 2048, "NGC": 768},
     },
-    "BGS_ANY-20.7": {
-        (0.0, 0.3): {"SGC": 4608, "NGC": 2304},
-        (0.3, 0.5): {"SGC": 1536, "NGC": 768},
+    "-20.7": {
         (0.0, 0.5): {"SGC": 1536, "NGC": 768},
-        (0.1, 0.5): {"SGC": 1536, "NGC": 768},
         (0.1, 0.4): {"SGC": 1536, "NGC": 768},
-    },
-    "BGS_BRIGHT-20.7": {
-        (0.0, 0.3): {"SGC": 4608, "NGC": 2304},
-        (0.1, 0.3): {"SGC": 6912, "NGC": 2304},
-        (0.3, 0.5): {"SGC": 1536, "NGC": 768},
-        (0.0, 0.5): {"SGC": 1536, "NGC": 768},
-        (0.1, 0.5): {"SGC": 1536, "NGC": 768},
-        (0.1, 0.4): {"SGC": 1536, "NGC": 768},
-    },
-    "BGS_BRIGHT+FAINT-20.7": {
         (0.0, 0.3): {"SGC": 6912, "NGC": 2304},
         (0.1, 0.3): {"SGC": 6912, "NGC": 2304},
         (0.3, 0.5): {"SGC": 1536, "NGC": 768},
+        (0.1, 0.5): {"SGC": 1536, "NGC": 768},
     },
-    # "BGS_BRIGHT-20.2": {
+    # "-20.2": {
     #     (0.1, 0.25): {"SGC": 2048, "NGC": 1024},
     #     (0.1, 0.4): {"SGC": 1024, "NGC": 256},
     # },
@@ -217,8 +179,9 @@ def case_from_array_id(array_id, campaign="legacy", compmd=None, version=None):
 def get_n_loops(phase, tracer, zrange, region, default=None, allow_missing=False):
     loops = N_LOOPS # use the same for simplicity, but could be different for pre/post `phase` if desired
     zrange = normalize_zrange(zrange)
+    magcut = "-" + tracer.split("-")[-1] # try to use the same n_loops for ANY/BRIGHT/BRIGHT+FAINT with the same magnitude cut, but could be different if desired
     try:
-        return loops[tracer][zrange][region]
+        return loops[magcut][zrange][region]
     except KeyError:
         if default is not None:
             return int(default)
