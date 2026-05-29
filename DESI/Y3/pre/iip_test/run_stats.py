@@ -48,7 +48,7 @@ def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None,
                         particle2_correlation={'jackknife': {'nsplits': 60}} if do_jackknife else {},
                         window_mesh3_spectrum={'ibatch': ibatch} if isinstance(ibatch, tuple) else {'computed_batches': ibatch})
         options = fill_fiducial_options(options, analysis=analysis)
-        options['correlation2_particle'].update({'battrs': dict(s=np.linspace(0., 180., 181), mu=(np.linspace(-1., 1., 201), 'midpoint'))}) # force the computation of large-scale correlation functions against the default for protected
+        options['particle2_correlation'].update({'battrs': dict(s=np.linspace(0., 180., 181), mu=(np.linspace(-1., 1., 201), 'midpoint'))}) # force the computation of large-scale correlation functions against the default for protected
         
         for itracer in options['catalog']:
             options['catalog'][itracer]['zranges'] = zranges # override fiducial zranges 
