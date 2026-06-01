@@ -7,7 +7,8 @@
 #SBATCH --cpus-per-task=128 # 128 hyperthreads = 64 physical cores
 #SBATCH --job-name=RascalC-LSS-BGS-nonkp_bright_faint_priority
 # Choose/edit job array to match the campaign; double-check with `python run_covs.py --list-cases --campaign <name>`
-#SBATCH --array=0-17 # nonkp_bright_faint_priority
+##SBATCH --array=0-17 # nonkp_bright_faint_priority
+#SBATCH --array=13 # re-run nonkp_bright_faint_priority
 ##SBATCH --array=0-13 # nonkp_bright_compare or legacy
 ##SBATCH --array=0-5 # nonkp_meeting_20260521_bright_faint or nonkp_meeting_20260521_bright20p7
 ##SBATCH --array=0-29 # pip_priority
