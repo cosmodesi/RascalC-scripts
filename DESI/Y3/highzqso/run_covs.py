@@ -87,7 +87,7 @@ nrandoms = desi_y3_file_manager.list_nran[tlabels[0]]
 if nrandoms >= 8: nrandoms //= 2 # to keep closer to the old runtime & convergence level, when LRG and ELG had only 4 randoms
 
 # set the number of integration loops based on tracer, z range and region
-n_loops = {'QSO': {(1.77, 3.8): {'SGC': 256,
+n_loops = {'QSO': {(1.77, 3.8): {'SGC': 512, # was 256
                                   'NGC': 256}}}[tlabels[0]][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
