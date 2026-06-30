@@ -32,6 +32,14 @@ CURRENT_CAMPAIGNS = {
             "BGS_BRIGHT-20.7": [(0.1, 0.3), (0.1, 0.4), (0.0, 0.5)],
         },
     },
+    "nonkp_z0p3_0p45_bright_bf_21p35": {
+        "compmd": "nonKP",
+        "version": "v2",
+        "tracer_zranges": {
+            "BGS_BRIGHT-21.35": [(0.3, 0.45)],
+            "BGS_BRIGHT+FAINT-21.35": [(0.3, 0.45)],
+        },
+    },
     "nonkp_bright_compare": {
         "compmd": "nonKP",
         "version": "v2",
