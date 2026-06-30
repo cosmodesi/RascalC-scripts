@@ -11,6 +11,7 @@
 ##SBATCH --array=0-13 # nonkp_bright_compare or legacy
 #SBATCH --array=2 # nonkp_bright_compare re-run
 ##SBATCH --array=0-5 # nonkp_meeting_20260521_bright_faint or nonkp_meeting_20260521_bright20p7
+##SBATCH --array=0-3 # nonkp_z0p3_0p45_bright_bf_21p35
 ##SBATCH --array=0-29 # pip_priority
 ##SBATCH --array=0-19 # pip_20p7
 
