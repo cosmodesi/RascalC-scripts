@@ -121,11 +121,10 @@ for c, allcounts_filename in enumerate(allcounts_filenames):
 del these_counts # free up memory
 
 # Load pre-computed reconstruction catalogs (from run_recon.py)
-recon_file = os.path.join('recon_catalogs', version, f"{tlabels[0]}_{reg}.npz")
-recon_data = np.load(recon_file)
-nran_saved = int(recon_data['nran'])
-print(f"Loaded reconstruction from {recon_file}, nran_saved={nran_saved}")
-assert nrandoms <= nran_saved, f"Need {nrandoms} randoms but only {nran_saved} saved"
+recon_dir = os.path.join('recon_catalogs', version)
+data_recon = np.load(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_data.npz"))
+randoms_recon = [np.load(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_randoms_{iran}.npz")) for iran in range(nrandoms)]
+print(f"Loaded reconstruction catalogs: data + {nrandoms} randoms from {recon_dir}")
 
 if args.test: sys.exit(0)
 
@@ -137,22 +136,19 @@ randoms_samples = [None] * ntracers_max
 ndata = [None] * ntracers_max
 
 for t, tlabel in enumerate(tlabels):
-    # Take subset of randoms for RascalC, concatenate, and z-cut
-    ran_pos_rec = np.concatenate([recon_data[f'randoms_position_rec_{iran}'] for iran in range(nrandoms)])
-    ran_z = np.concatenate([recon_data[f'randoms_z_{iran}'] for iran in range(nrandoms)])
-    ran_indweight = np.concatenate([recon_data[f'randoms_indweight_{iran}'] for iran in range(nrandoms)])
+    # Concatenate randoms and z-cut
+    ran_pos_rec = np.concatenate([r['position_rec'] for r in randoms_recon])
+    ran_z = np.concatenate([r['z'] for r in randoms_recon])
+    ran_indweight = np.concatenate([r['indweight'] for r in randoms_recon])
     z_mask = (ran_z >= z_min) & (ran_z < z_max)
     ran_pos_rec = ran_pos_rec[z_mask]
     ran_z = ran_z[z_mask]
     ran_indweight = ran_indweight[z_mask]
 
     # Z-cut data for ndata computation and jackknife reference
-    data_z = recon_data['data_z']
-    data_indweight = recon_data['data_indweight']
-    data_pos_rec = recon_data['data_position_rec']
-    data_z_mask = (data_z >= z_min) & (data_z < z_max)
-    data_indweight_cut = data_indweight[data_z_mask]
-    data_pos_rec_cut = data_pos_rec[data_z_mask]
+    data_z_mask = (data_recon['z'] >= z_min) & (data_recon['z'] < z_max)
+    data_indweight_cut = data_recon['indweight'][data_z_mask]
+    data_pos_rec_cut = data_recon['position_rec'][data_z_mask]
     ndata[t] = np.sum(data_indweight_cut)**2 / np.sum(data_indweight_cut**2)
 
     randoms_weights[t] = ran_indweight
@@ -162,7 +158,7 @@ for t, tlabel in enumerate(tlabels):
         subsampler = KMeansSubsampler('angular', positions = data_pos_rec_cut, position_type = 'pos', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
         randoms_samples[t] = subsampler.label(positions = ran_pos_rec, position_type = 'pos')
 
-del recon_data # free up memory
+del data_recon, randoms_recon # free up memory
 
 if not args.test: preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 

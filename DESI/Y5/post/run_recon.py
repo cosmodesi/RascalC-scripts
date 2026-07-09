@@ -25,9 +25,9 @@ for tracer in unique_tracers:
     print(f"\n{tracer}: recon_zrange={recon_zrange}, nran={nran_recon}, options={recon_options}")
 
     for reg in regs:
-        outfile = os.path.join(outdir, f"{tracer}_{reg}.npz")
-        if os.path.isfile(outfile):
-            print(f"  {reg}: {outfile} already exists, skipping")
+        data_outfile = os.path.join(outdir, f"{tracer}_{reg}_data.npz")
+        if os.path.isfile(data_outfile):
+            print(f"  {reg}: {data_outfile} already exists, skipping")
             continue
 
         catalog_options = dict(version=version, tracer=tracer, region=reg, zrange=recon_zrange, nran=nran_recon, weight="default-FKP")
@@ -42,23 +42,22 @@ for tracer in unique_tracers:
             **recon_options)
         print(f"  {reg}: reconstruction complete")
 
-        save_dict = {
-            'data_position_rec': np.asarray(data_positions_rec),
-            'data_z': np.asarray(data_catalog['Z']),
-            'data_indweight': np.asarray(data_catalog['INDWEIGHT']),
-        }
+        np.savez(data_outfile,
+                 position_rec=np.asarray(data_positions_rec),
+                 z=np.asarray(data_catalog['Z']),
+                 indweight=np.asarray(data_catalog['INDWEIGHT']))
+        print(f"  {reg}: saved data to {data_outfile}")
 
         start = 0
         for iran, random in enumerate(randoms_catalogs):
             size = len(random['POSITION'])
-            save_dict[f'randoms_position_rec_{iran}'] = np.asarray(randoms_rec_positions[start:start + size])
-            save_dict[f'randoms_z_{iran}'] = np.asarray(random['Z'])
-            save_dict[f'randoms_indweight_{iran}'] = np.asarray(random['INDWEIGHT'])
+            ran_outfile = os.path.join(outdir, f"{tracer}_{reg}_randoms_{iran}.npz")
+            np.savez(ran_outfile,
+                     position_rec=np.asarray(randoms_rec_positions[start:start + size]),
+                     z=np.asarray(random['Z']),
+                     indweight=np.asarray(random['INDWEIGHT']))
             start += size
-        save_dict['nran'] = np.array(len(randoms_catalogs))
-
-        np.savez(outfile, **save_dict)
-        print(f"  {reg}: saved to {outfile}")
+        print(f"  {reg}: saved {len(randoms_catalogs)} random catalogs")
 
         del data_catalog, randoms_catalogs, data_positions_rec, randoms_rec_positions
 
