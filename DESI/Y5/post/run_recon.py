@@ -17,8 +17,13 @@ parser = argparse.ArgumentParser(description="Run reconstruction for a given tra
 parser.add_argument("--tracer", type=str, required=True, help="tracer name, e.g. LRG, ELG_LOPnotqso, QSO, BGS_BRIGHT-21.35")
 args = parser.parse_args()
 
+# Initialize JAX distributed BEFORE any catalog reading — cosmoprimo imports
+# JAX at module level and creates arrays, which OOMs if all ranks target GPU 0.
+jax.distributed.initialize()
+
 version = 'data-dr3-matterhorn-v2-v0-bao'
-outdir = os.path.join('recon_catalogs', version)
+basedir = os.path.join(os.environ['PSCRATCH'], 'dr3', 'rascalc')
+outdir = os.path.join(basedir, 'recon_catalogs', version)
 if jax.process_index() == 0:
     os.makedirs(outdir, exist_ok=True)
 
@@ -68,4 +73,5 @@ for reg in regs:
 
     del data_catalog, randoms_catalogs, data_positions_rec, randoms_rec_positions
 
+jax.distributed.shutdown()
 print(f"\n{tracer} reconstruction complete.")

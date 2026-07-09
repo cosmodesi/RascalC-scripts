@@ -39,7 +39,8 @@ reg_comb = "GCcomb"
 tracers = ['BGS_BRIGHT-21.35'] + ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['QSO']
 zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 2.1)]
 
-hash_dict_file = "make_covs.hash_dict.asdf"
+basedir = os.environ['PSCRATCH']
+hash_dict_file = os.path.join(basedir, "make_covs.hash_dict.asdf")
 if os.path.isfile(hash_dict_file):
     # Load hash dictionary from file
     with asdf.open(hash_dict_file) as af:
@@ -50,7 +51,7 @@ else:
 # Hash dict keys are goal filenames, the elements are also dictionaries with dependencies/sources filenames as keys
 
 # Set up logging
-logfile = "make_covs.log.txt"
+logfile = os.path.join(basedir, "make_covs.log.txt")
 
 def print_and_log(s: object = "") -> None:
     print(s)
@@ -110,7 +111,7 @@ for tracer, z_range in zip(tracers, zs):
     reg_results = []
     if jackknife: reg_results_jack = []
     for reg in regs:
-        outdir = os.path.join('outdirs', version, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
+        outdir = os.path.join(basedir, 'outdirs', version, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
         if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
             outdirs_w_suffixes = [outdir + "_" + str(i) for i in range(11)] # append suffixes
             outdirs_w_suffixes = [dirname for dirname in outdirs_w_suffixes if os.path.isdir(dirname)] # filter only existing dirs
@@ -126,7 +127,7 @@ for tracer, z_range in zip(tracers, zs):
         results_name = post_process_auto(outdir, load_sample_cov=False, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=blank_function, dry_run=True)["path"]
         reg_results.append(results_name)
 
-        cov_dir = f"cov_txt/{version}/recsym_IFFT"
+        cov_dir = os.path.join(basedir, f"cov_txt/{version}/recsym_IFFT")
         cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
         # RascalC results depend on full output (most straightforwardly)

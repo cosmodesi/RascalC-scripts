@@ -96,9 +96,10 @@ assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
 # Output and temporary directories
+basedir = os.path.join(os.environ['PSCRATCH'], 'dr3', 'rascalc')
 outdir_base = os.path.join(version, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
-outdir = os.path.join("outdirs", outdir_base) # output file directory
-tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
+outdir = os.path.join(basedir, "outdirs", outdir_base) # output file directory
+tmpdir = os.path.join(basedir, "tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 if args.test: outdir = tmpdir # write outputs to tmpdir for test runs to avoid cluttering the main output directory with incomplete results
 
 # Form correlation function labels
@@ -121,7 +122,7 @@ for c, allcounts_filename in enumerate(allcounts_filenames):
 del these_counts # free up memory
 
 # Load pre-computed reconstruction catalogs (from run_recon.py)
-recon_dir = os.path.join('recon_catalogs', version)
+recon_dir = os.path.join(basedir, 'recon_catalogs', version)
 data_recon = np.load(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_data.npz"))
 randoms_recon = [np.load(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_randoms_{iran}.npz")) for iran in range(nrandoms)]
 print(f"Loaded reconstruction catalogs: data + {nrandoms} randoms from {recon_dir}")
