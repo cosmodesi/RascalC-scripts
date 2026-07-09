@@ -1,10 +1,9 @@
 ### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2025-2026).
-### Adapted for Y5 data post-recon with on-the-fly reconstruction.
+### Adapted for Y5 data post-recon; reads pre-computed reconstruction catalogs from run_recon.py.
 import sys, os
 import numpy as np
 import lsstypes
-from clustering_statistics.tools import get_stats_fn, get_catalog_fn, read_clustering_catalog, propose_fiducial
-from clustering_statistics.recon_tools import compute_reconstruction
+from clustering_statistics.tools import get_stats_fn
 from desipipe import setup_logging
 from pycorr import KMeansSubsampler
 from RascalC.lsstypes_utils.utils import reshape_lsstypes
@@ -121,37 +120,14 @@ for c, allcounts_filename in enumerate(allcounts_filenames):
     input_xis[c] = reshape_lsstypes(these_counts, r_step=r_step_cf, n_mu=mbin_cf) # reshape for input correlation function
 del these_counts # free up memory
 
-# Reconstruction setup
-recon_options = propose_fiducial('recon', tracer=tlabels[0])
-recon_zrange = recon_options.pop('zrange')
-nran_recon = propose_fiducial('catalog', tracer=tlabels[0])['nran']
-print(f"Reconstruction: zrange={recon_zrange}, nran_recon={nran_recon}, options={recon_options}")
-
-# Read catalogs over the full recon zrange for reconstruction
-catalog_options = dict(version=version, tracer=tlabels[0], region=reg, zrange=recon_zrange, nran=nran_recon, weight="default-FKP")
-catalog_options = propose_fiducial(kind='catalog', tracer=tlabels[0], zrange=recon_zrange, analysis='full_shape') | catalog_options
-
-data_catalog = read_clustering_catalog(kind='data', **catalog_options)
-randoms_catalogs = read_clustering_catalog(kind='randoms', concatenate=False, **catalog_options)
-print(f"Loaded data ({len(data_catalog)}) and {len(randoms_catalogs)} random catalogs over recon zrange {recon_zrange}")
+# Load pre-computed reconstruction catalogs (from run_recon.py)
+recon_file = os.path.join('recon_catalogs', version, f"{tlabels[0]}_{reg}.npz")
+recon_data = np.load(recon_file)
+nran_saved = int(recon_data['nran'])
+print(f"Loaded reconstruction from {recon_file}, nran_saved={nran_saved}")
+assert nrandoms <= nran_saved, f"Need {nrandoms} randoms but only {nran_saved} saved"
 
 if args.test: sys.exit(0)
-
-# Run on-the-fly reconstruction
-from mpytools import Catalog
-data_positions_rec, randoms_rec_positions = compute_reconstruction(
-    lambda: {'data': data_catalog, 'randoms': Catalog.concatenate(randoms_catalogs)},
-    **recon_options)
-print("Reconstruction complete")
-
-# Assign shifted positions back to catalog objects
-data_catalog['POSITION_REC'] = data_positions_rec
-start = 0
-for random in randoms_catalogs:
-    size = len(random['POSITION'])
-    random['POSITION_REC'] = randoms_rec_positions[start:start + size]
-    start += size
-del data_positions_rec, randoms_rec_positions
 
 # Slice to z-bin and nrandoms for RascalC
 ntracers_max = 2 # maximum number of tracers
@@ -162,36 +138,31 @@ ndata = [None] * ntracers_max
 
 for t, tlabel in enumerate(tlabels):
     # Take subset of randoms for RascalC, concatenate, and z-cut
-    random_catalog = Catalog.concatenate(randoms_catalogs[:nrandoms])
-    z_mask = (random_catalog['Z'] >= z_min) & (random_catalog['Z'] < z_max)
-    random_catalog = random_catalog[z_mask]
+    ran_pos_rec = np.concatenate([recon_data[f'randoms_position_rec_{iran}'] for iran in range(nrandoms)])
+    ran_z = np.concatenate([recon_data[f'randoms_z_{iran}'] for iran in range(nrandoms)])
+    ran_indweight = np.concatenate([recon_data[f'randoms_indweight_{iran}'] for iran in range(nrandoms)])
+    z_mask = (ran_z >= z_min) & (ran_z < z_max)
+    ran_pos_rec = ran_pos_rec[z_mask]
+    ran_z = ran_z[z_mask]
+    ran_indweight = ran_indweight[z_mask]
 
     # Z-cut data for ndata computation and jackknife reference
-    data_z_mask = (data_catalog['Z'] >= z_min) & (data_catalog['Z'] < z_max)
-    data_zcut = data_catalog[data_z_mask]
-    ndata[t] = np.sum(data_zcut["INDWEIGHT"])**2 / np.sum(data_zcut["INDWEIGHT"]**2)
+    data_z = recon_data['data_z']
+    data_indweight = recon_data['data_indweight']
+    data_pos_rec = recon_data['data_position_rec']
+    data_z_mask = (data_z >= z_min) & (data_z < z_max)
+    data_indweight_cut = data_indweight[data_z_mask]
+    data_pos_rec_cut = data_pos_rec[data_z_mask]
+    ndata[t] = np.sum(data_indweight_cut)**2 / np.sum(data_indweight_cut**2)
 
-    randoms_weights[t] = random_catalog["INDWEIGHT"]
-
-    # Convert shifted Cartesian positions to RA/DEC/dist
-    pos_rec = np.array(random_catalog['POSITION_REC'])
-    dist = np.sqrt(pos_rec[:, 0]**2 + pos_rec[:, 1]**2 + pos_rec[:, 2]**2)
-    dec = np.degrees(np.arcsin(pos_rec[:, 2] / dist))
-    ra = np.degrees(np.arctan2(pos_rec[:, 1], pos_rec[:, 0]))
-    ra[ra < 0] += 360
+    randoms_weights[t] = ran_indweight
+    randoms_positions[t] = ran_pos_rec # (N, 3) Cartesian
 
     if njack: # create jackknives using shifted data positions
-        pos_rec_data = np.array(data_zcut['POSITION_REC'])
-        dist_data = np.sqrt(pos_rec_data[:, 0]**2 + pos_rec_data[:, 1]**2 + pos_rec_data[:, 2]**2)
-        dec_data = np.degrees(np.arcsin(pos_rec_data[:, 2] / dist_data))
-        ra_data = np.degrees(np.arctan2(pos_rec_data[:, 1], pos_rec_data[:, 0]))
-        ra_data[ra_data < 0] += 360
-        subsampler = KMeansSubsampler('angular', positions = [ra_data, dec_data, data_zcut["Z"]], position_type = 'rdd', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
-        randoms_samples[t] = subsampler.label(positions = [ra, dec, random_catalog["Z"]], position_type = 'rdd')
+        subsampler = KMeansSubsampler('angular', positions = data_pos_rec_cut, position_type = 'pos', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
+        randoms_samples[t] = subsampler.label(positions = ran_pos_rec, position_type = 'pos')
 
-    randoms_positions[t] = [ra, dec, dist]
-
-del random_catalog, data_zcut, data_catalog, randoms_catalogs # free up memory
+del recon_data # free up memory
 
 if not args.test: preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
@@ -201,7 +172,7 @@ results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
                   allcounts_11 = allcounts[0], allcounts_12 = allcounts[1], allcounts_22 = allcounts[2],
                   xi_table_11 = input_xis[0], xi_table_12 = input_xis[1], xi_table_22 = input_xis[2],
                   no_data_galaxies1 = ndata[0], no_data_galaxies2 = ndata[1],
-                  position_type = "rdd",
+                  position_type = "pos",
                   randoms_positions1 = randoms_positions[0], randoms_weights1 = randoms_weights[0], randoms_samples1 = randoms_samples[0],
                   randoms_positions2 = randoms_positions[1], randoms_weights2 = randoms_weights[1], randoms_samples2 = randoms_samples[1],
                   normalize_wcounts = True,
