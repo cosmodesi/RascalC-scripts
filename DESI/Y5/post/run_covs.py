@@ -127,8 +127,6 @@ data_recon = np.load(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_data.npz"))
 randoms_recon = [np.load(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_randoms_{iran}.npz")) for iran in range(nrandoms)]
 print(f"Loaded reconstruction catalogs: data + {nrandoms} randoms from {recon_dir}")
 
-if args.test: sys.exit(0)
-
 # Slice to z-bin and nrandoms for RascalC
 ntracers_max = 2 # maximum number of tracers
 randoms_positions = [None] * ntracers_max
@@ -161,7 +159,8 @@ for t, tlabel in enumerate(tlabels):
 
 del data_recon, randoms_recon # free up memory
 
-if not args.test: preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
+if args.test: sys.exit(0)
+preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
