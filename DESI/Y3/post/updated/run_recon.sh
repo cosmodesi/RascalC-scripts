@@ -5,7 +5,7 @@
 #SBATCH --gpus 4
 #SBATCH -t 02:00:00
 #SBATCH -q regular
-#SBATCH --job-name=RascalC-Y3-data-recon
+#SBATCH --job-name=RascalC-Y3-v2-reconstruction
 
 set -e
 SECONDS=0
