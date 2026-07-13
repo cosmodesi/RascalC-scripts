@@ -2,6 +2,7 @@
 ### Adapted for Y3 data post-recon; reads pre-computed reconstruction catalogs from run_recon.py.
 import sys, os
 import numpy as np
+from astropy.table import Table, vstack
 import lsstypes
 from clustering_statistics.tools import get_stats_fn, propose_fiducial
 from desipipe import setup_logging
@@ -125,8 +126,8 @@ del these_counts # free up memory
 
 # Load pre-computed reconstruction catalogs (from run_recon.py)
 recon_dir = os.path.join('catalogs', version, recon_spec)
-data_recon = np.load(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_data.npz"))
-randoms_recon = [np.load(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_randoms_{iran}.npz")) for iran in range(nrandoms)]
+data_recon = [Table(np.load(os.path.join(recon_dir, f"{tracer}_{reg}_data.npz"))) for tracer in tlabels]
+randoms_recon = [vstack([Table(np.load(os.path.join(recon_dir, f"{tracer}_{reg}_randoms_{iran}.npz"))) for iran in range(nrandoms)]) for tracer in tlabels]
 print(f"Loaded reconstruction catalogs: data + {nrandoms} randoms from {recon_dir}")
 
 if args.test: sys.exit(0)
@@ -138,28 +139,20 @@ randoms_weights = [None] * ntracers_max
 randoms_samples = [None] * ntracers_max
 ndata = [None] * ntracers_max
 
-for t, tlabel in enumerate(tlabels):
-    # Concatenate randoms and z-cut
-    ran_pos_rec = np.concatenate([r['position_rec'] for r in randoms_recon])
-    ran_z = np.concatenate([r['z'] for r in randoms_recon])
-    ran_indweight = np.concatenate([r['indweight'] for r in randoms_recon])
-    z_mask = (ran_z >= z_min) & (ran_z < z_max)
-    ran_pos_rec = ran_pos_rec[z_mask]
-    ran_z = ran_z[z_mask]
-    ran_indweight = ran_indweight[z_mask]
+for t in range(len(tlabels)):
+    # z-cut randoms
+    randoms_recon[t] = randoms_recon[t][(randoms_recon[t]['z'] >= z_min) & (randoms_recon[t]['z'] < z_max)]
 
-    # Z-cut data for ndata computation and jackknife reference
-    data_z_mask = (data_recon['z'] >= z_min) & (data_recon['z'] < z_max)
-    data_indweight_cut = data_recon['indweight'][data_z_mask]
-    data_pos_rec_cut = data_recon['position_rec'][data_z_mask]
-    ndata[t] = np.sum(data_indweight_cut)**2 / np.sum(data_indweight_cut**2)
+    # z-cut data for ndata computation and jackknife reference
+    data_recon[t] = data_recon[t][(data_recon[t]['z'] >= z_min) & (data_recon[t]['z'] < z_max)]
+    ndata[t] = np.sum(data_recon[t]['indweight'])**2 / np.sum(data_recon[t]['indweight']**2)
 
-    randoms_weights[t] = ran_indweight
-    randoms_positions[t] = ran_pos_rec # (N, 3) Cartesian
+    randoms_weights[t] = randoms_recon[t]['indweight']
+    randoms_positions[t] = randoms_recon[t]['position_rec'] # (N, 3) Cartesian
 
     if njack: # create jackknives using shifted data positions
-        subsampler = KMeansSubsampler('angular', positions = data_pos_rec_cut, position_type = 'pos', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
-        randoms_samples[t] = subsampler.label(positions = ran_pos_rec, position_type = 'pos')
+        subsampler = KMeansSubsampler('angular', positions=data_recon[t]['position_rec'], position_type='pos', dtype='f8', nsamples=njack, nside=512, random_state=42)
+        randoms_samples[t] = subsampler.label(positions=randoms_positions[t], position_type='pos')
 
 del data_recon, randoms_recon # free up memory
 
