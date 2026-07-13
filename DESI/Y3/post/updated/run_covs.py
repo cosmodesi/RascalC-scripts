@@ -159,14 +159,14 @@ del data_recon, randoms_recon # free up memory
 if not args.test: preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
 # Run the main code, post-processing and extra convergence check
-results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
-                  nthread = nthread, N2 = N2, N3 = N3, N4 = N4, n_loops = n_loops, loops_per_sample = loops_per_sample,
-                  allcounts_11 = allcounts[0], allcounts_12 = allcounts[1], allcounts_22 = allcounts[2],
-                  xi_table_11 = input_xis[0], xi_table_12 = input_xis[1], xi_table_22 = input_xis[2],
-                  no_data_galaxies1 = ndata[0], no_data_galaxies2 = ndata[1],
-                  position_type = "pos",
-                  randoms_positions1 = randoms_positions[0], randoms_weights1 = randoms_weights[0], randoms_samples1 = randoms_samples[0],
-                  randoms_positions2 = randoms_positions[1], randoms_weights2 = randoms_weights[1], randoms_samples2 = randoms_samples[1],
-                  normalize_wcounts = True,
-                  out_dir = outdir, tmp_dir = tmpdir,
-                  skip_s_bins = skip_nbin_post, skip_l = skip_l_post)
+results = run_cov(mode=mode, max_l=max_l, boxsize=periodic_boxsize,
+                  nthread=nthread, N2=N2, N3=N3, N4=N4, n_loops=n_loops, loops_per_sample=loops_per_sample,
+                  allcounts_11=allcounts[0], allcounts_12=allcounts[1], allcounts_22=allcounts[2],
+                  xi_table_11=input_xis[0], xi_table_12=input_xis[1], xi_table_22=input_xis[2],
+                  no_data_galaxies1=ndata[0], no_data_galaxies2=ndata[1], effective_no_def=True,
+                  position_type="pos",
+                  randoms_positions1=randoms_positions[0], randoms_weights1=randoms_weights[0], randoms_samples1=randoms_samples[0],
+                  randoms_positions2=randoms_positions[1], randoms_weights2=randoms_weights[1], randoms_samples2=randoms_samples[1],
+                  normalize_wcounts=True,
+                  out_dir=outdir, tmp_dir=tmpdir,
+                  skip_s_bins=skip_nbin_post, skip_l=skip_l_post)
