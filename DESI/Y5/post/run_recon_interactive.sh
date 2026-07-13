@@ -1,6 +1,6 @@
 #!/bin/bash
 # Interactive version of run_recon.sh
-# Usage: salloc --account desi_g -C gpu&hbm80g -N 1 --gpus 4 -t 04:00:00 -q interactive
+# Usage: salloc --account desi_g -C "gpu&hbm80g" -N 1 --gpus 4 -t 04:00:00 -q interactive
 # Then: bash run_recon_interactive.sh
 
 set -e
