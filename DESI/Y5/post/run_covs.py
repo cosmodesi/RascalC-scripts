@@ -1,4 +1,4 @@
-### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2025-2026).
+### Python script for running RascalC in DESI setup (Michael Rashkovetskyi and Qinxun Li, 2025-2026).
 ### Adapted for Y5 data post-recon; reads pre-computed reconstruction catalogs from run_recon.py.
 import sys, os
 import numpy as np

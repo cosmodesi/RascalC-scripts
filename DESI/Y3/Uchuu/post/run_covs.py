@@ -1,4 +1,4 @@
-### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2025-2026).
+### Python script for running RascalC in DESI setup (Michael Rashkovetskyi and Qinxun Li, 2025-2026).
 ### Adapted for Uchuu post-recon mocks with on-the-fly reconstruction.
 import sys, os
 import numpy as np
