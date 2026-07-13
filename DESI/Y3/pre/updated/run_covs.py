@@ -14,9 +14,9 @@ import argparse
 setup_logging()
 filterwarnings("always") # do not suppress repeated warnings to make sure everything is going as planned
 
-parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 HOLI mocks pre-recon single-tracer")
-parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
-parser.add_argument("-t", "--test", action = "store_true", help = "test the input files, abort before the main computation")
+parser = argparse.ArgumentParser(description="Main RascalC computation script for DESI Y3 pre-recon single-tracer (using desi-clustering pipeline instead of desi-y3-kp)")
+parser.add_argument("id", type=int, help="number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
+parser.add_argument("-t", "--test", action="store_true", help="test the input files, abort before the main computation")
 args = parser.parse_args()
 
 def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory exists, rename it with a numeric suffix
