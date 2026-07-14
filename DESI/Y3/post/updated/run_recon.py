@@ -37,7 +37,7 @@ if jax.process_index() == 0:
     os.makedirs(outdir, exist_ok=True)
 
 for reg in regs:
-    data_outfile = os.path.join(outdir, f"{tracer}_{reg}_data.npz")
+    data_outfile = os.path.join(outdir, f"{tracer}_{reg}_clustering.ran.h5")
     if os.path.isfile(data_outfile):
         print(f"  {reg}: {data_outfile} already exists, skipping")
         continue
@@ -49,30 +49,25 @@ for reg in regs:
     randoms_catalogs = read_clustering_catalog(kind='randoms', concatenate=False, **catalog_options)
     print(f"  {reg}: loaded data ({len(data_catalog)}) and {len(randoms_catalogs)} randoms over recon zrange {recon_zrange}")
 
-    data_positions_rec, randoms_rec_positions = compute_reconstruction(
+    data_catalog['POSITION_REC'], randoms_rec_positions = compute_reconstruction(
         lambda: {'data': data_catalog, 'randoms': Catalog.concatenate(randoms_catalogs)},
         **recon_options)
     print(f"  {reg}: reconstruction complete")
 
-    if jax.process_index() == 0:
-        np.savez(data_outfile,
-                 position_rec=np.asarray(data_positions_rec),
-                 z=np.asarray(data_catalog['Z']),
-                 indweight=np.asarray(data_catalog['INDWEIGHT']))
-        print(f"  {reg}: saved data to {data_outfile}")
+    data_catalog.write(data_outfile)
+    print(f"  {reg}: saved data to {data_outfile}")
 
-        start = 0
-        for iran, random in enumerate(randoms_catalogs):
-            size = len(random['POSITION'])
-            ran_outfile = os.path.join(outdir, f"{tracer}_{reg}_randoms_{iran}.npz")
-            np.savez(ran_outfile,
-                     position_rec=np.asarray(randoms_rec_positions[start:start + size]),
-                     z=np.asarray(random['Z']),
-                     indweight=np.asarray(random['INDWEIGHT']))
-            start += size
-        print(f"  {reg}: saved {len(randoms_catalogs)} random catalogs")
+    # Assign reconstructed positions to random catalogs
+    start = 0
+    for iran, random in enumerate(randoms_catalogs):
+        size = len(random['POSITION'])
+        ran_outfile = os.path.join(outdir, f"{tracer}_{reg}_{iran}_clustering.ran.h5")
+        random['POSITION_REC'] = randoms_rec_positions[start:start + size]
+        random.write(ran_outfile)
+        print(f"  {reg}: saved random catalog {iran} to {ran_outfile}")
+        start += size
 
-    del data_catalog, randoms_catalogs, data_positions_rec, randoms_rec_positions
+    del data_catalog, randoms_catalogs, randoms_rec_positions
 
 jax.distributed.shutdown()
 print(f"\n{tracer} reconstruction complete.")
