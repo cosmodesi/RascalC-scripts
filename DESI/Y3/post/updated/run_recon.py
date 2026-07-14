@@ -54,23 +54,22 @@ for reg in regs:
         **recon_options)
     print(f"  {reg}: reconstruction complete")
 
-    if jax.process_index() == 0:
-        np.savez(data_outfile,
-                 position_rec=jax.device_get(data_positions_rec),
-                 z=jax.device_get(data_catalog['Z']),
-                 indweight=jax.device_get(data_catalog['INDWEIGHT']))
-        print(f"  {reg}: saved data to {data_outfile}")
+    np.savez(data_outfile,
+                position_rec=jax.device_get(data_positions_rec),
+                z=jax.device_get(data_catalog['Z']),
+                indweight=jax.device_get(data_catalog['INDWEIGHT']))
+    print(f"  {reg}: saved data to {data_outfile}")
 
-        start = 0
-        for iran, random in enumerate(randoms_catalogs):
-            size = len(random['POSITION'])
-            ran_outfile = os.path.join(outdir, f"{tracer}_{reg}_randoms_{iran}.npz")
-            np.savez(ran_outfile,
-                     position_rec=jax.device_get(randoms_rec_positions[start:start + size]),
-                     z=jax.device_get(random['Z']),
-                     indweight=jax.device_get(random['INDWEIGHT']))
-            start += size
-        print(f"  {reg}: saved {len(randoms_catalogs)} random catalogs")
+    start = 0
+    for iran, random in enumerate(randoms_catalogs):
+        size = len(random['POSITION'])
+        ran_outfile = os.path.join(outdir, f"{tracer}_{reg}_randoms_{iran}.npz")
+        np.savez(ran_outfile,
+                    position_rec=jax.device_get(randoms_rec_positions[start:start + size]),
+                    z=jax.device_get(random['Z']),
+                    indweight=jax.device_get(random['INDWEIGHT']))
+        start += size
+    print(f"  {reg}: saved {len(randoms_catalogs)} random catalogs")
 
     del data_catalog, randoms_catalogs, data_positions_rec, randoms_rec_positions
 
