@@ -139,10 +139,10 @@ ndata = [None] * ntracers_max
 
 for t in range(len(tlabels)):
     # z-cut randoms
-    randoms_recon[t] = randoms_recon[t][(randoms_recon[t]['z'] >= z_min) & (randoms_recon[t]['z'] < z_max)]
+    randoms_recon[t] = randoms_recon[t][(randoms_recon[t]['Z'] >= z_min) & (randoms_recon[t]['Z'] < z_max)]
 
     # z-cut data for ndata computation and jackknife reference
-    data_recon[t] = data_recon[t][(data_recon[t]['z'] >= z_min) & (data_recon[t]['z'] < z_max)]
+    data_recon[t] = data_recon[t][(data_recon[t]['Z'] >= z_min) & (data_recon[t]['Z'] < z_max)]
     ndata[t] = np.sum(data_recon[t]['INDWEIGHT'])**2 / np.sum(data_recon[t]['INDWEIGHT']**2)
 
     randoms_weights[t] = randoms_recon[t]['INDWEIGHT']
