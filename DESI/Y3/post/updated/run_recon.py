@@ -37,7 +37,7 @@ if jax.process_index() == 0:
     os.makedirs(outdir, exist_ok=True)
 
 for reg in regs:
-    data_outfile = os.path.join(outdir, f"{tracer}_{reg}_clustering.ran.h5")
+    data_outfile = os.path.join(outdir, f"{tracer}_{reg}_clustering.dat.h5")
     if os.path.isfile(data_outfile):
         print(f"  {reg}: {data_outfile} already exists, skipping")
         continue
