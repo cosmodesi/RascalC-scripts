@@ -143,13 +143,13 @@ for t in range(len(tlabels)):
 
     # z-cut data for ndata computation and jackknife reference
     data_recon[t] = data_recon[t][(data_recon[t]['z'] >= z_min) & (data_recon[t]['z'] < z_max)]
-    ndata[t] = np.sum(data_recon[t]['indweight'])**2 / np.sum(data_recon[t]['indweight']**2)
+    ndata[t] = np.sum(data_recon[t]['INDWEIGHT'])**2 / np.sum(data_recon[t]['INDWEIGHT']**2)
 
-    randoms_weights[t] = randoms_recon[t]['indweight']
-    randoms_positions[t] = randoms_recon[t]['position_rec'] # (N, 3) Cartesian
+    randoms_weights[t] = randoms_recon[t]['INDWEIGHT']
+    randoms_positions[t] = randoms_recon[t]['POSITION_REC'] # (N, 3) Cartesian
 
     if njack: # create jackknives using shifted data positions
-        subsampler = KMeansSubsampler('angular', positions=data_recon[t]['position_rec'], position_type='pos', dtype='f8', nsamples=njack, nside=512, random_state=42)
+        subsampler = KMeansSubsampler('angular', positions=data_recon[t]['POSITION_REC'], position_type='pos', dtype='f8', nsamples=njack, nside=512, random_state=42)
         randoms_samples[t] = subsampler.label(positions=randoms_positions[t], position_type='pos')
 
 del data_recon, randoms_recon # free up memory
