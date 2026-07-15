@@ -7,7 +7,7 @@ set -e
 SECONDS=0
 
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
-module unload desi-clustering
+# module unload desi-clustering
 
 JOB_FLAGS="-N 1 -n 4"
 
