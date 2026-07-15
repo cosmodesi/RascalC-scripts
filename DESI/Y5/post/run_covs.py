@@ -5,6 +5,7 @@ import numpy as np
 import lsstypes
 from clustering_statistics.tools import get_stats_fn
 from desipipe import setup_logging
+from mpytools import Catalog
 from pycorr import KMeansSubsampler
 from RascalC.lsstypes_utils.utils import reshape_lsstypes
 from RascalC import run_cov
@@ -123,8 +124,8 @@ del these_counts # free up memory
 
 # Load pre-computed reconstruction catalogs (from run_recon.py)
 recon_dir = os.path.join(basedir, 'recon_catalogs', version)
-data_recon = np.load(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_data.npz"))
-randoms_recon = [np.load(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_randoms_{iran}.npz")) for iran in range(nrandoms)]
+data_recon = Catalog.read(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_data.h5"))
+randoms_recon = [Catalog.read(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_randoms_{iran}.h5")) for iran in range(nrandoms)]
 print(f"Loaded reconstruction catalogs: data + {nrandoms} randoms from {recon_dir}")
 
 if args.test: sys.exit(0)
@@ -138,18 +139,18 @@ ndata = [None] * ntracers_max
 
 for t, tlabel in enumerate(tlabels):
     # Concatenate randoms and z-cut
-    ran_pos_rec = np.concatenate([r['position_rec'] for r in randoms_recon])
-    ran_z = np.concatenate([r['z'] for r in randoms_recon])
-    ran_indweight = np.concatenate([r['indweight'] for r in randoms_recon])
+    ran_pos_rec = np.concatenate([r['Position'] for r in randoms_recon])
+    ran_z = np.concatenate([r['Z'] for r in randoms_recon])
+    ran_indweight = np.concatenate([r['INDWEIGHT'] for r in randoms_recon])
     z_mask = (ran_z >= z_min) & (ran_z < z_max)
     ran_pos_rec = ran_pos_rec[z_mask]
     ran_z = ran_z[z_mask]
     ran_indweight = ran_indweight[z_mask]
 
     # Z-cut data for ndata computation and jackknife reference
-    data_z_mask = (data_recon['z'] >= z_min) & (data_recon['z'] < z_max)
-    data_indweight_cut = data_recon['indweight'][data_z_mask]
-    data_pos_rec_cut = data_recon['position_rec'][data_z_mask]
+    data_z_mask = (data_recon['Z'] >= z_min) & (data_recon['Z'] < z_max)
+    data_indweight_cut = data_recon['INDWEIGHT'][data_z_mask]
+    data_pos_rec_cut = data_recon['Position'][data_z_mask]
     ndata[t] = np.sum(data_indweight_cut)**2 / np.sum(data_indweight_cut**2)
 
     randoms_weights[t] = ran_indweight
