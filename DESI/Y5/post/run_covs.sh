@@ -12,4 +12,7 @@
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
 # module unload desi-clustering # use locally installed desi-clustering if uncommented, otherwise use the global one from cosmodesi environment
 
+# RascalC C++ binary needs GLIBCXX_3.4.32; the Cray PE gcc/11.2.0 lacks it
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+
 python -u run_covs.py $SLURM_ARRAY_TASK_ID
