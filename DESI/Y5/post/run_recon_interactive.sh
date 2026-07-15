@@ -1,13 +1,15 @@
 #!/bin/bash
 # Interactive version of run_recon.sh
-# Usage: salloc --account desi_g -C gpu&hbm80g -N 1 --gpus 4 -t 04:00:00 -q interactive
+# Usage: salloc --account desi_g -C "gpu&hbm80g" -N 1 --gpus 4 -t 04:00:00 -q interactive
 # Then: bash run_recon_interactive.sh
 
 set -e
 SECONDS=0
 
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
-# module unload desi-clustering
+
+# module unload desi-clustering # use locally installed desi-clustering if uncommented, otherwise use the global one from cosmodesi environment
+
 
 JOB_FLAGS="-N 1 -n 4"
 

@@ -1,17 +1,12 @@
 #!/bin/bash
-#SBATCH --account desi_g
-#SBATCH -C gpu&hbm80g
-#SBATCH -N 1
-#SBATCH --gpus 4
-#SBATCH -t 02:00:00
-#SBATCH -q regular
-#SBATCH --job-name=RascalC-Y5-data-recon
+# Interactive version of run_recon.sh
+# Usage: salloc --account desi_g -C "gpu&hbm80g" -N 1 --gpus 4 -t 04:00:00 -q interactive
+# Then: bash run_recon_interactive.sh
 
 set -e
 SECONDS=0
 
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
-
 # module unload desi-clustering # use locally installed desi-clustering if uncommented, otherwise use the global one from cosmodesi environment
 
 JOB_FLAGS="-N 1 -n 4"

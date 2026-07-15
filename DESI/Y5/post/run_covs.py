@@ -1,4 +1,4 @@
-### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2025-2026).
+### Python script for running RascalC in DESI setup (Michael Rashkovetskyi and Qinxun Li, 2025-2026).
 ### Adapted for Y5 data post-recon; reads pre-computed reconstruction catalogs from run_recon.py.
 import sys, os
 import numpy as np
@@ -128,8 +128,6 @@ data_recon = Catalog.read(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_data.h5")
 randoms_recon = [Catalog.read(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_randoms_{iran}.h5")) for iran in range(nrandoms)]
 print(f"Loaded reconstruction catalogs: data + {nrandoms} randoms from {recon_dir}")
 
-if args.test: sys.exit(0)
-
 # Slice to z-bin and nrandoms for RascalC
 ntracers_max = 2 # maximum number of tracers
 randoms_positions = [None] * ntracers_max
@@ -162,14 +160,15 @@ for t, tlabel in enumerate(tlabels):
 
 del data_recon, randoms_recon # free up memory
 
-if not args.test: preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
+if args.test: sys.exit(0)
+preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
                   nthread = nthread, N2 = N2, N3 = N3, N4 = N4, n_loops = n_loops, loops_per_sample = loops_per_sample,
                   allcounts_11 = allcounts[0], allcounts_12 = allcounts[1], allcounts_22 = allcounts[2],
                   xi_table_11 = input_xis[0], xi_table_12 = input_xis[1], xi_table_22 = input_xis[2],
-                  no_data_galaxies1 = ndata[0], no_data_galaxies2 = ndata[1],
+                  no_data_galaxies1 = ndata[0], no_data_galaxies2 = ndata[1], effective_no_def=True,
                   position_type = "pos",
                   randoms_positions1 = randoms_positions[0], randoms_weights1 = randoms_weights[0], randoms_samples1 = randoms_samples[0],
                   randoms_positions2 = randoms_positions[1], randoms_weights2 = randoms_weights[1], randoms_samples2 = randoms_samples[1],
