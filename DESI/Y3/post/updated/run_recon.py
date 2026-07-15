@@ -28,7 +28,7 @@ regs = ['SGC', 'NGC']
 
 recon_options = propose_fiducial('recon', tracer=tracer)
 recon_zrange = recon_options.pop('zrange')
-nran_recon = propose_fiducial('catalog', tracer=tracer)['nran']
+nran_recon = recon_options['nran']
 print(f"{tracer}: recon_zrange={recon_zrange}, nran={nran_recon}, options={recon_options}")
 
 recon_spec = 'recon_sm{smoothing_radius:.0f}_IFFT_{mode}'.format_map(recon_options)
