@@ -28,7 +28,8 @@ regs = ['SGC', 'NGC']
 
 recon_options = propose_fiducial('recon', tracer=tracer, analysis='bao')
 recon_zrange = recon_options.pop('zrange')
-nran_recon = recon_options['nran']
+nran_recon = propose_fiducial('catalog', tracer=tracer)['nran']
+if 'nran' in recon_options: nran_recon = recon_options['nran'] # override from recon_options if present there, logically matching https://github.com/cosmodesi/desi-clustering/blob/8f04d058d8f4c41c26caa95f9cf961c01ca7bdb1/clustering_statistics/compute_stats.py#L297
 print(f"{tracer}: recon_zrange={recon_zrange}, nran={nran_recon}, options={recon_options}")
 
 recon_spec = 'recon_sm{smoothing_radius:.0f}_IFFT_{mode}'.format_map(recon_options)
