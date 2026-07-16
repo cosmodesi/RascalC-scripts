@@ -26,7 +26,7 @@ version = 'data-dr2-v2'
 tracer = args.tracer
 regs = ['SGC', 'NGC']
 
-recon_options = propose_fiducial('recon', tracer=tracer)
+recon_options = propose_fiducial('recon', tracer=tracer, analysis='bao')
 recon_zrange = recon_options.pop('zrange')
 nran_recon = recon_options['nran']
 print(f"{tracer}: recon_zrange={recon_zrange}, nran={nran_recon}, options={recon_options}")
@@ -43,7 +43,7 @@ for reg in regs:
         continue
 
     catalog_options = dict(version=version, tracer=tracer, region=reg, zrange=recon_zrange, nran=nran_recon, weight="default-FKP")
-    catalog_options = propose_fiducial(kind='catalog', tracer=tracer, zrange=recon_zrange, analysis='full_shape') | catalog_options
+    catalog_options = propose_fiducial(kind='catalog', tracer=tracer, zrange=recon_zrange, analysis='bao') | catalog_options
 
     data_catalog = read_clustering_catalog(kind='data', **catalog_options)
     randoms_catalogs = read_clustering_catalog(kind='randoms', concatenate=False, **catalog_options)
