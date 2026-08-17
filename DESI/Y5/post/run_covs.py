@@ -1,12 +1,25 @@
 ### Python script for running RascalC in DESI setup (Michael Rashkovetskyi and Qinxun Li, 2025-2026).
 ### Adapted for Y5 data post-recon; reads pre-computed reconstruction catalogs from run_recon.py.
+###
+### Uses cucount.utils.KMeansSubsampler (matching the jackknife setup in
+### clustering_statistics.correlation2_tools.prepare_cucount_particles, i.e. same package,
+### same kw_jackknife = {'mode': 'angular', 'nsplits': 60, 'nside': 512, 'random_state': 42})
+### to assign jackknife regions to the reconstruction randoms, instead of pycorr.KMeansSubsampler.
+###
+### Why: the counts (.h5) files read as allcounts_11/xi_table_11 have their own jackknife-region
+### assignment baked in, computed by correlation2_tools.py via cucount.utils.KMeansSubsampler.
+### RascalC requires that randoms_samples1 use the SAME spatial partition, but only checks that
+### the label SET matches (integers 0..59), not that e.g. region 17 is the same patch of sky in
+### both. Building an independent partition with pycorr.KMeansSubsampler -- a different
+### package/implementation -- does not guarantee spatially matching region labels even with
+### matching nside/nsplits/random_state, and was suspected to cause a ~5x too-large, wrong
+### NGC/SGC-ordered theory covariance for several tracers (see run_covs_cucount_jackknife_test.sh).
 import sys, os
 import numpy as np
 import lsstypes
 from clustering_statistics.tools import get_stats_fn
 from desipipe import setup_logging
 from mpytools import Catalog
-from pycorr import KMeansSubsampler
 from RascalC.lsstypes_utils.utils import reshape_lsstypes
 from RascalC import run_cov
 from warnings import filterwarnings
@@ -97,7 +110,7 @@ assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
 # Output and temporary directories
-basedir = os.path.join(os.environ['PSCRATCH'], 'dr3', 'rascalc')
+basedir = os.path.join(os.environ['SCRATCH'], 'dr3', 'rascalc')
 outdir_base = os.path.join(version, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join(basedir, "outdirs", outdir_base) # output file directory
 tmpdir = os.path.join(basedir, "tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
@@ -154,9 +167,23 @@ for t, tlabel in enumerate(tlabels):
     randoms_weights[t] = ran_indweight
     randoms_positions[t] = ran_pos_rec # (N, 3) Cartesian
 
-    if njack: # create jackknives using shifted data positions
-        subsampler = KMeansSubsampler('angular', positions = data_pos_rec_cut, position_type = 'pos', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
-        randoms_samples[t] = subsampler.label(positions = ran_pos_rec, position_type = 'pos')
+    if njack:
+        # Use cucount.utils.KMeansSubsampler (same package + kw_jackknife as
+        # clustering_statistics.correlation2_tools.prepare_cucount_particles, which built the
+        # jackknife realizations baked into allcounts_11/input_xis above), instead of
+        # pycorr.KMeansSubsampler, so that jackknife region labels here correspond to the same
+        # spatial partition as in the counts files RascalC is given.
+        import cucount
+        from cucount.jax import WeightAttrs
+        from cucount.numpy import Particles as CucountParticles
+        from cucount.utils import KMeansSubsampler as CucountKMeansSubsampler
+
+        data_particles = CucountParticles(data_pos_rec_cut, [data_indweight_cut])
+        subsampler = CucountKMeansSubsampler(
+            data_particles, nsplits=njack, nside=512, mode='angular',
+            random_state=42, wattrs=WeightAttrs(),
+        )
+        randoms_samples[t] = subsampler.label(ran_pos_rec)
 
 del data_recon, randoms_recon # free up memory
 

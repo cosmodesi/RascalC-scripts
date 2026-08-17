@@ -3,8 +3,8 @@
 #SBATCH -C gpu&hbm80g
 #SBATCH -N 1
 #SBATCH --gpus 4
-#SBATCH -t 02:00:00
-#SBATCH -q regular
+#SBATCH -t 00:30:00
+#SBATCH -q debug
 #SBATCH --job-name=RascalC-Y5-data-recon
 
 set -e

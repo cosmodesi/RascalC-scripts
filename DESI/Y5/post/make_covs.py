@@ -39,7 +39,7 @@ reg_comb = "GCcomb"
 tracers = ['BGS_BRIGHT-21.35'] + ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['QSO']
 zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 2.1)]
 
-basedir = os.environ['PSCRATCH']
+basedir = os.environ['SCRATCH']
 hash_dict_file = os.path.join(basedir, "make_covs.hash_dict.asdf")
 if os.path.isfile(hash_dict_file):
     # Load hash dictionary from file

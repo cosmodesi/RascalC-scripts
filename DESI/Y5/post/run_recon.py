@@ -22,7 +22,7 @@ args = parser.parse_args()
 jax.distributed.initialize()
 
 version = 'data-dr3-matterhorn-v2-v0-bao'
-basedir = os.path.join(os.environ['PSCRATCH'], 'dr3', 'rascalc')
+basedir = os.path.join(os.environ['SCRATCH'], 'dr3', 'rascalc')
 outdir = os.path.join(basedir, 'recon_catalogs', version)
 if jax.process_index() == 0:
     os.makedirs(outdir, exist_ok=True)
