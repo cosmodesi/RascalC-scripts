@@ -44,8 +44,8 @@ fm = desi_y3_file_manager.get_data_file_manager(conf, verspec)
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracers = [['LRG', 'ELG_LOPnotqso'], ['ELG_LOPnotqso', 'QSO']]
-zs = [(0.8, 1.1), (1.1, 1.6)]
+tracers = [['LRG', 'ELG_LOPnotqso'], ['LRG', 'QSO']] + [['ELG_LOPnotqso', 'QSO']] * 2
+zs = [(0.8, 1.1)] * 3 + [(1.1, 1.6)]
 
 # for custom cross-counts
 nrandoms = 5
