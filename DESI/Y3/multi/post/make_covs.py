@@ -3,6 +3,7 @@
 import os
 from datetime import datetime
 import pickle
+import asdf
 import hashlib
 from typing import Callable
 import traceback
@@ -217,8 +218,8 @@ for tlabels, z_range in zip(tracers, zs):
             my_make(cov_name_cross, [cov_name_rescaled], lambda: convert_txt_cov_multi_to_cross(cov_name_rescaled, cov_name_cross))
 
 # Save the updated hash dictionary
-with open(hash_dict_file, "wb") as f:
-    pickle.dump(hash_dict, f)
+af = asdf.AsdfFile(dict(goal_deps_hashes=hash_dict))
+af.write_to(hash_dict_file.replace(".pkl", ".asdf"))
 
 print_and_log(datetime.now())
 print_and_log("Finished execution.")
