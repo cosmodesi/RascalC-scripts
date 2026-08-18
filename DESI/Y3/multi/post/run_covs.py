@@ -74,8 +74,8 @@ id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
-tracers = [('LRG', 'ELG_LOPnotqso'), ('ELG_LOPnotqso', 'QSO')]
-zs = [(0.8, 1.1), (1.1, 1.6)]
+tracers = [('LRG', 'ELG_LOPnotqso'), ('LRG', 'QSO')] + [('ELG_LOPnotqso', 'QSO')] * 2
+zs = [(0.8, 1.1)] * 3 + [(1.1, 1.6)]
 # need 4 jobs in this array
 
 tlabels = tuple(tracers[id]) # tracer labels for filenames
@@ -86,17 +86,29 @@ nrandoms = 5
 # set the number of integration loops based on tracers, z range and region
 n_loops = {('LRG', 'ELG_LOPnotqso'): {(0.8, 1.1): {'SGC': 512,
                                                    'NGC': 512}},
-           ('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 512,
+           ('LRG', 'QSO'): {(0.8, 1.1): {'SGC': 512,
+                                         'NGC': 512}},
+           ('ELG_LOPnotqso', 'QSO'): {(0.8, 1.1): {'SGC': 512,
+                                                   'NGC': 512},
+                                      (1.1, 1.6): {'SGC': 512,
                                                    'NGC': 512}}}[tlabels][z_range][reg]
 # set the base RNG seed (for reproducibility) also based on tracers, z range and region
 seed = {('LRG', 'ELG_LOPnotqso'): {(0.8, 1.1): {'SGC': 7084102,
                                                 'NGC': 7084102}},
-        ('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 5872789,
+        ('LRG', 'QSO'): {(0.8, 1.1): {'SGC': 6390506,
+                                      'NGC': 6941391}},
+        ('ELG_LOPnotqso', 'QSO'): {(0.8, 1.1): {'SGC': 4870322,
+                                                'NGC': 7017004},
+                                   (1.1, 1.6): {'SGC': 5872789,
                                                 'NGC': 143307}}}[tlabels][z_range][reg]
 # skip the finished integrals in each case
 start_integral = {('LRG', 'ELG_LOPnotqso'): {(0.8, 1.1): {'SGC': 1,
                                                           'NGC': 1}},
-                  ('ELG_LOPnotqso', 'QSO'): {(1.1, 1.6): {'SGC': 6,
+                  ('LRG', 'QSO'): {(0.8, 1.1): {'SGC': 1,
+                                                'NGC': 1}},
+                  ('ELG_LOPnotqso', 'QSO'): {(0.8, 1.1): {'SGC': 1,
+                                                          'NGC': 1},
+                                             (1.1, 1.6): {'SGC': 6,
                                                           'NGC': 4}}}[tlabels][z_range][reg]
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
