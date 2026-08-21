@@ -18,8 +18,10 @@ pip install -e /global/common/software/desi/users/mrash/RascalC
 You may need to additionally install the LSS package (<https://github.com/desihub/LSS>) for cutsky computations (fiducial DESI cosmology to convert redshift to distance).
 
 DESI Y1 data runs rely on [cosmodesi/desi-y1-kp](https://github.com/cosmodesi/desi-y1-kp) installed to retrieve the filenames.
-DESI Y3 data runs similarly rely on [cosmodesi/desi-y3-kp](https://github.com/cosmodesi/desi-y3-kp).
-These repositories are private and only accessible to [cosmodesi](https://github.com/cosmodesi) team members; they should become public after the data release.
+(Earlier) DESI Y3 data runs similarly rely on [cosmodesi/desi-y3-kp](https://github.com/cosmodesi/desi-y3-kp).
+These repositories are private and only accessible to [cosmodesi](https://github.com/cosmodesi) organization members; they should become public after the corresponding data releases.
+
+Later/updated DESI Y3 runs rely on [cosmodesi/desi-clustering](https://github.com/cosmodesi/desi-clustering); this repository is already public.
 
 ## Usage remarks
 
