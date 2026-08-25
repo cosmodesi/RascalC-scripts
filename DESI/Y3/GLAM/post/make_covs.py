@@ -6,7 +6,7 @@ import asdf
 import hashlib
 from typing import Callable
 import traceback
-from clustering_statistics.tools import get_stats_fn
+from clustering_statistics.tools import get_stats_fn, propose_fiducial
 from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect_raw_covariance_matrices
 from RascalC import post_process_auto
 from RascalC.utils import blank_function
@@ -115,15 +115,17 @@ for tracer, z_range in zip(tracers, zs):
     reg_results = []
     if jackknife: reg_results_jack = []
     for reg in regs:
+        recon_options = propose_fiducial('recon', tracer=tracer)
+        recon_spec = 'recon_sm{smoothing_radius:.0f}_IFFT_{mode}'.format_map(recon_options)
         if make_mock_cov: # skip BGS sample covs for now
             # set the mock covariance matrix filename
-            mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
+            mock_cov_name = f"cov_txt/{version}/{recon_spec}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
             # Make the mock sample covariance matrix
-            stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') # no jackknife
+            stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') # no jackknife
             xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious realizations already excluded when applicable
             my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
         
-        outdir = os.path.join('outdirs', version, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
+        outdir = os.path.join('outdirs', version, recon_spec, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
         if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
             outdirs_w_suffixes = [outdir + "_" + str(i) for i in range(11)] # append suffixes
             outdirs_w_suffixes = [dirname for dirname in outdirs_w_suffixes if os.path.isdir(dirname)] # filter only existing dirs
@@ -139,7 +141,7 @@ for tracer, z_range in zip(tracers, zs):
         results_name = post_process_auto(outdir, load_sample_cov=False, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=blank_function, dry_run=True)["path"]
         reg_results.append(results_name)
 
-        cov_dir = f"cov_txt/{version}/mock{mock_id}"
+        cov_dir = f"cov_txt/{version}/{recon_spec}/mock{mock_id}"
         cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
         # RascalC results depend on full output (most straightforwardly)
@@ -168,14 +170,14 @@ for tracer, z_range in zip(tracers, zs):
     
     if make_mock_cov:
         # set the mock covariance matrix filename
-        mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
+        mock_cov_name = f"cov_txt/{version}/{recon_spec}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
         # Make the mock sample covariance matrix
-        stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') # no jackknife
+        stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') # no jackknife
         xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious realizations already excluded when applicable
         my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
     # obtain the counts names
-    reg_counts_names = [get_stats_fn(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') for reg in regs] # no jackknife
+    reg_counts_names = [get_stats_fn(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') for reg in regs] # no jackknife
 
     if len(reg_counts_names) == len(regs): # if we have pycorr files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions

@@ -124,7 +124,7 @@ recon_options = propose_fiducial('recon', tracer=tlabels[0])
 recon_spec = 'recon_sm{smoothing_radius:.0f}_IFFT_{mode}'.format_map(recon_options)
 
 # Output and temporary directories
-outdir_base = os.path.join(version, f"mock{mock_id}", recon_spec, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir_base = os.path.join(version, recon_spec, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
 outdir = os.path.join("outdirs", outdir_base) # output file directory
 tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 if args.test: outdir = tmpdir # write outputs to tmpdir for test runs to avoid cluttering the main output directory with incomplete results
