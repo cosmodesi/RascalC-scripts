@@ -1,5 +1,5 @@
 ### Python script for running RascalC in DESI setup (Michael Rashkovetskyi and Qinxun Li, 2025-2026).
-### Adapted for Y5 data post-recon; reads pre-computed reconstruction catalogs from run_recon.py.
+### Adapted for GLAM mocks post-recon; reads pre-computed reconstruction catalogs from run_recon.py.
 ###
 ### Uses cucount.utils.KMeansSubsampler (matching the jackknife setup in
 ### clustering_statistics.correlation2_tools.prepare_cucount_particles, i.e. same package,
@@ -13,7 +13,12 @@
 ### both. Building an independent partition with pycorr.KMeansSubsampler -- a different
 ### package/implementation -- does not guarantee spatially matching region labels even with
 ### matching nside/nsplits/random_state, and was suspected to cause a ~5x too-large, wrong
-### NGC/SGC-ordered theory covariance for several tracers (see run_covs_cucount_jackknife_test.sh).
+### NGC/SGC-ordered theory covariance for several Y5 tracers (see DESI/Y5/post/run_covs.py).
+###
+### NOTE: as of writing, the shared stats tree only has plain (non-jackknife) recon_particle2_correlation
+### counts for GLAM (bao/base/glam-uchuu-*-v2-altmtl/mock150/...). The jackknife=dict(nsplits=njack)
+### counts this script requests below do not exist yet; they need to be produced first (a post-recon
+### equivalent of GLAM/pre/run_stats.py's do_jackknife=True step) before this script can run for real.
 import sys, os
 import numpy as np
 import lsstypes
@@ -28,7 +33,7 @@ import argparse
 setup_logging()
 filterwarnings("always") # do not suppress repeated warnings to make sure everything is going as planned
 
-parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y5 data post-recon single-tracer")
+parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 GLAM mocks post-recon single-tracer")
 parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
 parser.add_argument("-t", "--test", action = "store_true", help = "test the input files, abort before the main computation")
 args = parser.parse_args()
@@ -72,7 +77,9 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
-version = 'data-dr3-matterhorn-v2-v0-bao'
+version_dark = 'glam-uchuu-v2-altmtl'
+version_bright = 'glam-uchuu-bgs-v2-altmtl'
+mock_id = 150
 
 stats_dir = '/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_statistics'
 
@@ -80,6 +87,7 @@ id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
+# only the tracer/z-bin combos with recon_particle2_correlation counts available under bao/base for mock150
 tracers = ['BGS_BRIGHT-21.35'] + ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['QSO']
 zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 2.1)]
 # need 2 * 7 = 14 jobs in this array
@@ -87,17 +95,18 @@ zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
-nrandoms = {'BGS_BRIGHT-21.35': 1, 'LRG': 4, 'ELG_LOPnotqso': 5, 'QSO': 4}[tlabels[0]]
+nrandoms = {'BGS_BRIGHT-21.35': 2, 'LRG': 4, 'ELG_LOPnotqso': 5, 'QSO': 4}[tlabels[0]] # from DESI/Y3/GLAM/pre/run_covs.py
 
 # set the number of integration loops based on tracer, z range and region
-n_loops = {'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 3072,
-                                              'NGC': 1536}},
-           'LRG': {(0.4, 0.6): {'SGC': 2048,
-                                'NGC': 2048},
-                   (0.6, 0.8): {'SGC': 2048,
+# inherited from DESI/Y3/GLAM/pre/run_covs.py (pre-recon); no post-recon-specific convergence data yet
+n_loops = {'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 1536,
+                                             'NGC': 512}},
+           'LRG': {(0.4, 0.6): {'SGC': 1536,
                                 'NGC': 1536},
+                   (0.6, 0.8): {'SGC': 1536,
+                                'NGC': 1024},
                    (0.8, 1.1): {'SGC': 1024,
-                                'NGC': 512}},
+                                'NGC': 768}},
            'ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 768,
                                           'NGC': 512},
                              (1.1, 1.6): {'SGC': 512,
@@ -109,11 +118,12 @@ if args.test: n_loops = 0 # override for test runs
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
 
+version = version_bright if tlabels[0].startswith('BGS') else version_dark
+
 # Output and temporary directories
-basedir = os.path.join(os.environ['SCRATCH'], 'dr3', 'rascalc')
-outdir_base = os.path.join(version, "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
-outdir = os.path.join(basedir, "outdirs", outdir_base) # output file directory
-tmpdir = os.path.join(basedir, "tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
+outdir_base = os.path.join(version, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}")
+outdir = os.path.join("outdirs", outdir_base) # output file directory
+tmpdir = os.path.join("tmpdirs", outdir_base) # directory to write intermediate files, kept in a different subdirectory for easy deletion, almost no need to worry about not overwriting there
 if args.test: outdir = tmpdir # write outputs to tmpdir for test runs to avoid cluttering the main output directory with incomplete results
 
 # Form correlation function labels
@@ -122,7 +132,7 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved counts (post-recon pair counts from shared location)
-allcounts_filenames = [get_stats_fn(version=version, tracer=corlabel, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/with_desi-clustering', kind='recon_particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=njack)) for corlabel in corlabels]
+allcounts_filenames = [get_stats_fn(version=version, imock=mock_id, tracer=corlabel, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=njack)) for corlabel in corlabels]
 print("allcounts filenames:", allcounts_filenames)
 
 # Load counts and correlations
@@ -136,10 +146,12 @@ for c, allcounts_filename in enumerate(allcounts_filenames):
 del these_counts # free up memory
 
 # Load pre-computed reconstruction catalogs (from run_recon.py)
-recon_dir = os.path.join(basedir, 'recon_catalogs', version)
+recon_dir = os.path.join(os.environ['SCRATCH'], 'rascalc', 'recon_catalogs', version, f"mock{mock_id}")
 data_recon = Catalog.read(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_data.h5"))
 randoms_recon = [Catalog.read(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_randoms_{iran}.h5")) for iran in range(nrandoms)]
 print(f"Loaded reconstruction catalogs: data + {nrandoms} randoms from {recon_dir}")
+
+if args.test: sys.exit(0)
 
 # Slice to z-bin and nrandoms for RascalC
 ntracers_max = 2 # maximum number of tracers
@@ -187,7 +199,6 @@ for t, tlabel in enumerate(tlabels):
 
 del data_recon, randoms_recon # free up memory
 
-if args.test: sys.exit(0)
 preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
 # Run the main code, post-processing and extra convergence check

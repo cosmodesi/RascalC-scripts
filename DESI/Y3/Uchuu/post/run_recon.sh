@@ -5,7 +5,7 @@
 #SBATCH --gpus 4
 #SBATCH -t 00:30:00
 #SBATCH -q debug
-#SBATCH --job-name=RascalC-Y5-data-recon
+#SBATCH --job-name=RascalC-Y3-Uchuu-recon
 
 set -e
 SECONDS=0
@@ -16,7 +16,6 @@ source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
 
 JOB_FLAGS="-N 1 -n 4"
 
-srun $JOB_FLAGS python -u run_recon.py --tracer BGS_BRIGHT-21.35
 srun $JOB_FLAGS python -u run_recon.py --tracer LRG
 srun $JOB_FLAGS python -u run_recon.py --tracer ELG_LOPnotqso
 srun $JOB_FLAGS python -u run_recon.py --tracer QSO

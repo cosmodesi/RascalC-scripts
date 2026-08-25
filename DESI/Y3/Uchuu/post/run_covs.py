@@ -1,12 +1,25 @@
 ### Python script for running RascalC in DESI setup (Michael Rashkovetskyi and Qinxun Li, 2025-2026).
-### Adapted for Uchuu post-recon mocks with on-the-fly reconstruction.
+### Adapted for Uchuu post-recon mocks; reads pre-computed reconstruction catalogs from run_recon.py.
+###
+### Uses cucount.utils.KMeansSubsampler (matching the jackknife setup in
+### clustering_statistics.correlation2_tools.prepare_cucount_particles, i.e. same package,
+### same kw_jackknife = {'mode': 'angular', 'nsplits': 60, 'nside': 512, 'random_state': 42})
+### to assign jackknife regions to the reconstruction randoms, instead of pycorr.KMeansSubsampler.
+###
+### Why: the counts (.h5) files read as allcounts_11/xi_table_11 have their own jackknife-region
+### assignment baked in, computed by correlation2_tools.py via cucount.utils.KMeansSubsampler.
+### RascalC requires that randoms_samples1 use the SAME spatial partition, but only checks that
+### the label SET matches (integers 0..59), not that e.g. region 17 is the same patch of sky in
+### both. Building an independent partition with pycorr.KMeansSubsampler -- a different
+### package/implementation -- does not guarantee spatially matching region labels even with
+### matching nside/nsplits/random_state, and was suspected to cause a ~5x too-large, wrong
+### NGC/SGC-ordered theory covariance for several Y5 tracers (see DESI/Y5/post/run_covs.py).
 import sys, os
 import numpy as np
 import lsstypes
-from clustering_statistics.tools import get_stats_fn, get_catalog_fn, read_clustering_catalog, propose_fiducial
-from clustering_statistics.recon_tools import compute_reconstruction
+from clustering_statistics.tools import get_stats_fn
 from desipipe import setup_logging
-from pycorr import KMeansSubsampler
+from mpytools import Catalog
 from RascalC.lsstypes_utils.utils import reshape_lsstypes
 from RascalC import run_cov
 from warnings import filterwarnings
@@ -120,37 +133,13 @@ for c, allcounts_filename in enumerate(allcounts_filenames):
     input_xis[c] = reshape_lsstypes(these_counts, r_step=r_step_cf, n_mu=mbin_cf) # reshape for input correlation function
 del these_counts # free up memory
 
-# Reconstruction setup
-recon_options = propose_fiducial('recon', tracer=tlabels[0])
-recon_zrange = recon_options.pop('zrange')
-nran_recon = propose_fiducial('catalog', tracer=tlabels[0])['nran']
-print(f"Reconstruction: zrange={recon_zrange}, nran_recon={nran_recon}, options={recon_options}")
-
-# Read catalogs over the full recon zrange for reconstruction
-catalog_options = dict(version=version, imock=mock_id, tracer=tlabels[0], region=reg, zrange=recon_zrange, nran=nran_recon, weight="default-FKP")
-catalog_options = propose_fiducial(kind='catalog', tracer=tlabels[0], zrange=recon_zrange, analysis='full_shape') | catalog_options
-
-data_catalog = read_clustering_catalog(kind='data', **catalog_options)
-randoms_catalogs = read_clustering_catalog(kind='randoms', concatenate=False, expand={'parent_randoms_fn': get_catalog_fn(kind='parent_randoms', version='data-dr2-v2', tracer=tlabels[0], nran=nran_recon)}, **catalog_options)
-print(f"Loaded data ({len(data_catalog)}) and {len(randoms_catalogs)} random catalogs over recon zrange {recon_zrange}")
+# Load pre-computed reconstruction catalogs (from run_recon.py)
+recon_dir = os.path.join(os.environ['SCRATCH'], 'rascalc', 'recon_catalogs', version, f"mock{mock_id}")
+data_recon = Catalog.read(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_data.h5"))
+randoms_recon = [Catalog.read(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_randoms_{iran}.h5")) for iran in range(nrandoms)]
+print(f"Loaded reconstruction catalogs: data + {nrandoms} randoms from {recon_dir}")
 
 if args.test: sys.exit(0)
-
-# Run on-the-fly reconstruction
-from mpytools import Catalog
-data_positions_rec, randoms_rec_positions = compute_reconstruction(
-    lambda: {'data': data_catalog, 'randoms': Catalog.concatenate(randoms_catalogs)},
-    **recon_options)
-print("Reconstruction complete")
-
-# Assign shifted positions back to catalog objects
-data_catalog['POSITION_REC'] = data_positions_rec
-start = 0
-for random in randoms_catalogs:
-    size = len(random['POSITION'])
-    random['POSITION_REC'] = randoms_rec_positions[start:start + size]
-    start += size
-del data_positions_rec, randoms_rec_positions
 
 # Slice to z-bin and nrandoms for RascalC
 ntracers_max = 2 # maximum number of tracers
@@ -160,39 +149,45 @@ randoms_samples = [None] * ntracers_max
 ndata = [None] * ntracers_max
 
 for t, tlabel in enumerate(tlabels):
-    # Take subset of randoms for RascalC, concatenate, and z-cut
-    random_catalog = Catalog.concatenate(randoms_catalogs[:nrandoms])
-    z_mask = (random_catalog['Z'] >= z_min) & (random_catalog['Z'] < z_max)
-    random_catalog = random_catalog[z_mask]
+    # Concatenate randoms and z-cut
+    ran_pos_rec = np.concatenate([r['Position'] for r in randoms_recon])
+    ran_z = np.concatenate([r['Z'] for r in randoms_recon])
+    ran_indweight = np.concatenate([r['INDWEIGHT'] for r in randoms_recon])
+    z_mask = (ran_z >= z_min) & (ran_z < z_max)
+    ran_pos_rec = ran_pos_rec[z_mask]
+    ran_z = ran_z[z_mask]
+    ran_indweight = ran_indweight[z_mask]
 
     # Z-cut data for ndata computation and jackknife reference
-    data_z_mask = (data_catalog['Z'] >= z_min) & (data_catalog['Z'] < z_max)
-    data_zcut = data_catalog[data_z_mask]
-    ndata[t] = np.sum(data_zcut["INDWEIGHT"])**2 / np.sum(data_zcut["INDWEIGHT"]**2)
+    data_z_mask = (data_recon['Z'] >= z_min) & (data_recon['Z'] < z_max)
+    data_indweight_cut = data_recon['INDWEIGHT'][data_z_mask]
+    data_pos_rec_cut = data_recon['Position'][data_z_mask]
+    ndata[t] = np.sum(data_indweight_cut)**2 / np.sum(data_indweight_cut**2)
 
-    randoms_weights[t] = random_catalog["INDWEIGHT"]
+    randoms_weights[t] = ran_indweight
+    randoms_positions[t] = ran_pos_rec # (N, 3) Cartesian
 
-    # Convert shifted Cartesian positions to RA/DEC/dist
-    pos_rec = np.array(random_catalog['POSITION_REC'])
-    dist = np.sqrt(pos_rec[:, 0]**2 + pos_rec[:, 1]**2 + pos_rec[:, 2]**2)
-    dec = np.degrees(np.arcsin(pos_rec[:, 2] / dist))
-    ra = np.degrees(np.arctan2(pos_rec[:, 1], pos_rec[:, 0]))
-    ra[ra < 0] += 360
+    if njack:
+        # Use cucount.utils.KMeansSubsampler (same package + kw_jackknife as
+        # clustering_statistics.correlation2_tools.prepare_cucount_particles, which built the
+        # jackknife realizations baked into allcounts_11/input_xis above), instead of
+        # pycorr.KMeansSubsampler, so that jackknife region labels here correspond to the same
+        # spatial partition as in the counts files RascalC is given.
+        import cucount
+        from cucount.jax import WeightAttrs
+        from cucount.numpy import Particles as CucountParticles
+        from cucount.utils import KMeansSubsampler as CucountKMeansSubsampler
 
-    if njack: # create jackknives using shifted data positions
-        pos_rec_data = np.array(data_zcut['POSITION_REC'])
-        dist_data = np.sqrt(pos_rec_data[:, 0]**2 + pos_rec_data[:, 1]**2 + pos_rec_data[:, 2]**2)
-        dec_data = np.degrees(np.arcsin(pos_rec_data[:, 2] / dist_data))
-        ra_data = np.degrees(np.arctan2(pos_rec_data[:, 1], pos_rec_data[:, 0]))
-        ra_data[ra_data < 0] += 360
-        subsampler = KMeansSubsampler('angular', positions = [ra_data, dec_data, data_zcut["Z"]], position_type = 'rdd', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
-        randoms_samples[t] = subsampler.label(positions = [ra, dec, random_catalog["Z"]], position_type = 'rdd')
+        data_particles = CucountParticles(data_pos_rec_cut, [data_indweight_cut])
+        subsampler = CucountKMeansSubsampler(
+            data_particles, nsplits=njack, nside=512, mode='angular',
+            random_state=42, wattrs=WeightAttrs(),
+        )
+        randoms_samples[t] = subsampler.label(ran_pos_rec)
 
-    randoms_positions[t] = [ra, dec, dist]
+del data_recon, randoms_recon # free up memory
 
-del random_catalog, data_zcut, data_catalog, randoms_catalogs # free up memory
-
-if not args.test: preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
+preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
@@ -200,7 +195,7 @@ results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
                   allcounts_11 = allcounts[0], allcounts_12 = allcounts[1], allcounts_22 = allcounts[2],
                   xi_table_11 = input_xis[0], xi_table_12 = input_xis[1], xi_table_22 = input_xis[2],
                   no_data_galaxies1 = ndata[0], no_data_galaxies2 = ndata[1], effective_no_def=True,
-                  position_type = "rdd",
+                  position_type = "pos",
                   randoms_positions1 = randoms_positions[0], randoms_weights1 = randoms_weights[0], randoms_samples1 = randoms_samples[0],
                   randoms_positions2 = randoms_positions[1], randoms_weights2 = randoms_weights[1], randoms_samples2 = randoms_samples[1],
                   normalize_wcounts = True,

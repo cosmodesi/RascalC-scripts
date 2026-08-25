@@ -6,7 +6,7 @@ import os
 from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices
 from RascalC.post_process.legendre_mix_jackknife import post_process_legendre_mix_jackknife
 
-basedir = os.path.join(os.environ['PSCRATCH'], 'dr3', 'rascalc')
+basedir = os.path.join(os.environ['SCRATCH'], 'dr3', 'rascalc')
 outdir_base = os.path.join('data-dr3-matterhorn-v2-v0-bao', 'BGS_BRIGHT-21.35_NGC_z0.1-0.4')
 
 run_dirs = [

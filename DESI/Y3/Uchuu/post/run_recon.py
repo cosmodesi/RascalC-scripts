@@ -1,8 +1,16 @@
-### Python script for running on-the-fly reconstruction and saving shifted catalogs.
+### Python script for running reconstruction and saving shifted catalogs (Uchuu mocks).
+### Adapted from DESI/Y5/post/run_recon.py: mocks need imock and parent_randoms expansion
+### (as in DESI/Y3/GLAM/pre/run_covs.py and DESI/Y3/GLAM/post/run_recon.py), which real Y5 data does not.
+###
+### Key fix (matching DESI/Y5/post/run_recon.py c530220/568dacf): save via Catalog.write() on
+### every process, not np.savez guarded by `if jax.process_index() == 0`. Under jax.distributed,
+### catalog columns are sharded across processes; np.savez-ing only rank 0's local shard of
+### data_catalog['Z']/['INDWEIGHT'] silently dropped the other ranks' data. Catalog.write()
+### gathers across processes correctly.
 ### Called per tracer; loops over regions. Output is consumed by run_covs.py.
 import os
 import numpy as np
-from clustering_statistics.tools import read_clustering_catalog, propose_fiducial
+from clustering_statistics.tools import get_catalog_fn, read_clustering_catalog, propose_fiducial
 from clustering_statistics.recon_tools import compute_reconstruction
 from desipipe import setup_logging
 from mpytools import Catalog
@@ -13,21 +21,23 @@ import jax
 setup_logging()
 filterwarnings("always")
 
-parser = argparse.ArgumentParser(description="Run reconstruction for a given tracer and save shifted catalogs")
-parser.add_argument("--tracer", type=str, required=True, help="tracer name, e.g. LRG, ELG_LOPnotqso, QSO, BGS_BRIGHT-21.35")
+parser = argparse.ArgumentParser(description="Run reconstruction for a given tracer and save shifted catalogs (Uchuu mocks)")
+parser.add_argument("--tracer", type=str, required=True, help="tracer name, e.g. LRG, ELG_LOPnotqso, QSO")
 args = parser.parse_args()
 
 # Initialize JAX distributed BEFORE any catalog reading — cosmoprimo imports
 # JAX at module level and creates arrays, which OOMs if all ranks target GPU 0.
 jax.distributed.initialize()
 
-version = 'data-dr3-matterhorn-v2-v0-bao'
-basedir = os.path.join(os.environ['SCRATCH'], 'dr3', 'rascalc')
-outdir = os.path.join(basedir, 'recon_catalogs', version)
+version = 'uchuu-hf-altmtl'
+mock_id = 0
+
+tracer = args.tracer
+
+outdir = os.path.join(os.environ['SCRATCH'], 'rascalc', 'recon_catalogs', version, f"mock{mock_id}")
 if jax.process_index() == 0:
     os.makedirs(outdir, exist_ok=True)
 
-tracer = args.tracer
 regs = ['SGC', 'NGC']
 
 recon_options = propose_fiducial('recon', tracer=tracer)
@@ -41,11 +51,12 @@ for reg in regs:
         print(f"  {reg}: {data_outfile} already exists, skipping")
         continue
 
-    catalog_options = dict(version=version, tracer=tracer, region=reg, zrange=recon_zrange, nran=nran_recon, weight="default-FKP")
+    catalog_options = dict(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=recon_zrange, nran=nran_recon, weight="default-FKP")
     catalog_options = propose_fiducial(kind='catalog', tracer=tracer, zrange=recon_zrange, analysis='full_shape') | catalog_options
+    expand = {'parent_randoms_fn': get_catalog_fn(kind='parent_randoms', version='data-dr2-v2', tracer=tracer, nran=nran_recon)}
 
     data_catalog = read_clustering_catalog(kind='data', **catalog_options)
-    randoms_catalogs = read_clustering_catalog(kind='randoms', concatenate=False, **catalog_options)
+    randoms_catalogs = read_clustering_catalog(kind='randoms', concatenate=False, expand=expand, **catalog_options)
     print(f"  {reg}: loaded data ({len(data_catalog)}) and {len(randoms_catalogs)} randoms over recon zrange {recon_zrange}")
 
     data_positions_rec, randoms_rec_positions = compute_reconstruction(
