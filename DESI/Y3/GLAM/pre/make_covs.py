@@ -33,7 +33,7 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
 version_dark = 'glam-uchuu-v2-altmtl'
-version_bright = 'glam-uchuu-bgs-altmtl'
+version_bright = 'glam-uchuu-bgs-v2-altmtl'
 mock_id = 150
 
 stats_dir = '/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_statistics'

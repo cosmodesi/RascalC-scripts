@@ -61,7 +61,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
 version_dark = 'glam-uchuu-v2-altmtl'
-version_bright = 'glam-uchuu-bgs-altmtl'
+version_bright = 'glam-uchuu-bgs-v2-altmtl'
 mock_id = 150
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
