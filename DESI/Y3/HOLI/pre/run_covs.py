@@ -60,7 +60,7 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
-version_dark = 'holi-v3-altmtl'
+version_dark = 'holi-v4-altmtl'
 version_bright = 'holi-bgs-altmtl'
 mock_id = 0
 
