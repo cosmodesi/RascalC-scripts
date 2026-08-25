@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
     stats, postprocess = [], []
     version_dark = 'glam-uchuu-v2-altmtl'
-    version_bright = 'glam-uchuu-bgs-altmtl'
+    version_bright = 'glam-uchuu-bgs-v2-altmtl'
     check_for_existing_measurements = False
     
     imocks2run = 150 + np.arange(1)
