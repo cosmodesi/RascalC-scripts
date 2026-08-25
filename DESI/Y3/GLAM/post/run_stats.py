@@ -4,6 +4,7 @@ To run on NERSC, use the following commands:
 ```bash
 salloc -N 1 -C "gpu&hbm80g" -t 04:00:00 --gpus 4 --qos interactive --account desi_g
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
+module unload desi-clustering # temporarily to resolve the unrecognized version problem, need to install a more up-to-date version of desi-clustering in user space
 srun -n 4 python run_stats.py
 ```
 """

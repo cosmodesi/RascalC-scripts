@@ -1,7 +1,9 @@
-### Python script for running on-the-fly reconstruction and saving shifted catalogs (GLAM mocks).
-### Adapted from DESI/Y5/post/run_recon.py: mocks need imock and parent_randoms expansion
-### (as in DESI/Y3/GLAM/pre/run_covs.py and DESI/Y3/Uchuu/post/run_covs.py), which real Y5 data does not.
-### Called per tracer; loops over regions. Output is consumed by run_covs.py.
+"""
+Python script for running on-the-fly reconstruction and saving shifted catalogs (GLAM mocks).
+Adapted from DESI/Y5/post/run_recon.py: mocks need imock and parent_randoms expansion
+(as in DESI/Y3/GLAM/pre/run_covs.py and DESI/Y3/Uchuu/post/run_covs.py), which real Y5 data does not.
+Called per tracer; loops over regions. Output is consumed by run_covs.py.
+"""
 import os
 import numpy as np
 from clustering_statistics.tools import get_catalog_fn, read_clustering_catalog, propose_fiducial
