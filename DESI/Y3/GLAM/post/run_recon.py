@@ -30,25 +30,27 @@ mock_id = 150
 tracer = args.tracer
 version = version_bright if tracer.startswith('BGS') else version_dark
 
-outdir = os.path.join(os.environ['SCRATCH'], 'rascalc', 'recon_catalogs', version, f"mock{mock_id}")
+regs = ['SGC', 'NGC']
+
+recon_options = propose_fiducial('recon', tracer=tracer, analysis='bao')
+recon_zrange = recon_options.pop('zrange')
+nran_recon = propose_fiducial('catalog', tracer=tracer)['nran']
+if 'nran' in recon_options: nran_recon = recon_options['nran'] # override from recon_options if present there, logically matching https://github.com/cosmodesi/desi-clustering/blob/8f04d058d8f4c41c26caa95f9cf961c01ca7bdb1/clustering_statistics/compute_stats.py#L297
+print(f"{tracer}: recon_zrange={recon_zrange}, nran={nran_recon}, options={recon_options}")
+
+recon_spec = 'recon_sm{smoothing_radius:.0f}_IFFT_{mode}'.format_map(recon_options)
+outdir = os.path.join('catalogs', version, recon_spec)
 if jax.process_index() == 0:
     os.makedirs(outdir, exist_ok=True)
 
-regs = ['SGC', 'NGC']
-
-recon_options = propose_fiducial('recon', tracer=tracer)
-recon_zrange = recon_options.pop('zrange')
-nran_recon = propose_fiducial('catalog', tracer=tracer)['nran']
-print(f"{tracer}: recon_zrange={recon_zrange}, nran={nran_recon}, options={recon_options}")
-
 for reg in regs:
-    data_outfile = os.path.join(outdir, f"{tracer}_{reg}_data.h5")
+    data_outfile = os.path.join(outdir, f"{tracer}_{reg}_clustering.dat.h5")
     if os.path.isfile(data_outfile):
         print(f"  {reg}: {data_outfile} already exists, skipping")
         continue
 
     catalog_options = dict(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=recon_zrange, nran=nran_recon, weight="default-FKP")
-    catalog_options = propose_fiducial(kind='catalog', tracer=tracer, zrange=recon_zrange, analysis='full_shape') | catalog_options
+    catalog_options = propose_fiducial(kind='catalog', tracer=tracer, zrange=recon_zrange, analysis='bao') | catalog_options
     expand = {'parent_randoms_fn': get_catalog_fn(kind='parent_randoms', version='data-dr2-v2', tracer=tracer, nran=nran_recon)}
 
     data_catalog = read_clustering_catalog(kind='data', **catalog_options)
@@ -63,12 +65,14 @@ for reg in regs:
     data_catalog['Position'] = np.asarray(data_positions_rec)
     data_catalog.write(data_outfile)
 
+    # Assign reconstructed positions to random catalogs
     start = 0
     for iran, random in enumerate(randoms_catalogs):
         size = len(random['POSITION'])
-        ran_outfile = os.path.join(outdir, f"{tracer}_{reg}_randoms_{iran}.h5")
-        random['Position'] = np.asarray(randoms_rec_positions[start:start + size])
+        ran_outfile = os.path.join(outdir, f"{tracer}_{reg}_{iran}_clustering.ran.h5")
+        random['POSITION_REC'] = randoms_rec_positions[start:start + size]
         random.write(ran_outfile)
+        print(f"  {reg}: saved random catalog {iran} to {ran_outfile}")
         start += size
 
     if jax.process_index() == 0:
