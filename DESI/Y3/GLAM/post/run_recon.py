@@ -39,7 +39,7 @@ if 'nran' in recon_options: nran_recon = recon_options['nran'] # override from r
 print(f"{tracer}: recon_zrange={recon_zrange}, nran={nran_recon}, options={recon_options}")
 
 recon_spec = 'recon_sm{smoothing_radius:.0f}_IFFT_{mode}'.format_map(recon_options)
-outdir = os.path.join('catalogs', version, recon_spec)
+outdir = os.path.join('catalogs', version, recon_spec, f"mock{mock_id}")
 if jax.process_index() == 0:
     os.makedirs(outdir, exist_ok=True)
 

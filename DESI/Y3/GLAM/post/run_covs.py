@@ -149,7 +149,7 @@ for c, allcounts_filename in enumerate(allcounts_filenames):
 del these_counts # free up memory
 
 # Load pre-computed reconstruction catalogs (from run_recon.py)
-recon_dir = os.path.join('catalogs', version, recon_spec)
+recon_dir = os.path.join('catalogs', version, recon_spec, f"mock{mock_id}")
 data_recon = [Catalog.read(os.path.join(recon_dir, f"{tracer}_{reg}_clustering.dat.h5")) for tracer in tlabels]
 randoms_recon = [Catalog.concatenate([Catalog.read(os.path.join(recon_dir, f"{tracer}_{reg}_{iran}_clustering.ran.h5")) for iran in range(nrandoms)]) for tracer in tlabels]
 print(f"Loaded reconstruction catalogs: data + {nrandoms} randoms from {recon_dir}")
