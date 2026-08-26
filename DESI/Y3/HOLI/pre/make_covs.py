@@ -176,7 +176,7 @@ for tracer, z_range in zip(tracers, zs):
         my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
     # obtain the counts names
-    reg_counts_names = [get_stats_fn(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='full_shape/base', kind='particle2_correlation', weight='default-FKP') for reg in regs] # no jackknife
+    reg_counts_names = [get_stats_fn(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=z_range, stats_dir=".", project='full_shape/base', kind='particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=60)) for reg in regs] # generally need no jackknife, but here temporarily use local jackknife counts to make GCcomb because the shared non-jackknife counts are not available yet
 
     if len(reg_counts_names) == len(regs): # if we have pycorr files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions
