@@ -47,7 +47,7 @@ def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None,
             
             options = dict(catalog=dict(version=version, tracer=tracer, zrange=zranges, region=region, weight=weight, imock=imock), 
                            mesh2_spectrum=mesh2_spectrum, window_mesh2_spectrum=window_mesh2_spectrum,
-                           particle2_correlation={'jackknife': {'nsplits': 60}} if do_jackknife else {},
+                           recon_particle2_correlation={'jackknife': {'nsplits': 60}} if do_jackknife else {},
                            window_mesh3_spectrum={'ibatch': ibatch} if isinstance(ibatch, tuple) else {'computed_batches': ibatch})
             options = fill_fiducial_options(options, analysis=analysis)
             
@@ -65,7 +65,7 @@ def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None,
     # postprocess
     if postprocess:
         postprocess_options = dict(catalog=dict(version=version, tracer=tracer, zrange=zranges, weight=weight, imock=imocks[0]), imocks=imocks,
-                                   combine_regions={'stats': stats}, mesh2_spectrum=mesh2_spectrum, window_mesh2_spectrum=window_mesh2_spectrum, particle2_correlation={'jackknife': {'nsplits': 60}} if do_jackknife else {})
+                                   combine_regions={'stats': stats}, mesh2_spectrum=mesh2_spectrum, window_mesh2_spectrum=window_mesh2_spectrum, recon_particle2_correlation={'jackknife': {'nsplits': 60}} if do_jackknife else {})
         postprocess_stats_from_options(postprocess, analysis=analysis, get_stats_fn=get_stats_fn, **postprocess_options)
 
 
@@ -73,7 +73,7 @@ def postprocess_stats(tracer='LRG', analysis='full_shape', project='', version='
     from clustering_statistics import postprocess_stats_from_options
     if zranges is None:
         zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)
-    options = dict(catalog=dict(version=version, tracer=tracer, zrange=zranges, weight=weight, imock=imocks[0]), imocks=imocks, combine_regions={'stats': stats}, mesh2_spectrum={'cut': True, 'auw': True}, window_mesh2_spectrum={'cut': True}, particle2_correlation={'jackknife': {'nsplits': 60}} if do_jackknife else {})
+    options = dict(catalog=dict(version=version, tracer=tracer, zrange=zranges, weight=weight, imock=imocks[0]), imocks=imocks, combine_regions={'stats': stats}, mesh2_spectrum={'cut': True, 'auw': True}, window_mesh2_spectrum={'cut': True}, recon_particle2_correlation={'jackknife': {'nsplits': 60}} if do_jackknife else {})
     stats_dir_kws = dict(stats_dir=stats_dir, project=project)
     if onthefly == 'complete':
         get_stats_fn = functools.partial(tools.get_stats_fn, extra='complete', **stats_dir_kws)
