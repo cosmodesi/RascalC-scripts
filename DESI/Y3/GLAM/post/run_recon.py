@@ -19,6 +19,7 @@ filterwarnings("always")
 
 parser = argparse.ArgumentParser(description="Run reconstruction for a given tracer and save shifted catalogs (GLAM mocks)")
 parser.add_argument("--tracer", type=str, required=True, help="tracer name, e.g. LRG, ELG_LOPnotqso, QSO, BGS_BRIGHT-21.35")
+parser.add_argument("--overwrite", action="store_false", help="whether to overwrite existing files (default: True - temporarily)")
 args = parser.parse_args()
 
 # Initialize JAX distributed BEFORE any catalog reading — cosmoprimo imports
@@ -47,7 +48,7 @@ if jax.process_index() == 0:
 
 for reg in regs:
     data_outfile = os.path.join(outdir, f"{tracer}_{reg}_clustering.dat.h5")
-    if os.path.isfile(data_outfile):
+    if not args.overwrite and os.path.isfile(data_outfile):
         print(f"  {reg}: {data_outfile} already exists, skipping")
         continue
 
@@ -72,6 +73,9 @@ for reg in regs:
     for iran, random in enumerate(randoms_catalogs):
         size = len(random['POSITION'])
         ran_outfile = os.path.join(outdir, f"{tracer}_{reg}_{iran}_clustering.ran.h5")
+        if not args.overwrite and os.path.isfile(ran_outfile):
+            print(f"  {reg}: {ran_outfile} already exists, skipping")
+            continue
         random['POSITION_REC'] = randoms_rec_positions[start:start + size]
         random.write(ran_outfile)
         print(f"  {reg}: saved random catalog {iran} to {ran_outfile}")
