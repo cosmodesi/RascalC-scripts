@@ -154,8 +154,6 @@ data_recon = [Catalog.read(os.path.join(recon_dir, f"{tracer}_{reg}_clustering.d
 randoms_recon = [Catalog.concatenate([Catalog.read(os.path.join(recon_dir, f"{tracer}_{reg}_{iran}_clustering.ran.h5")) for iran in range(nrandoms)]) for tracer in tlabels]
 print(f"Loaded reconstruction catalogs: data + {nrandoms} randoms from {recon_dir}")
 
-if args.test: sys.exit(0)
-
 # Slice to z-bin and nrandoms for RascalC
 ntracers_max = 2 # maximum number of tracers
 randoms_positions = [None] * ntracers_max
@@ -190,6 +188,8 @@ for t, tlabel in enumerate(tlabels):
         randoms_samples[t] = subsampler.label(randoms_positions[t])
 
 del data_recon, randoms_recon # free up memory
+
+if args.test: sys.exit(0)
 
 preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
