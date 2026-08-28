@@ -178,7 +178,6 @@ for t, tlabel in enumerate(tlabels):
         # jackknife realizations baked into allcounts_11/input_xis above), instead of
         # pycorr.KMeansSubsampler, so that jackknife region labels here correspond to the same
         # spatial partition as in the counts files RascalC is given.
-        import cucount
         from cucount.jax import WeightAttrs
         from cucount.numpy import Particles as CucountParticles
         from cucount.utils import KMeansSubsampler as CucountKMeansSubsampler
