@@ -64,7 +64,7 @@ for reg in regs:
         **recon_options)
     print(f"  {reg}: reconstruction complete")
 
-    data_catalog['Position'] = np.asarray(data_positions_rec)
+    data_catalog['POSITION_REC'] = np.asarray(data_positions_rec)
     data_catalog.write(data_outfile)
 
     # Assign reconstructed positions to random catalogs
