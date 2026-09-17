@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
     stats, postprocess = [], []
     version_dark = 'holi-v4-altmtl'
-    version_bright = 'holi-bgs-altmtl'
+    version_bright = 'holi-bgs-v2-altmtl'
     check_for_existing_measurements = False
     
     # imocks2run = 150 + np.arange(1)
@@ -112,7 +112,8 @@ if __name__ == '__main__':
     weight   = 'default-FKP'
     regions  = ['NGC', 'SGC']
     # tracers  = ['BGS_BRIGHT-21.35', 'LRG', 'ELG_LOPnotqso', 'QSO']
-    tracers  = ['LRG', 'ELG_LOPnotqso', 'QSO'] # only dark-time to update for now
+    # tracers  = ['LRG', 'ELG_LOPnotqso', 'QSO'] # only dark-time to update for now
+    tracers  = ['BGS_BRIGHT-21.35'] # update BGS only
     max_mocks_per_batch = 1
 
     # onthefly = 'reshuffle'

@@ -61,7 +61,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
 version_dark = 'holi-v4-altmtl'
-version_bright = 'holi-bgs-altmtl'
+version_bright = 'holi-bgs-v2-altmtl'
 mock_id = 0
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do

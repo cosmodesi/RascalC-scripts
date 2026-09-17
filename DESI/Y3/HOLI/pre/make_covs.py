@@ -33,7 +33,7 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 
 # Settings for filenames
 version_dark = 'holi-v4-altmtl'
-version_bright = 'holi-bgs-altmtl'
+version_bright = 'holi-bgs-v2-altmtl'
 mock_id = 0
 
 stats_dir = '/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_statistics'
