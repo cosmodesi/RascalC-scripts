@@ -9,11 +9,9 @@ from desipipe import setup_logging
 from pycorr import KMeansSubsampler
 from RascalC.lsstypes_utils.utils import reshape_lsstypes
 from RascalC import run_cov
-from warnings import filterwarnings
 import argparse
 
 setup_logging()
-filterwarnings("always") # do not suppress repeated warnings to make sure everything is going as planned
 
 parser = argparse.ArgumentParser(description="Main RascalC computation script for DESI Y3 data post-recon single-tracer (using desi-clustering pipeline instead of desi-y3-kp)")
 parser.add_argument("id", type=int, help="number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")

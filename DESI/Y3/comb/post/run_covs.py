@@ -6,10 +6,7 @@ from pycorr import TwoPointCorrelationFunction, KMeansSubsampler
 from LSS.tabulated_cosmo import TabulatedDESI
 from RascalC.pycorr_utils.utils import fix_bad_bins_pycorr
 from RascalC import run_cov
-from warnings import filterwarnings
 import argparse
-
-filterwarnings("always") # do not suppress repeated warnings to make sure everything is going as planned
 
 parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 post-recon combined tracer")
 parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
