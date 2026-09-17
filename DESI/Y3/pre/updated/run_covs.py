@@ -1,5 +1,5 @@
 ### Python script for running RascalC in DESI setup (Michael Rashkovetskyi, 2025-2026).
-import os
+import os, sys
 import numpy as np
 import lsstypes
 from clustering_statistics.tools import get_stats_fn, read_clustering_catalog, propose_fiducial
@@ -154,7 +154,9 @@ for t, tlabel in enumerate(tlabels):
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
 del random_catalog, data_catalog # free up memory
 
-if not args.test: preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
+if args.test: sys.exit(0)
+
+preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
 # Run the main code, post-processing and extra convergence check
 results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
