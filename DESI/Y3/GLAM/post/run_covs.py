@@ -14,11 +14,9 @@
 ### package/implementation -- does not guarantee spatially matching region labels even with
 ### matching nside/nsplits/random_state, and was suspected to cause a ~5x too-large, wrong
 ### NGC/SGC-ordered theory covariance for several Y5 tracers (see DESI/Y5/post/run_covs.py).
-###
-### NOTE: as of writing, the shared stats tree only has plain (non-jackknife) recon_particle2_correlation
-### counts for GLAM (bao/base/glam-uchuu-*-v2-altmtl/mock150/...). The jackknife=dict(nsplits=njack)
-### counts this script requests below do not exist yet; they need to be produced first (a post-recon
-### equivalent of GLAM/pre/run_stats.py's do_jackknife=True step) before this script can run for real.
+### Misha: I think the real Y5 issue was missing 3/4 of the reconstructed random catalogs
+### (due to the caveats of catalog storage in parallelized run_recon.py, already fixed).
+### pycorr and cucount KMeansSubsampler's should match, but doesn't hurt to be extra sure.
 import sys, os
 import numpy as np
 import lsstypes
