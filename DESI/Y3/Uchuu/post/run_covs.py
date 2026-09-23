@@ -101,7 +101,6 @@ n_loops = {'LRG': {(0.4, 0.6): {'SGC': 2048,
                                           'NGC': 384}},
            'QSO': {(0.8, 2.1): {'SGC': 256,
                                 'NGC': 256}}}[tlabels[0]][z_range][reg]
-if args.test: n_loops = 0 # override for test runs
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
@@ -136,8 +135,6 @@ recon_dir = os.path.join(os.environ['SCRATCH'], 'rascalc', 'recon_catalogs', ver
 data_recon = Catalog.read(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_data.h5"))
 randoms_recon = [Catalog.read(os.path.join(recon_dir, f"{tlabels[0]}_{reg}_randoms_{iran}.h5")) for iran in range(nrandoms)]
 print(f"Loaded reconstruction catalogs: data + {nrandoms} randoms from {recon_dir}")
-
-if args.test: sys.exit(0)
 
 # Slice to z-bin and nrandoms for RascalC
 ntracers_max = 2 # maximum number of tracers
@@ -184,6 +181,7 @@ for t, tlabel in enumerate(tlabels):
 
 del data_recon, randoms_recon # free up memory
 
+if args.test: sys.exit(0)
 preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
 # Run the main code, post-processing and extra convergence check
