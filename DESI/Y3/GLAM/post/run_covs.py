@@ -91,7 +91,7 @@ zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
-nrandoms = {'BGS_BRIGHT-21.35': 2, 'LRG': 4, 'ELG_LOPnotqso': 5, 'QSO': 4}[tlabels[0]] # from DESI/Y3/GLAM/pre/run_covs.py
+nrandoms = {'BGS_BRIGHT-21.35': 2, 'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'QSO': 4}[tlabels[0]]
 
 # set the number of integration loops based on tracer, z range and region
 # inherited from DESI/Y3/GLAM/pre/run_covs.py (pre-recon), but seem to run ok
