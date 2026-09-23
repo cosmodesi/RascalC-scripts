@@ -36,7 +36,8 @@ version = version_bright if tracer.startswith('BGS') else version_dark
 regs = ['SGC', 'NGC']
 
 recon_options = propose_fiducial('recon', tracer=tracer, analysis='bao')
-recon_zrange = recon_options.pop('zrange')
+recon_zrange = recon_options.pop('zrange', None)
+if recon_zrange is None: recon_zrange = propose_fiducial('zrange', tracer=tracer) # for the combined tracer (LRG+ELG). for normal tracers, propose_fiducial does not contain an overall zrange
 nran_recon = propose_fiducial('catalog', tracer=tracer)['nran']
 if 'nran' in recon_options: nran_recon = recon_options['nran'] # override from recon_options if present there, logically matching https://github.com/cosmodesi/desi-clustering/blob/8f04d058d8f4c41c26caa95f9cf961c01ca7bdb1/clustering_statistics/compute_stats.py#L297
 print(f"{tracer}: recon_zrange={recon_zrange}, nran={nran_recon}, options={recon_options}")
