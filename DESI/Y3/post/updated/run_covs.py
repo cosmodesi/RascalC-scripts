@@ -65,14 +65,14 @@ id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
-tracers = ['BGS_BRIGHT-21.35'] + ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['QSO']
-zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 2.1)]
+tracers = ['BGS_BRIGHT-21.35'] + ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['QSO', 'LRG+ELG_LOPnotqso']
+zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 2.1), (0.8, 1.1)]
 # need 2 * 7 = 14 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
-nrandoms = {'BGS_BRIGHT-21.35': 1, 'LRG': 4, 'ELG_LOPnotqso': 5, 'QSO': 4}[tlabels[0]]
+nrandoms = {'BGS_BRIGHT-21.35': 1, 'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'QSO': 4}[tlabels[0]]
 
 # set the number of integration loops based on tracer, z range and region
 n_loops = {'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 3072,
@@ -83,6 +83,8 @@ n_loops = {'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 3072,
                                 'NGC': 1536},
                    (0.8, 1.1): {'SGC': 1024,
                                 'NGC': 512}},
+           'LRG+ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 1024,
+                                              'NGC': 768}},
            'ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 768,
                                           'NGC': 512},
                              (1.1, 1.6): {'SGC': 512,

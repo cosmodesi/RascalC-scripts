@@ -36,8 +36,8 @@ stats_dir = '/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_stat
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracers = ['BGS_BRIGHT-21.35'] + ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['QSO']
-zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 2.1)]
+tracers = ['BGS_BRIGHT-21.35'] + ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['LRG+ELG_LOPnotqso', 'QSO']
+zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 1.1), (0.8, 2.1)]
 
 hash_dict_file = "make_covs.hash_dict.asdf"
 if os.path.isfile(hash_dict_file):
