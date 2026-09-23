@@ -19,6 +19,7 @@ JOB_FLAGS="-N 1 -n 4"
 srun $JOB_FLAGS python -u run_recon.py --tracer BGS_BRIGHT-21.35
 srun $JOB_FLAGS python -u run_recon.py --tracer LRG
 srun $JOB_FLAGS python -u run_recon.py --tracer ELG_LOPnotqso
+srun $JOB_FLAGS python -u run_recon.py --tracer LRG+ELG_LOPnotqso
 srun $JOB_FLAGS python -u run_recon.py --tracer QSO
 
 echo " "
