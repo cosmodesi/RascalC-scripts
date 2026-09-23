@@ -19,7 +19,7 @@ filterwarnings("always")
 
 parser = argparse.ArgumentParser(description="Run reconstruction for a given tracer and save shifted catalogs (GLAM mocks)")
 parser.add_argument("--tracer", type=str, required=True, help="tracer name, e.g. LRG, ELG_LOPnotqso, QSO, BGS_BRIGHT-21.35")
-parser.add_argument("--overwrite", action="store_false", help="whether to overwrite existing files (default: True - temporarily)")
+parser.add_argument("--overwrite", action="store_true", help="whether to overwrite existing files (default: False)")
 args = parser.parse_args()
 
 # Initialize JAX distributed BEFORE any catalog reading — cosmoprimo imports
