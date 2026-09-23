@@ -85,7 +85,6 @@ n_loops = {'FullCombined': {(1.0, 1.2): {'SGC': 1024,
                                          'NGC': 768},
                             (1.2, 1.4): {'SGC': 1024,
                                          'NGC': 768}}}[tlabels[0]][z_range][reg]
-if args.test: n_loops = 0 # override for test runs
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"

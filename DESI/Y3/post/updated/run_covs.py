@@ -89,7 +89,6 @@ n_loops = {'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 3072,
                                           'NGC': 384}},
            'QSO': {(0.8, 2.1): {'SGC': 256,
                                 'NGC': 256}}}[tlabels[0]][z_range][reg]
-if args.test: n_loops = 0 # override for test runs
 
 assert n_loops % nthread == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of threads ({nthread})"
 assert n_loops % loops_per_sample == 0, f"Number of integration loops ({n_loops}) must be divisible by the number of loops per sample ({loops_per_sample})"
