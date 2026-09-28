@@ -119,35 +119,36 @@ if __name__ == '__main__':
     # onthefly = 'reshuffle'
     # onthefly = 'complete'
     onthefly = None
-    
-    for tracer, zranges in tracer_zranges.items():
-        version = version_bright if tracer.startswith('BGS') else version_dark
-        if zranges is None:
-            if 'png' in analysis:
-                # do not compute measurements for overlapping redshifts
-                zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)[:1]
+
+    for imock in imocks2run:
+        for tracer, zranges in tracer_zranges.items():
+            version = version_bright if tracer.startswith('BGS') else version_dark
+            if zranges is None:
+                if 'png' in analysis:
+                    # do not compute measurements for overlapping redshifts
+                    zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)[:1]
+                else:
+                    zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)
+            imocks_tmp = [imock]
+            if check_for_existing_measurements:
+                exists, missing = tools.checks_if_exists_and_readable(get_fn=functools.partial(tools.get_catalog_fn, tracer=tracer[0] if isinstance(tracer, (list, tuple)) else tracer,
+                                                                                            region='NGC', version=version), test_if_readable=False, imock=imocks_tmp)[:2]
+                imocks = exists[1]['imock']
+                rerun = []
+                for zrange in zranges:
+                    for kind in stats:
+                        stats_kws = dict(kind=kind, stats_dir=Path(str(stats_dir).replace('global','dvs_ro')),
+                                        tracer=tracer, region=regions[-1], weight=weight, zrange=zrange, version=version, project=project, 
+                                        jackknife=dict(nsplits=60), extra=onthefly if onthefly else '')
+                        rexists, missing, unreadable = tools.checks_if_exists_and_readable(get_fn=functools.partial(tools.get_stats_fn, **stats_kws), test_if_readable=True, imock=imocks_tmp)
+                        rerun += [imock for imock in imocks if (imock in unreadable[1]['imock']) or (imock not in rexists[1]['imock'])]
+                imocks = sorted(set(rerun))
             else:
-                zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)
-        if check_for_existing_measurements:
-            exists, missing = tools.checks_if_exists_and_readable(get_fn=functools.partial(tools.get_catalog_fn, tracer=tracer[0] if isinstance(tracer, (list, tuple)) else tracer,
-                                                                                           region='NGC', version=version), test_if_readable=False, imock=imocks2run)[:2]
-            imocks = exists[1]['imock']
-            rerun = []
-            for zrange in zranges:
-                for kind in stats:
-                    stats_kws = dict(kind=kind, stats_dir=Path(str(stats_dir).replace('global','dvs_ro')),
-                                     tracer=tracer, region=regions[-1], weight=weight, zrange=zrange, version=version, project=project, 
-                                     jackknife=dict(nsplits=60), extra=onthefly if onthefly else '')
-                    rexists, missing, unreadable = tools.checks_if_exists_and_readable(get_fn=functools.partial(tools.get_stats_fn, **stats_kws), test_if_readable=True, imock=imocks2run)
-                    rerun += [imock for imock in imocks if (imock in unreadable[1]['imock']) or (imock not in rexists[1]['imock'])]
-            imocks = sorted(set(rerun))
-            print(f'Running {imocks=} for tracer {tracer}')
-        else:
-            imocks = imocks2run
-            
-        run_stats_kws = dict(tracer=tracer, stats_dir=stats_dir, project=project, version=version, stats=stats, analysis=analysis, onthefly=onthefly, zranges=zranges, regions=regions, weight=weight, do_jackknife=do_jackknife, postprocess=postprocess)
-        batch_imocks = np.array_split(imocks, max(len(imocks) // max_mocks_per_batch, 1)) if len(imocks) else []
-        for _imocks in batch_imocks:
-            run_stats(imocks=_imocks, **run_stats_kws)
-        # if postprocess:
-        #     postprocess_stats(imocks=imocks, **run_stats_kws)
+                imocks = imocks_tmp
+                
+            run_stats_kws = dict(tracer=tracer, stats_dir=stats_dir, project=project, version=version, stats=stats, analysis=analysis, onthefly=onthefly, zranges=zranges, regions=regions, weight=weight, do_jackknife=do_jackknife, postprocess=postprocess)
+            batch_imocks = np.array_split(imocks, max(len(imocks) // max_mocks_per_batch, 1)) if len(imocks) else []
+            for _imocks in batch_imocks:
+                run_stats(imocks=_imocks, **run_stats_kws)
+            # if postprocess:
+            #     postprocess_stats(imocks=imocks, **run_stats_kws)
