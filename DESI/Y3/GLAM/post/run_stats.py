@@ -91,9 +91,9 @@ if __name__ == '__main__':
     stats, postprocess = [], []
     version_dark = 'glam-uchuu-v2-altmtl'
     version_bright = 'glam-uchuu-bgs-v2-altmtl'
-    check_for_existing_measurements = False
+    check_for_existing_measurements = True
     
-    imocks2run = 150 + np.arange(1)
+    imocks2run = 150 + np.arange(5)
     # imocks2run = np.arange(1)
     # stats_dir  = Path(os.getenv('SCRATCH')) / 'cai-dr2-benchmarks'
     # if version == 'holi-v3-altmtl':
@@ -111,21 +111,23 @@ if __name__ == '__main__':
     project  = f'{analysis}/base'
     weight   = 'default-FKP'
     regions  = ['NGC', 'SGC']
-    # tracers  = ['BGS_BRIGHT-21.35', 'LRG', 'ELG_LOPnotqso', 'LRG+ELG_LOPnotqso', 'QSO']
-    tracers  = ['LRG+ELG_LOPnotqso'] # only LRG+ELG to run now
+    # tracers = ['BGS_BRIGHT-21.35', 'LRG', 'ELG_LOPnotqso', 'LRG+ELG_LOPnotqso', 'QSO']
+    # tracer_zranges = {tracer: None for tracer in tracers} # use None to run the default ranges
+    tracer_zranges  = {'BGS_BRIGHT-21.35': [(0.0, 0.4)], 'LRG': [(0.6, 0.8)], 'ELG_LOPnotqso': [(1.1, 1.6)], 'LRG+ELG_LOPnotqso': [(0.8, 1.1)], 'QSO': [(0.8, 2.1)]} # 1 zrange per tracer for 5 mocks, corresponding to following RascalC runs
     max_mocks_per_batch = 1
 
     # onthefly = 'reshuffle'
     # onthefly = 'complete'
     onthefly = None
     
-    for tracer in tracers:
+    for tracer, zranges in tracer_zranges.items():
         version = version_bright if tracer.startswith('BGS') else version_dark
-        if 'png' in analysis:
-            # do not compute measurements for overlapping redshifts
-            zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)[:1]
-        else:
-            zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)
+        if zranges is None:
+            if 'png' in analysis:
+                # do not compute measurements for overlapping redshifts
+                zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)[:1]
+            else:
+                zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)
         if check_for_existing_measurements:
             exists, missing = tools.checks_if_exists_and_readable(get_fn=functools.partial(tools.get_catalog_fn, tracer=tracer[0] if isinstance(tracer, (list, tuple)) else tracer,
                                                                                            region='NGC', version=version), test_if_readable=False, imock=imocks2run)[:2]
@@ -133,12 +135,13 @@ if __name__ == '__main__':
             rerun = []
             for zrange in zranges:
                 for kind in stats:
-                    stats_kws = dict(basis='sugiyama-diagonal', kind=kind, stats_dir=Path(str(stats_dir).replace('global','dvs_ro')),
+                    stats_kws = dict(kind=kind, stats_dir=Path(str(stats_dir).replace('global','dvs_ro')),
                                      tracer=tracer, region=regions[-1], weight=weight, zrange=zrange, version=version, project=project, 
-                                     extra=onthefly if onthefly else '')
+                                     jackknife=dict(nsplits=60), extra=onthefly if onthefly else '')
                     rexists, missing, unreadable = tools.checks_if_exists_and_readable(get_fn=functools.partial(tools.get_stats_fn, **stats_kws), test_if_readable=True, imock=imocks2run)
                     rerun += [imock for imock in imocks if (imock in unreadable[1]['imock']) or (imock not in rexists[1]['imock'])]
             imocks = sorted(set(rerun))
+            print(f'Running {imocks=} for tracer {tracer}')
         else:
             imocks = imocks2run
             
