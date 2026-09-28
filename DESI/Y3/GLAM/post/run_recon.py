@@ -19,6 +19,7 @@ filterwarnings("always")
 
 parser = argparse.ArgumentParser(description="Run reconstruction for a given tracer and save shifted catalogs (GLAM mocks)")
 parser.add_argument("--tracer", type=str, required=True, help="tracer name, e.g. LRG, ELG_LOPnotqso, QSO, BGS_BRIGHT-21.35")
+parser.add_argument("--mock_id", type=int, help="ID of the mock catalog to use", default=150)
 parser.add_argument("--overwrite", action="store_true", help="whether to overwrite existing files (default: False)")
 args = parser.parse_args()
 
@@ -28,7 +29,7 @@ jax.distributed.initialize()
 
 version_dark = 'glam-uchuu-v2-altmtl'
 version_bright = 'glam-uchuu-bgs-v2-altmtl'
-mock_id = 150
+mock_id : int = args.mock_id
 
 tracer = args.tracer
 version = version_bright if tracer.startswith('BGS') else version_dark

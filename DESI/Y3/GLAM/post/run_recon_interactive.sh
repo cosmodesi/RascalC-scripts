@@ -8,16 +8,16 @@ SECONDS=0
 
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
 
-module unload desi-clustering # use locally installed desi-clustering if uncommented, otherwise use the global one from cosmodesi environment
+# module unload desi-clustering # use locally installed desi-clustering if uncommented, otherwise use the global one from cosmodesi environment
 
 
 JOB_FLAGS="-N 1 -n 4"
 
-srun $JOB_FLAGS python -u run_recon.py --tracer BGS_BRIGHT-21.35
-srun $JOB_FLAGS python -u run_recon.py --tracer LRG
-srun $JOB_FLAGS python -u run_recon.py --tracer ELG_LOPnotqso
-srun $JOB_FLAGS python -u run_recon.py --tracer LRG+ELG_LOPnotqso
-srun $JOB_FLAGS python -u run_recon.py --tracer QSO
+for MOCK_ID in {150..154} ; do
+    for TRACER in BGS_BRIGHT-21.35 LRG ELG_LOPnotqso LRG+ELG_LOPnotqso QSO ; do
+        srun $JOB_FLAGS python -u run_recon.py --tracer $TRACER --mock_id $MOCK_ID
+    done
+done
 
 echo " "
 if (( $SECONDS > 3600 )); then
