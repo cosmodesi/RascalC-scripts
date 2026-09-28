@@ -131,9 +131,10 @@ if __name__ == '__main__':
                     zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)
             imocks_tmp = [imock]
             if check_for_existing_measurements:
-                exists, missing = tools.checks_if_exists_and_readable(get_fn=functools.partial(tools.get_catalog_fn, tracer=tracer[0] if isinstance(tracer, (list, tuple)) else tracer,
-                                                                                            region='NGC', version=version), test_if_readable=False, imock=imocks_tmp)[:2]
-                imocks = exists[1]['imock']
+                # exists, missing = tools.checks_if_exists_and_readable(get_fn=functools.partial(tools.get_catalog_fn, tracer=tracer[0] if isinstance(tracer, (list, tuple)) else tracer,
+                #                                                                             region='NGC', version=version), test_if_readable=False, imock=imocks_tmp)[:2]
+                # imocks = exists[1]['imock']
+                imocks = imocks_tmp
                 rerun = []
                 for zrange in zranges:
                     for kind in stats:
