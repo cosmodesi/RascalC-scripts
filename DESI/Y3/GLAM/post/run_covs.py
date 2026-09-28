@@ -29,9 +29,10 @@ import argparse
 
 setup_logging()
 
-parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 GLAM mocks post-recon single-tracer")
-parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
-parser.add_argument("-t", "--test", action = "store_true", help = "test the input files, abort before the main computation")
+parser = argparse.ArgumentParser(description="Main RascalC computation script for DESI Y3 GLAM mocks post-recon single-tracer")
+parser.add_argument("id", type=int, help="number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
+parser.add_argument("--mock_id", type=int, help="ID of the mock catalog to use", default=150)
+parser.add_argument("-t", "--test", action="store_true", help="test the input files, abort before the main computation")
 args = parser.parse_args()
 
 def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory exists, rename it with a numeric suffix
@@ -75,7 +76,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 # Settings for filenames
 version_dark = 'glam-uchuu-v2-altmtl'
 version_bright = 'glam-uchuu-bgs-v2-altmtl'
-mock_id = 150
+mock_id : int = args.mock_id
 
 stats_dir = '.'
 
