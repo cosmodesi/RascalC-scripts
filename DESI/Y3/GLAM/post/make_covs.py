@@ -123,9 +123,7 @@ for tracer, z_range in zip(tracers, zs):
             mock_cov_name = f"cov_txt/{version}/{recon_spec}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
             # Make the mock sample covariance matrix
             stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') # no jackknife
-            if tracer.startswith('BGS'): imock = '*' # take all mocks for BGS, no dubious realizations known
-            else: imock = np.loadtxt("glam-uchuu-v2-altmtl_dark-time_imocks_for_covariance_v2.txt", dtype=int) # make sure to exclude dubious realizations for dark-time tracers: their directories are not (yet) automatically excluded by renaming mock... to dubious_mock... in the stats_dir
-            xi_filenames = get_stats_fn(imock=imock, **stats_kws)
+            xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
             my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
         for mock_id in mock_ids:
@@ -177,9 +175,7 @@ for tracer, z_range in zip(tracers, zs):
         mock_cov_name = f"cov_txt/{version}/{recon_spec}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
         # Make the mock sample covariance matrix
         stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') # no jackknife
-        if tracer.startswith('BGS'): imock = '*' # take all mocks for BGS, no dubious realizations known
-        else: imock = np.loadtxt("glam-uchuu-v2-altmtl_dark-time_imocks_for_covariance_v2.txt", dtype=int) # make sure to exclude dubious realizations for dark-time tracers: their directories are not (yet) automatically excluded by renaming mock... to dubious_mock... in the stats_dir
-        xi_filenames = get_stats_fn(imock=imock, **stats_kws)
+        xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
         my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
     for mock_id in mock_ids:
