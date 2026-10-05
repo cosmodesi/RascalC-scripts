@@ -111,6 +111,7 @@ def sha256sum(filename: str, buffer_size: int = 128*1024) -> str: # from https:/
 # Make steps for making covs
 for tracer, z_range in zip(tracers, zs):
     version = version_bright if tracer.startswith('BGS') else version_dark
+    project_common = 'full_shape/' + ('split_randoms' if tracer.startswith('BGS') else 'base')
     tlabels = [tracer]
     z_min, z_max = z_range
     reg_results = {mock_id: [] for mock_id in mock_ids}
@@ -120,7 +121,7 @@ for tracer, z_range in zip(tracers, zs):
             # set the mock covariance matrix filename
             mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
             if not os.path.isfile(mock_cov_name): # make the mock sample covariance matrix only if it doesn't already exist. even finding all the (existing) xi_filenames is rather slow
-                stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') # no jackknife
+                stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project=project_common, kind='particle2_correlation', weight='default-FKP') # no jackknife
                 xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
                 print_and_log(f"Found {len(xi_filenames)} realizations for {mock_cov_name}")
                 my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
@@ -173,14 +174,15 @@ for tracer, z_range in zip(tracers, zs):
         # set the mock covariance matrix filename
         mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
         if not os.path.exists(mock_cov_name): # make the mock sample covariance matrix only if it doesn't already exist. even finding all the (existing) xi_filenames is rather slow
-            stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') # no jackknife
+            stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project=project_common, kind='particle2_correlation', weight='default-FKP') # no jackknife
             xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
             print_and_log(f"Found {len(xi_filenames)} realizations for {mock_cov_name}")
             my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
     for mock_id in mock_ids:
         # obtain the counts names
-        reg_counts_names = [get_stats_fn(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') for reg in regs] # no jackknife
+        reg_counts_names = [get_stats_fn(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project=project_common, kind='particle2_correlation', weight='default-FKP') for reg in regs] # no jackknife
+        if any(not os.path.isfile(fn) for fn in reg_counts_names): reg_counts_names = [get_stats_fn(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=z_range, stats_dir=".", project='full_shape/base', kind='particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=njack)) for reg in regs] # fall back to local counts with jackknives
         cov_dir = f"cov_txt/{version}/mock{mock_id}" # reset the cov_dir name
 
         if len(reg_counts_names) == len(regs): # if we have pycorr files for all regions

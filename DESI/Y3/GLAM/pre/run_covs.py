@@ -65,7 +65,7 @@ id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
-# only the tracer/z-bin combos with recon_particle2_correlation counts available under bao/base for mock150
+# cleaned up fiducial tracers and z ranges
 tracers = ['BGS_BRIGHT-21.35'] + ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['QSO', 'LRG+ELG_LOPnotqso']
 zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 2.1), (0.8, 1.1)]
 # need 2 * 8 = 16 jobs in this array
