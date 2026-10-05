@@ -21,7 +21,7 @@ rmax = 180 # maximum output cov radius in Mpc/h
 
 jackknife = 1
 njack = 60 if jackknife else None
-make_mock_cov = 0
+make_mock_cov = 1
 
 skip_r_bins = 5
 skip_l = 0
@@ -121,10 +121,11 @@ for tracer, z_range in zip(tracers, zs):
         if make_mock_cov:
             # set the mock covariance matrix filename
             mock_cov_name = f"cov_txt/{version}/{recon_spec}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
-            # Make the mock sample covariance matrix
-            stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') # no jackknife
-            xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
-            my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
+            if not os.path.isfile(mock_cov_name): # make the mock sample covariance matrix only if it doesn't already exist. even finding all the (existing) xi_filenames is rather slow
+                stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') # no jackknife
+                xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
+                print_and_log(f"Found {len(xi_filenames)} realizations for {mock_cov_name}")
+                my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
         for mock_id in mock_ids:
             outdir = os.path.join('outdirs', version, recon_spec, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
@@ -173,10 +174,11 @@ for tracer, z_range in zip(tracers, zs):
     if make_mock_cov:
         # set the mock covariance matrix filename
         mock_cov_name = f"cov_txt/{version}/{recon_spec}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
-        # Make the mock sample covariance matrix
-        stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') # no jackknife
-        xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
-        my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
+        if not os.path.exists(mock_cov_name): # make the mock sample covariance matrix only if it doesn't already exist. even finding all the (existing) xi_filenames is rather slow
+            stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') # no jackknife
+            xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
+            print_and_log(f"Found {len(xi_filenames)} realizations for {mock_cov_name}")
+            my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
     for mock_id in mock_ids:
         # obtain the counts names
