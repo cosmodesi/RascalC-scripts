@@ -6,11 +6,10 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128 # 128 hyperthreads = 64 physical cores
 #SBATCH --job-name=RascalC-Y3-v2-recon
-##SBATCH --array=0-15 # all jobs
-#SBATCH --array=14-15 # LRG+ELG
+#SBATCH --array=0-15 # all jobs
 
 # load cosmodesi environment
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main
-module unload desi-clustering # use locally installed desi-clustering if uncommented, otherwise use the global one from cosmodesi environment
+# module unload desi-clustering # use locally installed desi-clustering if uncommented, otherwise use the global one from cosmodesi environment
 
 python -u run_covs.py $SLURM_ARRAY_TASK_ID
