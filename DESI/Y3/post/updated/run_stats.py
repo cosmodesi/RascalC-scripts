@@ -98,12 +98,11 @@ if __name__ == '__main__':
     stats = ['recon_particle2_correlation']
     do_jackknife = True
     postprocess = ['combine_regions']
-    analysis = 'bao'
-    project  = f'{analysis}/with_desi-clustering'
+    analysis = 'protected'
+    project  = f'{analysis}/base'
     weight   = 'default-FKP'
     regions  = ['NGC', 'SGC']
-    # tracers  = ['BGS_BRIGHT-21.35', 'LRG', 'ELG_LOPnotqso', 'LRG+ELG_LOPnotqso', 'QSO']
-    tracers  = ['LRG+ELG_LOPnotqso']
+    tracers  = ['BGS_BRIGHT-21.35', 'LRG', 'ELG_LOPnotqso', 'LRG+ELG_LOPnotqso', 'QSO']
 
     # onthefly = 'reshuffle'
     # onthefly = 'complete'
