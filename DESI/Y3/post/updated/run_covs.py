@@ -59,8 +59,6 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 # Settings for filenames
 version = 'data-dr2-v2'
 
-stats_dir = '/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_statistics'
-
 id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
@@ -110,7 +108,7 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved counts (post-recon pair counts from shared location)
-allcounts_filenames = [get_stats_fn(version=version, tracer=corlabel, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/with_desi-clustering', kind='recon_particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=njack)) for corlabel in corlabels]
+allcounts_filenames = [get_stats_fn(version=version, tracer=corlabel, region=reg, zrange=z_range, stats_dir='.', project='protected/base', kind='recon_particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=njack)) for corlabel in corlabels]
 print("allcounts filenames:", allcounts_filenames)
 
 # Load counts and correlations
