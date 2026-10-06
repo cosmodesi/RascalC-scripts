@@ -31,8 +31,6 @@ xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
 # Settings for filenames
 version = 'data-dr2-v2'
 
-stats_dir = '/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_statistics'
-
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
@@ -155,8 +153,8 @@ for tracer, z_range in zip(tracers, zs):
             my_make(cov_name_jack, [results_name_jack], lambda: export_cov_legendre(results_name_jack, max_l, cov_name_jack))
             # Recipe: run convert cov
 
-    # obtain the counts names (use jackknife pair counts since non-jackknife don't exist at bao/with_desi-clustering)
-    reg_counts_names = [get_stats_fn(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/with_desi-clustering', kind='recon_particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=60)) for reg in regs]
+    # obtain the counts names (use jackknife pair counts since non-jackknife have not been created)
+    reg_counts_names = [get_stats_fn(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir='.', project='protected/base', kind='recon_particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=60)) for reg in regs]
 
     if len(reg_counts_names) == len(regs): # if we have count files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions
