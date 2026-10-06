@@ -70,11 +70,11 @@ zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
-nrandoms = {'BGS_BRIGHT-21.35': 2, 'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'QSO': 4}[tlabels[0]]
+nrandoms = {'BGS_BRIGHT-21.35': 1, 'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'QSO': 4}[tlabels[0]]
 
 # set the number of integration loops based on tracer, z range and region
-n_loops = {'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 1536,
-                                             'NGC': 768}},
+n_loops = {'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 3072,
+                                              'NGC': 1536}},
            'LRG': {(0.4, 0.6): {'SGC': 2048,
                                 'NGC': 2048},
                    (0.6, 0.8): {'SGC': 2048,
