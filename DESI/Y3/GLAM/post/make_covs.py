@@ -183,6 +183,7 @@ for tracer, z_range in zip(tracers, zs):
     for mock_id in mock_ids:
         # obtain the counts names
         reg_counts_names = [get_stats_fn(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='bao/base', kind='recon_particle2_correlation', weight='default-FKP') for reg in regs] # no jackknife
+        if any(not os.path.isfile(fn) for fn in reg_counts_names): reg_counts_names = [get_stats_fn(version=version, imock=mock_id, tracer=tracer, region=reg, zrange=z_range, stats_dir=".", project='bao/base', kind='recon_particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=njack)) for reg in regs] # fall back to local counts with jackknives
         cov_dir = f"cov_txt/{version}/{recon_spec}/mock{mock_id}" # reset the cov_dir name
 
         if len(reg_counts_names) == len(regs): # if we have pycorr files for all regions
