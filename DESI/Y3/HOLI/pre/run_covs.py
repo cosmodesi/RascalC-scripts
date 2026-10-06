@@ -12,9 +12,10 @@ import argparse
 
 setup_logging()
 
-parser = argparse.ArgumentParser(description = "Main RascalC computation script for DESI Y3 HOLI mocks pre-recon single-tracer")
-parser.add_argument("id", type = int, help = "number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
-parser.add_argument("-t", "--test", action = "store_true", help = "test the input files, abort before the main computation")
+parser = argparse.ArgumentParser(description="Main RascalC computation script for DESI Y3 HOLI mocks pre-recon (single tracers and LRG+ELG combined tracer)")
+parser.add_argument("id", type=int, help="number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
+parser.add_argument("--mock_id", type=int, help="ID of the mock catalog to use", default=0)
+parser.add_argument("-t", "--test", action="store_true", help="test the input files, abort before the main computation")
 args = parser.parse_args()
 
 def preserve(filename: str, max_num: int = 10) -> None: # if the file/directory exists, rename it with a numeric suffix
@@ -37,7 +38,6 @@ njack = 60 # set None to turn off jackknife
 periodic_boxsize = None # aperiodic if None (or 0)
 
 # Covariance matrix binning
-# nbin = 50 # number of radial bins for output cov
 r_step = 4 # step in radial bins for output cov
 mbin = None # number of angular (mu) bins to use for projections, None means to keep the original number from counts files
 skip_nbin_pre = 0 # number of first radial bins to exclude before running the C++ code
@@ -45,7 +45,6 @@ skip_nbin_post = 5 # number of first radial bins to exclude at post-processing, 
 skip_l_post = 0 # number of higher (even) multipoles to exclude at post-processing
 
 # Input correlation function binning
-# nbin_cf = 100 # number of radial bins for input 2PCF
 r_step_cf = 2 # step in radial bins for input 2PCF
 mbin_cf = 10 # number of angular (mu) bins for input 2PCF
 
@@ -60,46 +59,37 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 # Settings for filenames
 version_dark = 'holi-v4-altmtl'
 version_bright = 'holi-bgs-v2-altmtl'
-mock_id = 0
+mock_id : int = args.mock_id
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
-tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['LRG+ELG_LOPnotqso', 'BGS_BRIGHT-21.5'] + ['BGS_BRIGHT-21.35'] * 2 + ['BGS_BRIGHT-20.2'] * 2 + ['QSO']
-zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 1.1), (0.1, 0.4), (0.1, 0.4), (0.25, 0.4), (0.1, 0.25), (0.1, 0.4), (0.8, 2.1)]
-# need 2 * 12 = 24 jobs in this array
+# cleaned up fiducial tracers and z ranges
+tracers = ['BGS_BRIGHT-21.35'] + ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['QSO', 'LRG+ELG_LOPnotqso']
+zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 2.1), (0.8, 1.1)]
+# need 2 * 8 = 16 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
-nrandoms = {'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'BGS_BRIGHT-21.35': 2, 'QSO': 4}[tlabels[0]]
-
-if tlabels[0] == 'BGS_BRIGHT-20.2': N3 *= 2; N4 *= 4 # due to convergence issues
+nrandoms = {'BGS_BRIGHT-21.35': 2, 'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'QSO': 4}[tlabels[0]]
 
 # set the number of integration loops based on tracer, z range and region
-n_loops = {'LRG': {(0.4, 0.6): {'SGC': 1536,
+n_loops = {'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 1536,
+                                             'NGC': 512}},
+           'LRG': {(0.4, 0.6): {'SGC': 1536,
                                 'NGC': 1536},
                    (0.6, 0.8): {'SGC': 1536,
                                 'NGC': 1024},
                    (0.8, 1.1): {'SGC': 1024,
                                 'NGC': 768}},
+           'LRG+ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 768,
+                                              'NGC': 512}},
            'ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 768,
                                           'NGC': 512},
                              (1.1, 1.6): {'SGC': 512,
                                           'NGC': 384}},
-           'LRG+ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 768,
-                                              'NGC': 512}},
-           'BGS_BRIGHT-21.5': {(0.1, 0.4): {'SGC': 2048,
-                                            'NGC': 1024}},
-           'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 1536,
-                                             'NGC': 512},
-                                (0.25, 0.4): {'SGC': 2048,
-                                              'NGC': 768}},
-           'BGS_BRIGHT-20.2': {(0.1, 0.25): {'SGC': 4096,
-                                             'NGC': 2048},
-                               (0.1, 0.4): {'SGC': 1024,
-                                            'NGC': 512}},
            'QSO': {(0.8, 2.1): {'SGC': 256,
                                 'NGC': 256}}}[tlabels[0]][z_range][reg]
 
@@ -142,13 +132,13 @@ ndata = [None] * ntracers_max
 for t, tlabel in enumerate(tlabels):
     catalog_options = dict(version=version, imock=mock_id, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, weight="default-FKP")
     catalog_options = propose_fiducial(kind='catalog', tracer=tlabel, zrange=z_range, analysis='full_shape') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
+    data_catalog = read_clustering_catalog(kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP". For the combined tracer, data should be read first to set the data counts for random reweighting
     random_catalog = read_clustering_catalog(kind='randoms', expand={'parent_randoms_fn': get_catalog_fn(kind='parent_randoms', version='data-dr2-v2', tracer=tlabel, nran=nrandoms)}, **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
     randoms_weights[t] = random_catalog["INDWEIGHT"]
-    data_catalog = read_clustering_catalog(kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
     ndata[t] = np.sum(data_catalog["INDWEIGHT"])**2 / np.sum(data_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
     if njack: # create jackknives
-        subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
-        randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
+        subsampler = KMeansSubsampler('angular', positions=[data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type='rdd', dtype='f8', nsamples=njack, nside=512, random_state=42)
+        randoms_samples[t] = subsampler.label(positions=[random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type='rdd')
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
 del random_catalog, data_catalog # free up memory
@@ -158,14 +148,14 @@ if args.test: sys.exit(0)
 preserve(outdir) # rename the directory if it exists to prevent overwriting, but avoid doing this for a test run and in cases when the script fails at an earlier stage
 
 # Run the main code, post-processing and extra convergence check
-results = run_cov(mode = mode, max_l = max_l, boxsize = periodic_boxsize,
-                  nthread = nthread, N2 = N2, N3 = N3, N4 = N4, n_loops = n_loops, loops_per_sample = loops_per_sample,
-                  allcounts_11 = allcounts[0], allcounts_12 = allcounts[1], allcounts_22 = allcounts[2],
-                  xi_table_11 = input_xis[0], xi_table_12 = input_xis[1], xi_table_22 = input_xis[2],
-                  no_data_galaxies1 = ndata[0], no_data_galaxies2 = ndata[1],
-                  position_type = "rdd",
-                  randoms_positions1 = randoms_positions[0], randoms_weights1 = randoms_weights[0], randoms_samples1 = randoms_samples[0],
-                  randoms_positions2 = randoms_positions[1], randoms_weights2 = randoms_weights[1], randoms_samples2 = randoms_samples[1],
-                  normalize_wcounts = True,
-                  out_dir = outdir, tmp_dir = tmpdir,
-                  skip_s_bins = skip_nbin_post, skip_l = skip_l_post)
+results = run_cov(mode=mode, max_l=max_l, boxsize=periodic_boxsize,
+                  nthread=nthread, N2=N2, N3=N3, N4=N4, n_loops=n_loops, loops_per_sample=loops_per_sample,
+                  allcounts_11=allcounts[0], allcounts_12=allcounts[1], allcounts_22=allcounts[2],
+                  xi_table_11=input_xis[0], xi_table_12=input_xis[1], xi_table_22=input_xis[2],
+                  no_data_galaxies1=ndata[0], no_data_galaxies2=ndata[1], effective_no_def=True,
+                  position_type="rdd",
+                  randoms_positions1=randoms_positions[0], randoms_weights1=randoms_weights[0], randoms_samples1=randoms_samples[0],
+                  randoms_positions2=randoms_positions[1], randoms_weights2=randoms_weights[1], randoms_samples2=randoms_samples[1],
+                  normalize_wcounts=True,
+                  out_dir=outdir, tmp_dir=tmpdir,
+                  skip_s_bins=skip_nbin_post, skip_l=skip_l_post)
