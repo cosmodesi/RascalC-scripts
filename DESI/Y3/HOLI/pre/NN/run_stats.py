@@ -109,7 +109,7 @@ if __name__ == '__main__':
     postprocess = ['combine_regions']
     analysis = 'full_shape'
     project  = f'{analysis}/base'
-    weight   = 'default-FKP'
+    weight   = 'default-nn-FKP' # need the 'nn' piece to handle the NN (nearest neighbor) weights properly
     regions  = ['NGC', 'SGC']
     # tracers = ['BGS_BRIGHT-21.35', 'LRG', 'ELG_LOPnotqso', 'LRG+ELG_LOPnotqso', 'QSO']
     # tracer_zranges = {tracer: None for tracer in tracers} # use None to run the default ranges

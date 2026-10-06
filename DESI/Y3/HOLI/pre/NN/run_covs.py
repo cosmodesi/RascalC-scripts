@@ -109,7 +109,8 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved counts
-allcounts_filenames = [get_stats_fn(version=version, imock=mock_id, tracer=corlabel, region=reg, zrange=z_range, stats_dir='.', project='full_shape/base', kind='particle2_correlation', weight='default-FKP', jackknife=dict(nsplits=njack)) for corlabel in corlabels]
+weight = 'default-nn-FKP' # need the 'nn' piece to handle the NN (nearest neighbor) weights properly
+allcounts_filenames = [get_stats_fn(version=version, imock=mock_id, tracer=corlabel, region=reg, zrange=z_range, stats_dir='.', project='full_shape/base', kind='particle2_correlation', weight=weight, jackknife=dict(nsplits=njack)) for corlabel in corlabels]
 print("allcounts filenames:", allcounts_filenames)
 
 # Load counts and correlations
@@ -130,10 +131,10 @@ randoms_weights = [None] * ntracers_max
 randoms_samples = [None] * ntracers_max
 ndata = [None] * ntracers_max
 for t, tlabel in enumerate(tlabels):
-    catalog_options = dict(version=version, imock=mock_id, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, weight="default-FKP")
+    catalog_options = dict(version=version, imock=mock_id, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, weight=weight)
     catalog_options = propose_fiducial(kind='catalog', tracer=tlabel, zrange=z_range, analysis='full_shape') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
-    data_catalog = read_clustering_catalog(kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP". For the combined tracer, data should be read first to set the data counts for random reweighting
-    random_catalog = read_clustering_catalog(kind='randoms', expand={'parent_randoms_fn': get_catalog_fn(kind='parent_randoms', version='data-dr2-v2', tracer=tlabel, nran=nrandoms)}, **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
+    data_catalog = read_clustering_catalog(kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-nn-FKP". For the combined tracer, data should be read first to set the data counts for random reweighting
+    random_catalog = read_clustering_catalog(kind='randoms', expand={'parent_randoms_fn': get_catalog_fn(kind='parent_randoms', version='data-dr2-v2', tracer=tlabel, nran=nrandoms)}, **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-nn-FKP"
     randoms_weights[t] = random_catalog["INDWEIGHT"]
     ndata[t] = np.sum(data_catalog["INDWEIGHT"])**2 / np.sum(data_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
     if njack: # create jackknives
