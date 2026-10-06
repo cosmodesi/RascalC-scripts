@@ -94,7 +94,6 @@ if __name__ == '__main__':
     check_for_existing_measurements = True
     
     imocks2run = 150 + np.arange(5)
-    # imocks2run = np.arange(1)
     # stats_dir  = Path(os.getenv('SCRATCH')) / 'cai-dr2-benchmarks'
     # if version == 'holi-v3-altmtl':
     #     # do not perform measurements on dubious mocks
