@@ -89,11 +89,12 @@ def postprocess_stats(tracer='LRG', analysis='full_shape', project='', version='
 if __name__ == '__main__':
 
     stats, postprocess = [], []
-    version_dark = 'holi-v4-altmtl'
-    version_bright = 'holi-bgs-v2-altmtl'
+    version_dark = 'holi-v4-altmtl-NN'
+    version_bright = 'holi-bgs-v2-altmtl-NN' # this probably doesn't exist yet
     check_for_existing_measurements = True
     
-    imocks2run = np.arange(5)
+    # imocks2run = np.arange(5)
+    imocks2run = np.arange(1)
     # stats_dir  = Path(os.getenv('SCRATCH')) / 'cai-dr2-benchmarks'
     # if version == 'holi-v3-altmtl':
     #     # do not perform measurements on dubious mocks
@@ -112,7 +113,8 @@ if __name__ == '__main__':
     regions  = ['NGC', 'SGC']
     # tracers = ['BGS_BRIGHT-21.35', 'LRG', 'ELG_LOPnotqso', 'LRG+ELG_LOPnotqso', 'QSO']
     # tracer_zranges = {tracer: None for tracer in tracers} # use None to run the default ranges
-    tracer_zranges  = {'BGS_BRIGHT-21.35': [(0.1, 0.4)], 'LRG': [(0.6, 0.8)], 'ELG_LOPnotqso': [(1.1, 1.6)], 'LRG+ELG_LOPnotqso': [(0.8, 1.1)], 'QSO': [(0.8, 2.1)]} # 1 zrange per tracer for 5 mocks, corresponding to following RascalC runs
+    tracer_zranges = {'ELG_LOPnotqso': None}
+    # tracer_zranges  = {'BGS_BRIGHT-21.35': [(0.1, 0.4)], 'LRG': [(0.6, 0.8)], 'ELG_LOPnotqso': [(1.1, 1.6)], 'LRG+ELG_LOPnotqso': [(0.8, 1.1)], 'QSO': [(0.8, 2.1)]} # 1 zrange per tracer for 5 mocks, corresponding to following RascalC runs
     max_mocks_per_batch = 1
 
     # onthefly = 'reshuffle'
