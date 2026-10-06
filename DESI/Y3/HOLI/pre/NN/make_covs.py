@@ -41,8 +41,10 @@ stats_dir = '/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_stat
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
 
-tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['BGS_BRIGHT-21.35', 'QSO', 'LRG+ELG_LOPnotqso']
-zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.1, 0.4), (0.8, 2.1), (0.8, 1.1)]
+# tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['BGS_BRIGHT-21.35', 'QSO', 'LRG+ELG_LOPnotqso']
+# zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.1, 0.4), (0.8, 2.1), (0.8, 1.1)]
+tracers = ['ELG_LOPnotqso'] * 2
+zs = [(0.8, 1.1), (1.1, 1.6)]
 
 hash_dict_file = "make_covs.hash_dict.asdf"
 if os.path.isfile(hash_dict_file):
@@ -119,9 +121,9 @@ for tracer, z_range in zip(tracers, zs):
     for reg in regs:
         if make_mock_cov:
             # set the mock covariance matrix filename
-            mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
+            mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_NN_FKP_lin{r_step}_cov_sample.txt"
             if not os.path.isfile(mock_cov_name): # make the mock sample covariance matrix only if it doesn't already exist. even finding all the (existing) xi_filenames is rather slow
-                stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project=project_common, kind='particle2_correlation', weight='default-FKP') # no jackknife
+                stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project=project_common, kind='particle2_correlation', weight='default-nn-FKP') # no jackknife
                 xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
                 print_and_log(f"Found {len(xi_filenames)} realizations for {mock_cov_name}")
                 my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
@@ -172,9 +174,9 @@ for tracer, z_range in zip(tracers, zs):
     
     if make_mock_cov:
         # set the mock covariance matrix filename
-        mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample.txt"
+        mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_NN_FKP_lin{r_step}_cov_sample.txt"
         if not os.path.exists(mock_cov_name): # make the mock sample covariance matrix only if it doesn't already exist. even finding all the (existing) xi_filenames is rather slow
-            stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project=project_common, kind='particle2_correlation', weight='default-FKP') # no jackknife
+            stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project=project_common, kind='particle2_correlation', weight='default-nn-FKP') # no jackknife
             xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
             print_and_log(f"Found {len(xi_filenames)} realizations for {mock_cov_name}")
             my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
