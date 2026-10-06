@@ -7,7 +7,7 @@ import hashlib
 from typing import Callable
 import traceback
 import numpy as np
-from clustering_statistics.tools import get_stats_fn, propose_fiducial
+from clustering_statistics.tools import get_stats_fn
 from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect_raw_covariance_matrices
 from RascalC import post_process_auto
 from RascalC.utils import blank_function
