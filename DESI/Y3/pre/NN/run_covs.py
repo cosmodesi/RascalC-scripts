@@ -58,7 +58,8 @@ N3 = 10 # number of third cells/particles per secondary cell/particle
 N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
-version = 'data-dr2-v2.1'
+version = 'data-dr2-v2-cmblens'
+weight = 'default-nn-FKP'
 
 id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
@@ -106,7 +107,7 @@ corlabels = [tlabels[0]]
 if len(tlabels) == 2: corlabels += ["_".join(tlabels), tlabels[1]] # cross-correlation comes between the auto-correlatons
 
 # Filenames for saved counts
-allcounts_filenames = [get_stats_fn(version=version, tracer=corlabel, region=reg, zrange=z_range, stats_dir='.', project='protected/base', kind='particle2_correlation', weight='default-FKP-bitwise-iip', jackknife=dict(nsplits=njack)) for corlabel in corlabels]
+allcounts_filenames = [get_stats_fn(version=version, tracer=corlabel, region=reg, zrange=z_range, stats_dir='.', project='protected/base', kind='particle2_correlation', weight=weight, jackknife=dict(nsplits=njack)) for corlabel in corlabels]
 print("allcounts filenames:", allcounts_filenames)
 
 # Load counts and correlations
@@ -127,9 +128,8 @@ randoms_weights = [None] * ntracers_max
 randoms_samples = [None] * ntracers_max
 ndata = [None] * ntracers_max
 for t, tlabel in enumerate(tlabels):
-    catalog_options = dict(version=version, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, weight='default-FKP-bitwise-iip')
+    catalog_options = dict(version=version, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, weight=weight)
     catalog_options = propose_fiducial(kind='catalog', tracer=tlabel, zrange=z_range, analysis='protected') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
-    catalog_options['binned_weight'] = read_catalog(kind='full_data', **catalog_options).attrs # needed to apply NTILE-missing_power weight correction, which is similar to f_tile (FRAC_TLOBS_TILES) for nonKP for PIP here (PIP automatically selected given IIP in weights)
     random_catalog = read_clustering_catalog(kind='randoms', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
     randoms_weights[t] = random_catalog["INDWEIGHT"]
     data_catalog = read_clustering_catalog(kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
