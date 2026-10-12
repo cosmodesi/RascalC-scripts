@@ -6,9 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128 # 128 hyperthreads = 64 physical cores
 #SBATCH --job-name=RascalC-Y3-v2.1-PIP
-##SBATCH --array=0-23 # full job array
-##SBATCH --array=0-9,14,15,22,23 # LRG, ELG, BGS_BRIGHT-21.35 z0.1-0.4, and QSO
-#SBATCH --array=6-9 # ELG z0.8-1.1 and z1.1-1.6
+#SBATCH --array=8-11 # ELG z0.8-1.1 and z1.1-1.6
 
 # load cosmodesi environment
 source /global/common/software/desi/users/adematti/cosmodesi_environment.sh main

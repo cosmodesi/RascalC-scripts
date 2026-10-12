@@ -64,19 +64,19 @@ id = args.id # SLURM_JOB_ID to decide what this one has to do
 reg = "NGC" if id%2 else "SGC" # region for filenames
 
 id //= 2 # extracted all needed info from parity, move on
-tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['LRG+ELG_LOPnotqso', 'BGS_BRIGHT-21.5'] + ['BGS_BRIGHT-21.35'] * 2 + ['BGS_BRIGHT-20.2'] * 2 + ['QSO']
-zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 1.1), (0.1, 0.4), (0.1, 0.4), (0.25, 0.4), (0.1, 0.25), (0.1, 0.4), (0.8, 2.1)]
-# need 2 * 12 = 24 jobs in this array
+tracers = ['BGS_BRIGHT-21.35'] + ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['QSO', 'LRG+ELG_LOPnotqso']
+zs = [(0.1, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.8, 2.1), (0.8, 1.1)]
+# need 2 * 7 = 14 jobs in this array
 
 tlabels = [tracers[id]] # tracer labels for filenames
 z_range = tuple(zs[id]) # for redshift cut and filenames
 z_min, z_max = z_range
 nrandoms = {'LRG': 4, 'ELG_LOPnotqso': 5, 'LRG+ELG_LOPnotqso': 5, 'BGS_BRIGHT-21.35': 2, 'QSO': 4}[tlabels[0]]
 
-if tlabels[0] == 'BGS_BRIGHT-20.2': N3 *= 2; N4 *= 4 # due to convergence issues
-
 # set the number of integration loops based on tracer, z range and region
-n_loops = {'LRG': {(0.4, 0.6): {'SGC': 1536,
+n_loops = {'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 1536,
+                                             'NGC': 512}},
+           'LRG': {(0.4, 0.6): {'SGC': 1536,
                                 'NGC': 1536},
                    (0.6, 0.8): {'SGC': 1536,
                                 'NGC': 1024},
@@ -88,16 +88,6 @@ n_loops = {'LRG': {(0.4, 0.6): {'SGC': 1536,
                                           'NGC': 384}},
            'LRG+ELG_LOPnotqso': {(0.8, 1.1): {'SGC': 768,
                                               'NGC': 512}},
-           'BGS_BRIGHT-21.5': {(0.1, 0.4): {'SGC': 2048,
-                                            'NGC': 1024}},
-           'BGS_BRIGHT-21.35': {(0.1, 0.4): {'SGC': 1536,
-                                             'NGC': 512},
-                                (0.25, 0.4): {'SGC': 2048,
-                                              'NGC': 768}},
-           'BGS_BRIGHT-20.2': {(0.1, 0.25): {'SGC': 4096,
-                                             'NGC': 2048},
-                               (0.1, 0.4): {'SGC': 1024,
-                                            'NGC': 512}},
            'QSO': {(0.8, 2.1): {'SGC': 256,
                                 'NGC': 256}}}[tlabels[0]][z_range][reg]
 
@@ -146,8 +136,8 @@ for t, tlabel in enumerate(tlabels):
     ndata[t] = np.sum(data_catalog["INDWEIGHT"])**2 / np.sum(data_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
     print(f"ndata: naive={len(data_catalog)}, effective={ndata[t]}")
     if njack: # create jackknives
-        subsampler = KMeansSubsampler('angular', positions = [data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type = 'rdd', dtype='f8', nsamples = njack, nside = 512, random_state = 42)
-        randoms_samples[t] = subsampler.label(positions = [random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type = 'rdd')
+        subsampler = KMeansSubsampler('angular', positions=[data_catalog["RA"], data_catalog["DEC"], data_catalog["Z"]], position_type='rdd', dtype='f8', nsamples=njack, nside=512, random_state=42)
+        randoms_samples[t] = subsampler.label(positions=[random_catalog["RA"], random_catalog["DEC"], random_catalog["Z"]], position_type='rdd')
     # compute comoving distance
     randoms_positions[t] = [random_catalog["RA"], random_catalog["DEC"], cosmology.comoving_radial_distance(random_catalog["Z"])]
 del random_catalog, data_catalog # free up memory
