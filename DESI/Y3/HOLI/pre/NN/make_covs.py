@@ -38,7 +38,7 @@ mock_ids = np.arange(5)
 
 stats_dir = '/dvs_ro/cfs/cdirs/desi/science/cai/desi-clustering/dr2/summary_statistics'
 weight = 'default-nn-FKP' # need the 'nn' piece to handle the NN (nearest neighbor) weights properly
-weight_alt = 'default_NN_FKP'
+weight_label = 'default_NN_FKP'
 
 regs = ('SGC', 'NGC') # regions for filenames
 reg_comb = "GCcomb"
@@ -123,7 +123,7 @@ for tracer, z_range in zip(tracers, zs):
     for reg in regs:
         if make_mock_cov:
             # set the mock covariance matrix filename
-            mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_{weight_alt}_lin{r_step}_cov_sample.txt"
+            mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_{weight_label}_lin{r_step}_cov_sample.txt"
             if not os.path.isfile(mock_cov_name): # make the mock sample covariance matrix only if it doesn't already exist. even finding all the (existing) xi_filenames is rather slow
                 stats_kws = dict(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project=project_common, kind='particle2_correlation', weight=weight) # no jackknife
                 xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
@@ -148,7 +148,7 @@ for tracer, z_range in zip(tracers, zs):
             reg_results[mock_id].append(results_name)
 
             cov_dir = f"cov_txt/{version}/mock{mock_id}"
-            cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_{weight_alt}_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
+            cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_{weight_label}_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt"
 
             # RascalC results depend on full output (most straightforwardly)
             my_make(results_name, [raw_name],
@@ -169,14 +169,14 @@ for tracer, z_range in zip(tracers, zs):
                         lambda: post_process_auto(outdir, load_sample_cov=False, jackknife=True, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log))
                 # Recipe: run post-processing; extra convergence check included by default
 
-                cov_name_jack = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_{weight_alt}_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt"
+                cov_name_jack = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_{weight_label}_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt"
                 # Individual cov file depends on RascalC results
                 my_make(cov_name_jack, [results_name_jack], lambda: export_cov_legendre(results_name_jack, max_l, cov_name_jack))
                 # Recipe: run convert cov
     
     if make_mock_cov:
         # set the mock covariance matrix filename
-        mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_{weight_alt}_lin{r_step}_cov_sample.txt"
+        mock_cov_name = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_{weight_label}_lin{r_step}_cov_sample.txt"
         if not os.path.exists(mock_cov_name): # make the mock sample covariance matrix only if it doesn't already exist. even finding all the (existing) xi_filenames is rather slow
             stats_kws = dict(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir=stats_dir, project=project_common, kind='particle2_correlation', weight=weight) # no jackknife
             xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
@@ -193,7 +193,7 @@ for tracer, z_range in zip(tracers, zs):
             if len(reg_results[mock_id]) == len(regs): # if we have RascalC results for all regions
                 # Combined Gaussian cov
 
-                cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_{weight_alt}_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # combined cov name
+                cov_name = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_{weight_label}_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_Gaussian.txt" # combined cov name
 
                 # Comb cov depends on the region RascalC results
                 my_make(cov_name, reg_results[mock_id], lambda: combine_covs_legendre(*reg_results[mock_id], *reg_counts_names, cov_name, max_l, r_step=r_step, skip_r_bins=skip_r_bins, print_function=print_and_log))
@@ -201,7 +201,7 @@ for tracer, z_range in zip(tracers, zs):
 
             if jackknife and len(reg_results_jack[mock_id]) == len(regs): # if jackknife and we have RascalC jack results for all regions
                 # Combined rescaled cov
-                cov_name_jack = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_{weight_alt}_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # combined cov name
+                cov_name_jack = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_{weight_label}_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC.txt" # combined cov name
 
                 # Comb cov depends on the region RascalC results
                 my_make(cov_name_jack, reg_results_jack[mock_id], lambda: combine_covs_legendre(*reg_results_jack[mock_id], *reg_counts_names, cov_name_jack, max_l, r_step=r_step, skip_r_bins=skip_r_bins, print_function=print_and_log))

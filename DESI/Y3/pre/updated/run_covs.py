@@ -12,7 +12,7 @@ import argparse
 
 setup_logging()
 
-parser = argparse.ArgumentParser(description="Main RascalC computation script for DESI Y3 pre-recon single-tracer (using desi-clustering pipeline instead of desi-y3-kp)")
+parser = argparse.ArgumentParser(description="Main RascalC computation script for DESI Y3 (DR2) pre-recon single-tracer (using desi-clustering pipeline instead of desi-y3-kp)")
 parser.add_argument("id", type=int, help="number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
 parser.add_argument("-t", "--test", action="store_true", help="test the input files, abort before the main computation")
 args = parser.parse_args()

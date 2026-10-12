@@ -12,7 +12,7 @@ import argparse
 
 setup_logging()
 
-parser = argparse.ArgumentParser(description="Main RascalC computation script for DESI Y3 pre-recon single-tracer with IIP completeness weights from PIP catalogs (instead of default completeness weights from nonKP catalogs)")
+parser = argparse.ArgumentParser(description="Main RascalC computation script for DESI Y3 (DR2) pre-recon single-tracer with IIP completeness weights from PIP catalogs (instead of default completeness weights from nonKP catalogs)")
 parser.add_argument("id", type=int, help="number of the task in the array, encoding tracer, redshift bin and region (SGC/NGC)")
 parser.add_argument("-t", "--test", action="store_true", help="test the input files, abort before the main computation")
 args = parser.parse_args()
