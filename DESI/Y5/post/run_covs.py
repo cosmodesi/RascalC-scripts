@@ -14,6 +14,9 @@
 ### package/implementation -- does not guarantee spatially matching region labels even with
 ### matching nside/nsplits/random_state, and was suspected to cause a ~5x too-large, wrong
 ### NGC/SGC-ordered theory covariance for several tracers (see run_covs_cucount_jackknife_test.sh).
+### Misha: I think the real issue was missing 3/4 of the reconstructed random catalogs
+### (due to the caveats of catalog storage in parallelized run_recon.py, already fixed).
+### pycorr and cucount KMeansSubsampler's should match, but doesn't hurt to be extra sure.
 import sys, os
 import numpy as np
 import lsstypes
