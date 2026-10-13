@@ -130,9 +130,9 @@ for t, tlabel in enumerate(tlabels):
     catalog_options = dict(version=version, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, weight='default-FKP-bitwise-iip')
     catalog_options = propose_fiducial(kind='catalog', tracer=tlabel, zrange=z_range, analysis='protected') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
     catalog_options['binned_weight'] = read_catalog(kind='full_data', **catalog_options).attrs # needed to apply NTILE-missing_power weight correction, which is similar to f_tile (FRAC_TLOBS_TILES) for nonKP for PIP here (PIP automatically selected given IIP in weights)
+    data_catalog = read_clustering_catalog(kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP". For the combined tracer, data should be read first to set the data counts for random reweighting
     random_catalog = read_clustering_catalog(kind='randoms', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
     randoms_weights[t] = random_catalog["INDWEIGHT"]
-    data_catalog = read_clustering_catalog(kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
     ndata[t] = np.sum(data_catalog["INDWEIGHT"])**2 / np.sum(data_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
     print(f"ndata: naive={len(data_catalog)}, effective={ndata[t]}")
     if njack: # create jackknives
