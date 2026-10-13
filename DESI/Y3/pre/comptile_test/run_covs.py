@@ -59,6 +59,7 @@ N4 = 20 # number of fourth cells/particles per third cell/particle
 
 # Settings for filenames
 cat_dir = '/dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/analysis/loa-v1/LSScats/v2/comptile/'
+cat_ext = 'fits'
 version = 'data-dr2-v2-comptile'
 weight = 'default-FKP'
 
@@ -129,7 +130,7 @@ randoms_weights = [None] * ntracers_max
 randoms_samples = [None] * ntracers_max
 ndata = [None] * ntracers_max
 for t, tlabel in enumerate(tlabels):
-    catalog_options = dict(version=version, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, weight=weight)
+    catalog_options = dict(version=version, tracer=tlabel, region=reg, zrange=z_range, nran=nrandoms, concatenate=True, weight=weight, cat_dir=cat_dir, ext=cat_ext)
     catalog_options = propose_fiducial(kind='catalog', tracer=tlabel, zrange=z_range, analysis='protected') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
     random_catalog = read_clustering_catalog(kind='randoms', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
     randoms_weights[t] = random_catalog["INDWEIGHT"]

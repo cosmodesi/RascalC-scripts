@@ -18,7 +18,7 @@ from clustering_statistics import tools
 
 setup_logging()
 
-def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None, stats_dir=Path(os.getenv('SCRATCH')) / 'measurements', stats=['mesh2_spectrum'], weight='default-FKP', analysis='full_shape', regions=['NGC','SGC'], ibatch=None, postprocess=None, zranges=None, do_jackknife=False, cat_dir=None, **kwargs):
+def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None, stats_dir=Path(os.getenv('SCRATCH')) / 'measurements', stats=['mesh2_spectrum'], weight='default-FKP', analysis='full_shape', regions=['NGC','SGC'], ibatch=None, postprocess=None, zranges=None, do_jackknife=False, cat_dir=None, cat_ext=None, **kwargs):
     # Everything inside this function will be executed on the compute nodes;
     # This function must be self-contained; and cannot rely on imports from the outer scope.
     import os
@@ -43,7 +43,7 @@ def run_stats(tracer='LRG', project='', version='holi-v3-altmtl', onthefly=None,
                             'auw': True if 'altmtl' in version and onthefly is None and 'shape' in analysis else None}
         window_mesh2_spectrum = {'cut': True if 'shape' in analysis else None}
         
-        options = dict(catalog=dict(version=version, tracer=tracer, zrange=zranges, region=region, weight=weight, cat_dir=cat_dir), 
+        options = dict(catalog=dict(version=version, tracer=tracer, zrange=zranges, region=region, weight=weight, cat_dir=cat_dir, ext=cat_ext), 
                         mesh2_spectrum=mesh2_spectrum, window_mesh2_spectrum=window_mesh2_spectrum,
                         particle2_correlation={'jackknife': {'nsplits': 60}} if do_jackknife else {},
                         window_mesh3_spectrum={'ibatch': ibatch} if isinstance(ibatch, tuple) else {'computed_batches': ibatch})
@@ -90,6 +90,7 @@ if __name__ == '__main__':
     stats, postprocess = [], []
     version  = 'data-dr2-v2-comptile'
     cat_dir  = '/dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/analysis/loa-v1/LSScats/v2/comptile/'
+    cat_ext  = 'fits'
     
     # stats_dir  = tools.base_stats_dir
     stats_dir = Path(".")
@@ -115,7 +116,7 @@ if __name__ == '__main__':
         else:
             zranges = tools.propose_fiducial('zranges', tracer, analysis=analysis)
             
-        run_stats_kws = dict(tracer=tracer, stats_dir=stats_dir, project=project, version=version, stats=stats, analysis=analysis, onthefly=onthefly, zranges=zranges, regions=regions, weight=weight, do_jackknife=do_jackknife, cat_dir=cat_dir, postprocess=postprocess)
+        run_stats_kws = dict(tracer=tracer, stats_dir=stats_dir, project=project, version=version, stats=stats, analysis=analysis, onthefly=onthefly, zranges=zranges, regions=regions, weight=weight, do_jackknife=do_jackknife, cat_dir=cat_dir, cat_ext=cat_ext, postprocess=postprocess)
         run_stats(**run_stats_kws)
         # if postprocess:
         #     postprocess_stats(**run_stats_kws)
