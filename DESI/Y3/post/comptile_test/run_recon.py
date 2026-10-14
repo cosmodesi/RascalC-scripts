@@ -46,7 +46,7 @@ for reg in regs:
         print(f"  {reg}: {data_outfile} already exists, skipping")
         continue
 
-    catalog_options = dict(version=version, tracer=tracer, region=reg, zrange=recon_zrange, nran=nran_recon, weight="default-FKP", cat_dir=cat_dir, cat_ext=cat_ext)
+    catalog_options = dict(version=version, tracer=tracer, region=reg, zrange=recon_zrange, nran=nran_recon, weight="default-FKP", cat_dir=cat_dir, ext=cat_ext)
     catalog_options = propose_fiducial(kind='catalog', tracer=tracer, zrange=recon_zrange, analysis='bao') | catalog_options
 
     data_catalog = read_clustering_catalog(kind='data', **catalog_options)
