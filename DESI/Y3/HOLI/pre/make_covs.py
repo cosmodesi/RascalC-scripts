@@ -233,7 +233,7 @@ for tracer, z_range in zip(tracers, zs):
 
         if tracer in density_rescaling_tracers: # number of galaxies/density is known to mismatch between mocks and data for some tracers, so we try to scale the shot-noise rescaling accordingly to correct for this
             def make_density_rescaled_mock_cov(mock_cov_name: str, mock_cov_name_density_rescaled: str) -> None:
-                catalog_options = dict(tracer=tracer, region=reg_comb, zrange=z_range, weight="default-FKP")
+                catalog_options = dict(tracer=tracer, region='ALL', zrange=z_range, weight="default-FKP") # region='GCcomb' does not work here, instead region='ALL' should be ok
                 catalog_options = propose_fiducial(kind='catalog', tracer=tracer, zrange=z_range, analysis='full_shape') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
                 mock_catalog = read_clustering_catalog(version=version, imock=mock_ids[0], kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
                 N_eff_mock = np.sum(mock_catalog["INDWEIGHT"])**2 / np.sum(mock_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
