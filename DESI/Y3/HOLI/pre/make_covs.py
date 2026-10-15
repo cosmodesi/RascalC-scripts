@@ -130,6 +130,25 @@ for tracer, z_range in zip(tracers, zs):
                 print_and_log(f"Found {len(xi_filenames)} realizations for {mock_cov_name}")
                 my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
 
+        if tracer in density_rescaling_tracers: # number of galaxies/density is known to mismatch between mocks and data for some tracers, so we try to scale the shot-noise rescaling accordingly to correct for this
+            def make_density_rescaled_mock_cov(mock_cov_name: str, mock_cov_name_density_rescaled: str) -> None:
+                catalog_options = dict(tracer=tracer, region=reg_comb, zrange=z_range, weight="default-FKP")
+                catalog_options = propose_fiducial(kind='catalog', tracer=tracer, zrange=z_range, analysis='full_shape') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
+                mock_catalog = read_clustering_catalog(version=version, imock=mock_ids[0], kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
+                N_eff_mock = np.sum(mock_catalog["INDWEIGHT"])**2 / np.sum(mock_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
+                del mock_catalog # free up memory
+                data_catalog = read_clustering_catalog(version=data_version, kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
+                N_eff_data = np.sum(data_catalog["INDWEIGHT"])**2 / np.sum(data_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
+                del data_catalog # free up memory
+                ratio = N_eff_mock / N_eff_data
+                print_and_log(f"{tracer} {z_range} {reg_comb}: {N_eff_mock=}, {N_eff_data=}, mock/data {ratio=}")
+                cov = np.loadtxt(mock_cov_name)
+                cov *= ratio**2 # rescale the covariance by the square of the ratio of effective numbers. This should be right in the shot-noise dominated regime
+                np.savetxt(mock_cov_name_density_rescaled, cov, header=f"# generated from {mock_cov_name} by rescaling by the square of the mock/data {ratio=} of effective numbers")
+            
+            mock_cov_name_density_rescaled = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample_density_rescaled.txt"
+            my_make(mock_cov_name_density_rescaled, [mock_cov_name], lambda: make_density_rescaled_mock_cov(mock_cov_name, mock_cov_name_density_rescaled))
+
         for mock_id in mock_ids:
             outdir = os.path.join('outdirs', version, f"mock{mock_id}", "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}") # output file directory
             if not os.path.isdir(outdir): # try to find the dirs with suffixes and concatenate samples from them
@@ -211,6 +230,25 @@ for tracer, z_range in zip(tracers, zs):
             xi_filenames = get_stats_fn(imock='*', **stats_kws) # dubious mocks excluded by renaming their dirs
             print_and_log(f"Found {len(xi_filenames)} realizations for {mock_cov_name}")
             my_make(mock_cov_name, [], lambda: sample_cov_multipoles_from_lsstypes_files([xi_filenames], mock_cov_name, max_l=max_l, r_step=r_step, r_max=rmax)) # empty dependencies should result in making this only if the destination file is missing; checking hashes of ~1000 mock files has been taking long
+
+        if tracer in density_rescaling_tracers: # number of galaxies/density is known to mismatch between mocks and data for some tracers, so we try to scale the shot-noise rescaling accordingly to correct for this
+            def make_density_rescaled_mock_cov(mock_cov_name: str, mock_cov_name_density_rescaled: str) -> None:
+                catalog_options = dict(tracer=tracer, region=reg_comb, zrange=z_range, weight="default-FKP")
+                catalog_options = propose_fiducial(kind='catalog', tracer=tracer, zrange=z_range, analysis='full_shape') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
+                mock_catalog = read_clustering_catalog(version=version, imock=mock_ids[0], kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
+                N_eff_mock = np.sum(mock_catalog["INDWEIGHT"])**2 / np.sum(mock_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
+                del mock_catalog # free up memory
+                data_catalog = read_clustering_catalog(version=data_version, kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
+                N_eff_data = np.sum(data_catalog["INDWEIGHT"])**2 / np.sum(data_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
+                del data_catalog # free up memory
+                ratio = N_eff_mock / N_eff_data
+                print_and_log(f"{tracer} {z_range} {reg_comb}: {N_eff_mock=}, {N_eff_data=}, mock/data {ratio=}")
+                cov = np.loadtxt(mock_cov_name)
+                cov *= ratio**2 # rescale the covariance by the square of the ratio of effective numbers. This should be right in the shot-noise dominated regime
+                np.savetxt(mock_cov_name_density_rescaled, cov, header=f"# generated from {mock_cov_name} by rescaling by the square of mock/data {ratio=} of effective numbers")
+            
+            mock_cov_name_density_rescaled = f"cov_txt/{version}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_cov_sample_density_rescaled.txt"
+            my_make(mock_cov_name_density_rescaled, [mock_cov_name], lambda: make_density_rescaled_mock_cov(mock_cov_name, mock_cov_name_density_rescaled))
 
     for mock_id in mock_ids:
         # obtain the counts names
