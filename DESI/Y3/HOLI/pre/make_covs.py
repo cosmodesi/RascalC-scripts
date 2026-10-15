@@ -7,11 +7,11 @@ import hashlib
 from typing import Callable
 import traceback
 import numpy as np
-from clustering_statistics.tools import get_stats_fn
+from clustering_statistics.tools import get_stats_fn, read_clustering_catalog, propose_fiducial
 from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect_raw_covariance_matrices
 from RascalC import post_process_auto
 from RascalC.utils import blank_function
-from RascalC.cov_utils import export_cov_legendre
+from RascalC.cov_utils import export_cov_legendre, get_shot_noise_rescaling
 from RascalC.combine_regions import combine_covs_legendre
 from RascalC.lsstypes_utils.sample_cov_multipoles import sample_cov_multipoles_from_lsstypes_files
 
@@ -43,6 +43,9 @@ reg_comb = "GCcomb"
 
 tracers = ['LRG'] * 3 + ['ELG_LOPnotqso'] * 2 + ['BGS_BRIGHT-21.35', 'QSO', 'LRG+ELG_LOPnotqso']
 zs = [(0.4, 0.6), (0.6, 0.8), (0.8, 1.1), (0.8, 1.1), (1.1, 1.6), (0.1, 0.4), (0.8, 2.1), (0.8, 1.1)]
+
+density_rescaling_tracers = ['ELG_LOPnotqso', 'QSO'] # number of galaxies/density is known to mismatch between mocks and data for these tracers, so we try to scale the shot-noise rescaling accordingly to correct for this
+if density_rescaling_tracers: data_version = 'data-dr2-v2' # version of the data to use for density rescaling.
 
 hash_dict_file = "make_covs.hash_dict.asdf"
 if os.path.isfile(hash_dict_file):
@@ -116,6 +119,7 @@ for tracer, z_range in zip(tracers, zs):
     z_min, z_max = z_range
     reg_results = {mock_id: [] for mock_id in mock_ids}
     if jackknife: reg_results_jack = {mock_id: [] for mock_id in mock_ids}
+    if tracer in density_rescaling_tracers: reg_results_density_rescaled = {mock_id: [] for mock_id in mock_ids}
     for reg in regs:
         if make_mock_cov:
             # set the mock covariance matrix filename
@@ -169,6 +173,35 @@ for tracer, z_range in zip(tracers, zs):
                 # Individual cov file depends on RascalC results
                 my_make(cov_name_jack, [results_name_jack], lambda: export_cov_legendre(results_name_jack, max_l, cov_name_jack))
                 # Recipe: run convert cov
+
+                if tracer in density_rescaling_tracers: # number of galaxies/density is known to mismatch between mocks and data for some tracers, so we try to scale the shot-noise rescaling accordingly to correct for this
+                    results_name_density_rescaled = post_process_auto(outdir, out_dir=outdir+"/density_rescaled", load_sample_cov=False, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=blank_function, dry_run=True)["path"]
+                    reg_results_density_rescaled[mock_id].append(results_name_density_rescaled)
+        
+                    cov_name_density_rescaled = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_density_rescaled.txt"
+
+                    def post_process_density_rescaled(jackknife_results_name: str, outdir: str) -> None:
+                        alpha = get_shot_noise_rescaling(jackknife_results_name) # jackknife shot-noise rescaling
+                        catalog_options = dict(tracer=tracer, region=reg, zrange=z_range, weight="default-FKP")
+                        catalog_options = propose_fiducial(kind='catalog', tracer=tracer, zrange=z_range, analysis='full_shape') | catalog_options # fill missing options with proposed fiducial, but keep the existing ones
+                        mock_catalog = read_clustering_catalog(version=version, imock=mock_id, kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
+                        N_eff_mock = np.sum(mock_catalog["INDWEIGHT"])**2 / np.sum(mock_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
+                        del mock_catalog # free up memory
+                        data_catalog = read_clustering_catalog(version=data_version, kind='data', **catalog_options) # redshift cut already done since we provided zrange; INDWEIGHT multiplied by FKP due to weight="default-FKP"
+                        N_eff_data = np.sum(data_catalog["INDWEIGHT"])**2 / np.sum(data_catalog["INDWEIGHT"]**2) # probably better than just len(data_catalog) because insensitive to zero-weight objects and less sensitive to low-weight objects
+                        del data_catalog # free up memory
+                        ratio = N_eff_mock / N_eff_data
+                        print_and_log(f"{tracer} {z_range} {reg}: {N_eff_mock=}, {N_eff_data=}, mock/data {ratio=}")
+                        alpha *= ratio # rescale the shot-noise rescaling by the ratio of effective numbers. Shot noise goes as 1/n or 1/N, so alpha_mock * N_eff_mock / N_eff_data should be  correct
+                        post_process_auto(outdir, out_dir=outdir+"/density_rescaled", shot_noise_rescaling1=alpha, load_sample_cov=False, jackknife=False, skip_s_bins=skip_r_bins, skip_l=skip_l, print_function=print_and_log)
+        
+                    # RascalC results depend on full output (most straightforwardly), but now also on the jackknife results (via shot-noise rescaling)
+                    my_make(results_name_density_rescaled, [raw_name, results_name_jack], lambda: post_process_density_rescaled(results_name_jack, outdir))
+                    # Recipe: run post-processing; extra convergence check included by default
+        
+                    # Individual cov file depends on RascalC results
+                    my_make(cov_name_density_rescaled, [results_name_density_rescaled], lambda: export_cov_legendre(results_name_density_rescaled, max_l, cov_name_density_rescaled))
+                    # Recipe: export cov
     
     if make_mock_cov:
         # set the mock covariance matrix filename
@@ -201,6 +234,14 @@ for tracer, z_range in zip(tracers, zs):
 
                 # Comb cov depends on the region RascalC results
                 my_make(cov_name_jack, reg_results_jack[mock_id], lambda: combine_covs_legendre(*reg_results_jack[mock_id], *reg_counts_names, cov_name_jack, max_l, r_step=r_step, skip_r_bins=skip_r_bins, print_function=print_and_log))
+                # Recipe: run combine covs
+            
+            if tracer in density_rescaling_tracers and len(reg_results_density_rescaled[mock_id]) == len(regs): # if we have RascalC density-rescaled results for all regions
+                # Combined rescaled cov
+                cov_name_density_rescaled = f"{cov_dir}/xi" + xilabel + "_" + "_".join(tlabels + [reg_comb]) + f"_z{z_min}-{z_max}_default_FKP_lin{r_step}_s{rmin_real}-{rmax}_cov_RascalC_density_rescaled.txt" # combined cov name
+
+                # Comb cov depends on the region RascalC results
+                my_make(cov_name_density_rescaled, reg_results_density_rescaled[mock_id], lambda: combine_covs_legendre(*reg_results_density_rescaled[mock_id], *reg_counts_names, cov_name_density_rescaled, max_l, r_step=r_step, skip_r_bins=skip_r_bins, print_function=print_and_log))
                 # Recipe: run combine covs
 
 # Save the updated hash dictionary
