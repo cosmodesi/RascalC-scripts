@@ -39,7 +39,7 @@ def read_covariance_txt(txt_fn, srange=srange, sstep=sstep, ells=ells):
 def convert_covariance(txt_fn, dr_fn, tracer):
     """Convert one RascalC text covariance to the lsstypes file expected by the fits."""
     covariance = read_covariance_txt(txt_fn)
-    covariance = covariance.clone(observable=ObservableTree([covariance.observable], observables=['correlation2'],
+    covariance = covariance.clone(observable=ObservableTree([covariance.observable], observables=['correlation2recon'],
                                                            tracers=[(tools.get_simple_tracer(tracer),) * 2]))
     Path(dr_fn).parent.mkdir(parents=True, exist_ok=True)
     covariance.write(dr_fn)
