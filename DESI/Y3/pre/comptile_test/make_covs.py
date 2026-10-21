@@ -188,8 +188,7 @@ for tracer, z_range in zip(tracers, zs):
                     lambda: export_lsstypes_covariance_from_txt_legendre(cov_name_jack, covariance_fn, tracer=get_simple_tracer(tracer), recon=False, srange=(rmin_real, rmax), sstep=r_step, ells=ells, print_function=print_and_log))
 
 # Save the updated hash dictionary
-af = asdf.AsdfFile(dict(goal_deps_hashes=hash_dict))
-af.write_to(hash_dict_file)
+asdf.dump(dict(goal_deps_hashes=hash_dict), hash_dict_file)
 
 print_and_log(datetime.now())
 print_and_log("Finished execution.")

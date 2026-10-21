@@ -218,8 +218,7 @@ for tlabels, z_range in zip(tracers, zs):
             my_make(cov_name_cross, [cov_name_rescaled], lambda: convert_txt_cov_multi_to_cross(cov_name_rescaled, cov_name_cross))
 
 # Save the updated hash dictionary
-af = asdf.AsdfFile(dict(goal_deps_hashes=hash_dict))
-af.write_to(hash_dict_file)
+asdf.dump(dict(goal_deps_hashes=hash_dict), hash_dict_file)
 
 print_and_log(datetime.now())
 print_and_log("Finished execution.")

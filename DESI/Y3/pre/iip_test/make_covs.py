@@ -176,8 +176,7 @@ for tracer, z_range in zip(tracers, zs):
             # Recipe: run combine covs
 
 # Save the updated hash dictionary
-af = asdf.AsdfFile(dict(goal_deps_hashes=hash_dict))
-af.write_to(hash_dict_file)
+asdf.dump(dict(goal_deps_hashes=hash_dict), hash_dict_file)
 
 print_and_log(datetime.now())
 print_and_log("Finished execution.")
