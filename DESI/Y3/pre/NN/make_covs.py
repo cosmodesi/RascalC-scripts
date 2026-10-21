@@ -6,11 +6,12 @@ import asdf
 import hashlib
 from typing import Callable
 import traceback
-from clustering_statistics.tools import get_stats_fn
+from clustering_statistics.tools import get_stats_fn, get_simple_tracer
 from RascalC.raw_covariance_matrices import cat_raw_covariance_matrices, collect_raw_covariance_matrices
 from RascalC import post_process_auto
 from RascalC.utils import blank_function
 from RascalC.cov_utils import export_cov_legendre
+from RascalC.lsstypes_utils.cov_export import export_lsstypes_covariance_from_rascalc_legendre, export_lsstypes_covariance_from_txt_legendre
 from RascalC.combine_regions import combine_covs_legendre
 
 max_l = 4
@@ -26,10 +27,12 @@ skip_l = 0
 r_step = rmax // nbin
 rmin_real = r_step * skip_r_bins
 
-xilabel = "".join([str(i) for i in range(0, max_l+1, 2)])
+ells = list(range(0, max_l + 1, 2))
+xilabel = "".join([str(i) for i in ells])
 
 # Settings for filenames
 version = 'data-dr2-v2-cmblens'
+weight = 'default-nn-FKP'
 weight_label = 'default_NN_FKP'
 
 stats_dir = '.'
@@ -154,8 +157,13 @@ for tracer, z_range in zip(tracers, zs):
             my_make(cov_name_jack, [results_name_jack], lambda: export_cov_legendre(results_name_jack, max_l, cov_name_jack))
             # Recipe: run convert cov
 
+            # Also export the covariance to lsstypes format for use in the fits
+            covariance_fn = str(get_stats_fn(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir='.', project='bao/rascalc', kind='covariance_particle2_correlation', weight=weight)) # need a string for the dictionary key, not a Path object (in the latter case, it can't be dumped to asdf)
+            my_make(covariance_fn, [results_name_jack],
+                    lambda: export_lsstypes_covariance_from_rascalc_legendre(results_name_jack, covariance_fn, tracer=get_simple_tracer(tracer), recon=False, srange=(rmin_real, rmax), sstep=r_step, ells=ells, print_function=print_and_log))
+
     # obtain the counts names
-    reg_counts_names = [get_stats_fn(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='protected/base', kind='particle2_correlation', weight='default-nn-FKP', jackknife=dict(nsplits=njack)) for reg in regs] # don't need jackknife but jackknife-less counts not present (for now)
+    reg_counts_names = [get_stats_fn(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir=stats_dir, project='protected/base', kind='particle2_correlation', weight=weight, jackknife=dict(nsplits=njack)) for reg in regs] # don't need jackknife but jackknife-less counts not present (for now)
 
     if len(reg_counts_names) == len(regs): # if we have pycorr files for all regions
         if len(reg_results) == len(regs): # if we have RascalC results for all regions
@@ -174,6 +182,11 @@ for tracer, z_range in zip(tracers, zs):
             # Comb cov depends on the region RascalC results
             my_make(cov_name_jack, reg_results_jack, lambda: combine_covs_legendre(*reg_results_jack, *reg_counts_names, cov_name_jack, max_l, r_step=r_step, skip_r_bins=skip_r_bins, print_function=print_and_log))
             # Recipe: run combine covs
+
+            # Also export the covariance to lsstypes format for use in the fits
+            covariance_fn = str(get_stats_fn(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir='.', project='bao/rascalc', kind='covariance_particle2_correlation', weight=weight)) # need a string for the dictionary key, not a Path object (in the latter case, it can't be dumped to asdf)
+            my_make(covariance_fn, [cov_name_jack],
+                    lambda: export_lsstypes_covariance_from_txt_legendre(cov_name_jack, covariance_fn, tracer=get_simple_tracer(tracer), recon=False, srange=(rmin_real, rmax), sstep=r_step, ells=ells))
 
 # Save the updated hash dictionary
 asdf.dump(dict(goal_deps_hashes=hash_dict), hash_dict_file)
