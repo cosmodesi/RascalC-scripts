@@ -156,7 +156,7 @@ for tracer, z_range in zip(tracers, zs):
             # Recipe: run convert cov
 
             # Also export the covariance to lsstypes format for use in the fits
-            covariance_fn = get_stats_fn(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir='.', project='bao/rascalc', kind='covariance_particle2_correlation', weight='default-FKP')
+            covariance_fn = str(get_stats_fn(version=version, tracer=tracer, region=reg, zrange=z_range, stats_dir='.', project='bao/rascalc', kind='covariance_particle2_correlation', weight='default-FKP')) # need a string for the dictionary key, not a Path object (in the latter case, it can't be dumped to asdf)
             my_make(covariance_fn, [results_name_jack],
                     lambda: export_lsstypes_covariance_from_rascalc_legendre(results_name_jack, covariance_fn, tracer=get_simple_tracer(tracer), recon=False, srange=(rmin_real, rmax), sstep=r_step, ells=ells, print_function=print_and_log))
 
@@ -182,9 +182,9 @@ for tracer, z_range in zip(tracers, zs):
             # Recipe: run combine covs
 
             # Also export the covariance to lsstypes format for use in the fits
-            covariance_fn = get_stats_fn(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir='.', project='bao/rascalc', kind='covariance_particle2_correlation', weight='default-FKP')
+            covariance_fn = str(get_stats_fn(version=version, tracer=tracer, region=reg_comb, zrange=z_range, stats_dir='.', project='bao/rascalc', kind='covariance_particle2_correlation', weight='default-FKP')) # need a string for the dictionary key, not a Path object (in the latter case, it can't be dumped to asdf)
             my_make(covariance_fn, [cov_name_jack],
-                    lambda: export_lsstypes_covariance_from_txt_legendre(cov_name_jack, covariance_fn, tracer=get_simple_tracer(tracer), recon=False, srange=(rmin_real, rmax), sstep=r_step, ells=ells, print_function=print_and_log))
+                    lambda: export_lsstypes_covariance_from_txt_legendre(cov_name_jack, covariance_fn, tracer=get_simple_tracer(tracer), recon=False, srange=(rmin_real, rmax), sstep=r_step, ells=ells))
 
 # Save the updated hash dictionary
 asdf.dump(dict(goal_deps_hashes=hash_dict), hash_dict_file)
